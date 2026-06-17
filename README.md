@@ -24,6 +24,12 @@ Phase 3 adds:
 - protected dataset upload and bundled demo-load endpoints
 - backend scripts for loading the bundled Bengaluru event dataset
 
+Phase 4 adds:
+
+- derived event feature generation with duration fallback and historical risk rates
+- a protected feature rebuild endpoint for admin/control-room operators
+- backend scripts and tests for rebuilding `event_features`
+
 ## Repository Layout
 
 ```text
@@ -94,6 +100,12 @@ future/
 
   ```bash
   python backend/scripts/seed_demo_data.py
+  ```
+
+- Feature generation smoke check:
+
+  ```bash
+  python backend/scripts/create_features.py
   ```
 
 The base MVP remains free-tier and dataset-honest. Optional Google Translate support stays disabled by default.

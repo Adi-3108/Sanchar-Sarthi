@@ -18,6 +18,7 @@ from app.services.data_cleaning_service import (
     ingest_astram_csv_bytes,
     ingest_astram_csv_file,
 )
+from app.services.feature_engineering_service import FeatureRebuildReport, rebuild_event_features
 
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 
@@ -27,6 +28,15 @@ class DatasetLoadResponse(BaseModel):
     rows_loaded: int
     columns_detected: int
     invalid_rows: int
+    message: str | None = None
+
+
+class FeatureGenerationResponse(BaseModel):
+    status: str
+    events_processed: int
+    features_created: int
+    features_updated: int
+    duration_unavailable: int
     message: str | None = None
 
 
@@ -93,12 +103,54 @@ def _record_dataset_audit_log(
     db.commit()
 
 
+def _record_feature_generation_audit_log(
+    db: Session,
+    auth: AuthContext,
+    *,
+    resource_id: str,
+    report: FeatureRebuildReport,
+    commit: bool = True,
+) -> None:
+    db.add(
+        SystemAuditLog(
+            actor_user_id=_coerce_uuid(auth.user_account_id),
+            actor_role=auth.role,
+            action="dataset_generate_features",
+            resource_type="event_features",
+            resource_id=resource_id,
+            metadata_json={
+                "events_processed": report.events_processed,
+                "features_created": report.features_created,
+                "features_updated": report.features_updated,
+                "duration_unavailable": report.duration_unavailable,
+            },
+        )
+    )
+    if commit:
+        db.commit()
+
+
 def _success_payload(report: IngestionReport, *, message: str | None = None) -> DatasetLoadResponse:
     return DatasetLoadResponse(
         status="success",
         rows_loaded=report.rows_upserted,
         columns_detected=report.columns_detected,
         invalid_rows=report.invalid_rows,
+        message=message,
+    )
+
+
+def _feature_generation_payload(
+    report: FeatureRebuildReport,
+    *,
+    message: str | None = None,
+) -> FeatureGenerationResponse:
+    return FeatureGenerationResponse(
+        status="success",
+        events_processed=report.events_processed,
+        features_created=report.features_created,
+        features_updated=report.features_updated,
+        duration_unavailable=report.duration_unavailable,
         message=message,
     )
 
@@ -177,3 +229,36 @@ async def upload_dataset(
         return error_response(503, "DATABASE_UNAVAILABLE", "Database is unavailable for dataset upload.")
 
     return _success_payload(report)
+
+
+@router.post("/generate-features", response_model=FeatureGenerationResponse)
+def generate_features(
+    auth: AuthContext = Depends(require_admin_or_control_room),
+    db: Session = Depends(get_db),
+):
+    try:
+        report = rebuild_event_features(db, commit=False)
+        _record_feature_generation_audit_log(
+            db,
+            auth,
+            resource_id="all-events",
+            report=report,
+            commit=False,
+        )
+        db.commit()
+    except ValueError as exc:
+        db.rollback()
+        return error_response(404, "EVENT_NOT_FOUND", str(exc))
+    except SQLAlchemyError:
+        db.rollback()
+        return error_response(
+            503,
+            "DATABASE_UNAVAILABLE",
+            "Database is unavailable for feature generation.",
+        )
+
+    message = "Event features generated."
+    if report.events_processed == 0:
+        message = "No events available for feature generation."
+
+    return _feature_generation_payload(report, message=message)

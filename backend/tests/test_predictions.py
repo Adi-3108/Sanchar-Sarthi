@@ -96,9 +96,13 @@ def test_predict_event_persists_single_rule_fallback_prediction(tmp_path, monkey
         assert record.predicted_priority in {"High", "Low"}
         assert float(record.priority_confidence) > 0.0
         assert record.clearance_prediction_method == "rule_fallback"
+        assert float(record.estimated_impact_score) > 0.0
+        assert record.impact_category in {"Low", "Medium", "High", "Critical"}
+        assert float(record.additional_event_delta) >= 0.0
         assert record.prediction_explanation_json["priority"]["method"] == "rule_fallback"
         assert record.prediction_explanation_json["road_closure"]["method"] == "primary_rule_history"
         assert record.prediction_explanation_json["resolution_time"]["data_filter_applied"]
+        assert record.prediction_explanation_json["impact"]["counterfactual"]["honesty_note"]
 
         record_again, created_again = prediction_service.predict_event(session, event, feature=feature)
         assert created_again is False
@@ -161,7 +165,10 @@ def test_event_detail_route_includes_prediction_payload(tmp_path, monkeypatch):
     assert payload["prediction"]["event_id"] == "PRED-001"
     assert payload["prediction"]["predicted_priority"] in {"High", "Low"}
     assert payload["prediction"]["clearance_prediction_method"] == "rule_fallback"
+    assert payload["prediction"]["impact_category"] in {"Low", "Medium", "High", "Critical"}
+    assert payload["prediction"]["estimated_impact_score"] > 0
     assert payload["prediction"]["prediction_explanation_json"]["road_closure"]["method"] == "primary_rule_history"
+    assert payload["prediction"]["prediction_explanation_json"]["impact"]["counterfactual"]["honesty_note"]
 
 
 def test_model_runs_endpoint_returns_latest_run_per_model(tmp_path):
@@ -216,3 +223,86 @@ def test_model_runs_endpoint_returns_latest_run_per_model(tmp_path):
         "priority_model",
         "road_closure_model",
     }
+
+
+def test_simulate_event_route_returns_ephemeral_prediction_payload(tmp_path, monkeypatch):
+    session_factory = _build_session_factory(tmp_path, "simulate-event-route.db")
+    actor_id = uuid4()
+    monkeypatch.setattr(prediction_service, "PRIORITY_MODEL_PATH", tmp_path / "missing-priority.joblib")
+    monkeypatch.setattr(
+        road_closure_scoring_service,
+        "ROAD_CLOSURE_MODEL_PATH",
+        tmp_path / "missing-road-closure.joblib",
+    )
+    monkeypatch.setattr(
+        resolution_time_service,
+        "RESOLUTION_TIME_MODEL_PATH",
+        tmp_path / "missing-resolution.joblib",
+    )
+
+    with session_factory() as session:
+        _seed_prediction_events(session)
+        session.add(
+            UserAccount(
+                id=actor_id,
+                role="control_room",
+                display_name="Simulation Officer",
+                auth_provider="firebase",
+                auth_provider_uid="firebase-control-room-simulation",
+                is_active=True,
+            )
+        )
+        session.commit()
+
+    def override_get_db():
+        db = session_factory()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[routes_events.require_internal_event_access] = lambda: AuthContext(
+        firebase_uid="firebase-control-room-simulation",
+        email="controlroom@example.com",
+        role="control_room",
+        user_account_id=str(actor_id),
+    )
+
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/events/simulate",
+                json={
+                    "event_type": "planned",
+                    "event_cause": "procession",
+                    "latitude": 12.9716,
+                    "longitude": 77.5946,
+                    "corridor": "MG Road",
+                    "police_station": "Ashok Nagar",
+                    "zone": "Central",
+                    "junction": "Brigade Road",
+                    "start_datetime": "2026-06-22T18:00:00Z",
+                    "expected_duration_minutes": 120,
+                    "expected_crowd_size": 5000,
+                    "weather_condition": "heavy_rain",
+                    "available_officers": 18,
+                    "description": "Large procession expected during evening peak",
+                    "veh_type": "Truck",
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["predicted_priority"] in {"High", "Low"}
+    assert payload["estimated_impact_score"] > 0
+    assert payload["impact_category"] in {"Low", "Medium", "High", "Critical"}
+    assert payload["counterfactual"]["additional_event_delta"] >= 0
+    assert payload["weather_adjustment"]["weather_condition"] == "heavy_rain"
+    assert payload["event_dna"]["event_id"].startswith("SIM-")
+    assert payload["similar_event_summary"]["match_count"] >= 0
+
+    with session_factory() as session:
+        assert session.query(Event).filter(Event.id.like("SIM-%")).count() == 0

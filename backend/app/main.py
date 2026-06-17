@@ -6,12 +6,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes_health import router as health_router
 from app.core.config import get_settings
 from app.core.firebase import initialize_firebase
+from app.db.base import import_model_modules
 
 settings = get_settings()
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    import_model_modules()
     initialize_firebase(settings)
     yield
 

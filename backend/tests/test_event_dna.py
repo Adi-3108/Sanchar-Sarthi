@@ -111,7 +111,9 @@ def test_persist_event_dna_prefers_structured_fields_and_downweights_low_confide
         assert "Duration" in record.time_context
         assert "Corridor: Central Spine." in record.location_context
         assert "Historical corridor risk" in record.historical_pattern
-        assert record.weather_context == "Weather context deferred to Phase 10 weather integration."
+        assert record.weather_context == (
+            "No linked weather observation exists in ASTraM history; Phase 10 weather adjustments apply only when manual or live weather inputs are provided."
+        )
         assert record.multi_event_context == "Multi-event conflict context deferred to Phase 13 analysis."
 
 
@@ -160,7 +162,9 @@ def test_event_detail_route_returns_dna_and_similar_events(tmp_path):
     assert payload["event"]["id"] == "DNA-001"
     assert payload["features"]["location_cluster_id"] == "CL-001"
     assert payload["event_dna"]["event_id"] == "DNA-001"
-    assert payload["event_dna"]["weather_context"] == "Weather context deferred to Phase 10 weather integration."
+    assert payload["event_dna"]["weather_context"] == (
+        "No linked weather observation exists in ASTraM history; Phase 10 weather adjustments apply only when manual or live weather inputs are provided."
+    )
     assert payload["event_dna"]["multi_event_context"] == "Multi-event conflict context deferred to Phase 13 analysis."
     assert len(payload["similar_events"]) == 2
     assert payload["similar_events"][0]["event_id"] == "DNA-002"

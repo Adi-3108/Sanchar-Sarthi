@@ -21,6 +21,7 @@ from app.services.recommendation_orchestrator import (
     generate_recommendation_plan,
     persist_recommendation_plan,
 )
+from app.services.weather_service import resolve_weather_adjustment
 
 router = APIRouter(prefix="/api/recommendations", tags=["recommendations"])
 
@@ -73,6 +74,7 @@ def _record_recommendation_audit_log(
     available_officers: int | None,
     include_logistics_impact: bool,
     include_emergency_corridor: bool,
+    weather_adjustment: dict[str, object] | None = None,
 ) -> None:
     db.add(
         SystemAuditLog(
@@ -85,6 +87,12 @@ def _record_recommendation_audit_log(
                 "available_officers": available_officers,
                 "include_logistics_impact": include_logistics_impact,
                 "include_emergency_corridor": include_emergency_corridor,
+                "weather_source": (
+                    str(weather_adjustment.get("source"))
+                    if weather_adjustment is not None and weather_adjustment.get("source") is not None
+                    else None
+                ),
+                "weather_reason_codes": list(weather_adjustment.get("reason_codes", [])) if weather_adjustment else [],
             },
         )
     )
@@ -113,11 +121,32 @@ def generate_event_plan(
             feature, _feature_created = build_features_for_event(db, event, commit=False)
 
         prediction = _get_primary_prediction(db, event.id)
-        if prediction is None:
+        weather_requested = (
+            payload.weather_condition is not None
+            or payload.rain_mm is not None
+            or payload.visibility_m is not None
+            or payload.use_live_weather
+        )
+        weather_adjustment = (
+            resolve_weather_adjustment(
+                float(event.latitude),
+                float(event.longitude),
+                weather_condition=payload.weather_condition,
+                rain_mm=payload.rain_mm,
+                visibility_m=payload.visibility_m,
+                use_live_weather=payload.use_live_weather,
+                source_context="event_plan",
+            )
+            if weather_requested
+            else None
+        )
+        if prediction is None or weather_requested:
             prediction, _prediction_created = predict_event(
                 db,
                 event,
                 feature=feature,
+                weather_condition=payload.weather_condition,
+                weather_adjustment_override=weather_adjustment,
                 commit=False,
                 persist=True,
             )
@@ -143,6 +172,7 @@ def generate_event_plan(
             available_officers=payload.available_officers,
             include_logistics_impact=payload.include_logistics_impact,
             include_emergency_corridor=payload.include_emergency_corridor,
+            weather_adjustment=weather_adjustment or dict(prediction.weather_adjustment_json or {}),
         )
         db.commit()
         return RecommendationPlanResponse.model_validate(plan)

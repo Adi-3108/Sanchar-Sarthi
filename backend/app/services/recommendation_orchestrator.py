@@ -52,6 +52,7 @@ class RecommendationInput:
     include_logistics_impact: bool = True
     include_emergency_corridor: bool = True
     prediction_explanation_json: dict[str, object] | None = None
+    weather_adjustment_json: dict[str, object] | None = None
 
 
 def build_recommendation_input(
@@ -93,6 +94,7 @@ def build_recommendation_input(
         include_logistics_impact=include_logistics_impact,
         include_emergency_corridor=include_emergency_corridor,
         prediction_explanation_json=dict(prediction.prediction_explanation_json or {}),
+        weather_adjustment_json=dict(prediction.weather_adjustment_json or {}),
     )
 
 
@@ -124,13 +126,106 @@ def _clearance_confidence(input_data: RecommendationInput) -> float:
     return 0.45
 
 
+def _weather_confidence(input_data: RecommendationInput) -> float:
+    weather = dict(input_data.weather_adjustment_json or {})
+    source = str(weather.get("source") or "")
+    if source == "open_meteo_live":
+        return 0.66
+    if source.startswith("manual_"):
+        return 0.6
+    if source.startswith("open_meteo_"):
+        return 0.42
+    return 0.38
+
+
+def build_weather_risk(input_data: RecommendationInput) -> dict[str, object]:
+    weather = dict(input_data.weather_adjustment_json or {})
+    if not weather:
+        return {
+            "weather_condition": "clear",
+            "weather_factor": 1.0,
+            "rain_mm": 0.0,
+            "visibility_m": None,
+            "low_visibility": False,
+            "waterlogging_risk": "low",
+            "reason_codes": [],
+            "source": "phase10_default",
+            "provider": None,
+            "provider_status": "not_requested",
+            "note": "No explicit weather risk was provided, so EventFlow AI used a neutral weather modifier.",
+        }
+    return weather
+
+
+def apply_weather_to_barricades(
+    barricade_plan: dict[str, object],
+    weather_risk: dict[str, object],
+) -> dict[str, object]:
+    updated = dict(barricade_plan)
+    reason_codes = list(updated.get("reason_codes", []))
+    for reason in list(weather_risk.get("reason_codes", [])):
+        if reason not in reason_codes:
+            reason_codes.append(reason)
+
+    weather_factor = _safe_float(weather_risk.get("weather_factor"))
+    waterlogging_risk = str(weather_risk.get("waterlogging_risk") or "low")
+    low_visibility = bool(weather_risk.get("low_visibility"))
+
+    if weather_factor >= 1.2 or waterlogging_risk == "elevated":
+        updated["barricade_level"] = "extended_buffer_with_slow_speed_channelization"
+        updated["estimated_units"] = int(updated.get("estimated_units") or 0) + 2
+        updated["field_note"] = "Increase taper distance and avoid pushing traffic through low-lying road segments."
+    elif low_visibility:
+        updated["field_note"] = "Strengthen reflector visibility and add slower channelization near the incident edge."
+
+    placement_priority = list(updated.get("placement_priority", []))
+    if waterlogging_risk in {"watch", "elevated"} and "avoid low-lying diversion entry" not in placement_priority:
+        placement_priority.append("avoid low-lying diversion entry")
+    updated["placement_priority"] = placement_priority[:6]
+    updated["reason_codes"] = reason_codes
+    return updated
+
+
+def apply_weather_to_diversion(
+    diversion_plan: dict[str, object],
+    weather_risk: dict[str, object],
+) -> dict[str, object]:
+    updated = dict(diversion_plan)
+    reason_codes = list(updated.get("reason_codes", []))
+    for reason in list(weather_risk.get("reason_codes", [])):
+        if reason not in reason_codes:
+            reason_codes.append(reason)
+
+    waterlogging_risk = str(weather_risk.get("waterlogging_risk") or "low")
+    low_visibility = bool(weather_risk.get("low_visibility"))
+    weather_factor = _safe_float(weather_risk.get("weather_factor"))
+    upstream_focus_points = list(updated.get("upstream_focus_points", []))
+
+    if waterlogging_risk == "elevated" or weather_factor >= 1.2:
+        updated["strategy"] = "weather_buffered_hotspot_bypass"
+        updated["diversion_scope"] = "avoid low-lying approaches and create wider upstream diversion buffers"
+        updated["heavy_vehicle_advisory"] = "Move heavy vehicles away from low-lying corridors and flooded underpasses before hotspot entry."
+        updated["field_note"] = "Do not route diversions through low-visibility or waterlogging-prone links without field confirmation."
+    elif low_visibility:
+        updated["field_note"] = "Advance upstream advisories earlier because visibility-related braking waves may widen the spillover radius."
+
+    if waterlogging_risk in {"watch", "elevated"} and "avoid low-lying roads" not in upstream_focus_points:
+        upstream_focus_points.append("avoid low-lying roads")
+    if low_visibility and "advance warning farther upstream" not in upstream_focus_points:
+        upstream_focus_points.append("advance warning farther upstream")
+
+    updated["upstream_focus_points"] = upstream_focus_points[:5]
+    updated["reason_codes"] = reason_codes
+    return updated
+
+
 def build_confidence_ledger(
     input_data: RecommendationInput,
     *,
     manpower: dict[str, object],
     diversion: dict[str, object],
 ) -> list[dict[str, object]]:
-    return [
+    ledger = [
         {
             "input": "ASTraM historical events",
             "confidence": 0.85,
@@ -149,6 +244,19 @@ def build_confidence_ledger(
             "note": "Treat probability as the primary signal; the boolean closure flag is only an operational helper.",
             "source": "road_closure_probability",
         },
+    ]
+    weather_risk = build_weather_risk(input_data)
+    if weather_risk.get("source") != "phase10_default" or weather_risk.get("reason_codes"):
+        ledger.append(
+            {
+                "input": "Weather modifier",
+                "confidence": _weather_confidence(input_data),
+                "note": f"Weather input source: {weather_risk.get('source', 'unknown')}. This remains an operational adjustment, not a road-sensor ground truth feed.",
+                "source": "phase10_weather_adjustment",
+            }
+        )
+    ledger.extend(
+        [
         {
             "input": "Manpower and diversion heuristics",
             "confidence": 0.6 if str(manpower.get("deployment_style")) != "point_control" else 0.55,
@@ -161,7 +269,9 @@ def build_confidence_ledger(
             "note": "Not present in the ASTraM dataset or current MVP integrations.",
             "source": "future_live_integration",
         },
-    ]
+        ]
+    )
+    return ledger
 
 
 def build_recommended_action_summary(
@@ -178,12 +288,16 @@ def build_recommended_action_summary(
         f"Use {barricades['barricade_level'].replace('_', ' ')} and "
         f"{diversion['strategy'].replace('_', ' ')} operations."
     )
+    weather_risk = build_weather_risk(input_data)
+    if list(weather_risk.get("reason_codes", [])):
+        summary += " Apply the weather-risk note before final field deployment."
     if int(manpower.get("officer_gap", 0) or 0) > 0:
         summary += f" Reallocate {manpower['officer_gap']} additional officers to reach the recommended posture."
     return summary
 
 
 def generate_recommendation_plan(input_data: RecommendationInput) -> dict[str, object]:
+    weather_risk = build_weather_risk(input_data)
     manpower = recommend_manpower(
         ManpowerInput(
             impact_score=input_data.impact_score,
@@ -207,6 +321,7 @@ def generate_recommendation_plan(input_data: RecommendationInput) -> dict[str, o
             junction=input_data.junction,
         )
     )
+    barricades = apply_weather_to_barricades(barricades, weather_risk)
     diversion = recommend_diversion(
         DiversionInput(
             impact_score=input_data.impact_score,
@@ -218,6 +333,7 @@ def generate_recommendation_plan(input_data: RecommendationInput) -> dict[str, o
             zone=input_data.zone,
         )
     )
+    diversion = apply_weather_to_diversion(diversion, weather_risk)
     emergency_corridor = (
         recommend_emergency_corridor(
             EmergencyCorridorInput(
@@ -276,6 +392,7 @@ def generate_recommendation_plan(input_data: RecommendationInput) -> dict[str, o
             else None,
             "honesty_note": DATASET_HONESTY_NOTE,
         },
+        "weather_risk": weather_risk,
         "manpower": manpower,
         "barricades": barricades,
         "diversions": diversion,
@@ -355,6 +472,7 @@ def serialize_recommendation_plan(
     return {
         "event_id": record.event_id,
         "risk_summary": {},
+        "weather_risk": None,
         "manpower": dict(record.deployment_plan_json or {}),
         "barricades": dict(record.barricade_plan_json or {}),
         "diversions": dict(record.diversion_plan_json or {}),
@@ -376,6 +494,7 @@ def merge_risk_summary_into_plan(
     if prediction is None:
         return plan
     merged = dict(plan)
+    merged["weather_risk"] = dict(prediction.weather_adjustment_json or {})
     merged["risk_summary"] = {
         "impact_score": _safe_float(prediction.estimated_impact_score),
         "impact_category": prediction.impact_category or "Low",

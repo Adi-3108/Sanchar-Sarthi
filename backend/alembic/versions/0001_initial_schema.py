@@ -171,6 +171,7 @@ def upgrade() -> None:
             "duration_source IN ('end_datetime', 'closed_datetime', 'resolved_datetime', 'unavailable')",
             name="ck_event_features_duration_source",
         ),
+        sa.UniqueConstraint("event_id", name="uq_event_features_event_id"),
     )
     op.create_index("idx_event_features_event_id", "event_features", ["event_id"])
     op.create_index("idx_event_features_location_cluster_id", "event_features", ["location_cluster_id"])
@@ -209,6 +210,7 @@ def upgrade() -> None:
         sa.Column("risk_indicators_json", _json_type(), nullable=False, server_default=_json_default("{}")),
         sa.Column("similar_event_ids_json", _json_type(), nullable=False, server_default=_json_default("[]")),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
+        sa.UniqueConstraint("event_id", name="uq_event_dna_event_id"),
     )
     op.create_index("idx_event_dna_event_id", "event_dna", ["event_id"])
 

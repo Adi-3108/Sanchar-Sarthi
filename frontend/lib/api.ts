@@ -3,6 +3,8 @@ export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://loc
   ""
 );
 
+export type ModelArtifactStatus = "not_loaded" | "dependency_missing" | "loaded";
+
 export type HealthResponse = {
   status: "ok";
   service: string;
@@ -11,9 +13,9 @@ export type HealthResponse = {
   database: string;
   database_detail?: string | null;
   models: {
-    priority: string;
-    road_closure: string;
-    resolution_time: string;
+    priority: ModelArtifactStatus;
+    road_closure: ModelArtifactStatus;
+    resolution_time: ModelArtifactStatus;
   };
   auth: {
     firebase: "configured" | "not_configured";
@@ -123,6 +125,32 @@ export type SimilarEventResponse = {
   historical_cluster_closure_rate?: number | null;
 };
 
+export type EventPredictionResponse = {
+  event_id: string;
+  model_run_id?: string | null;
+  predicted_priority?: string | null;
+  priority_confidence?: number | null;
+  road_closure_probability?: number | null;
+  predicted_road_closure?: boolean | null;
+  estimated_clearance_minutes?: number | null;
+  clearance_prediction_method?: string | null;
+  clearance_confidence?: number | null;
+  clearance_confidence_note?: string | null;
+  historical_clearance_range_min?: number | null;
+  historical_clearance_range_max?: number | null;
+  estimated_impact_score?: number | null;
+  impact_category?: string | null;
+  impact_radius_km?: number | null;
+  vehicle_impact_factor?: number | null;
+  vehicle_impact_note?: string | null;
+  baseline_risk_score?: number | null;
+  additional_event_delta?: number | null;
+  weather_adjustment_json?: Record<string, unknown> | null;
+  multi_event_conflict_json?: Record<string, unknown> | null;
+  prediction_explanation_json: Record<string, unknown>;
+  model_version?: string | null;
+};
+
 export type EventDetailResponse = {
   event: {
     id: string;
@@ -143,12 +171,31 @@ export type EventDetailResponse = {
   };
   features?: EventFeatureResponse | null;
   event_dna?: EventDnaResponse | null;
-  prediction?: Record<string, unknown> | null;
+  prediction?: EventPredictionResponse | null;
   recommendation?: Record<string, unknown> | null;
   similar_events: SimilarEventResponse[];
   citizen_reports: Array<Record<string, unknown>>;
   live_updates: Array<Record<string, unknown>>;
   map_overlays: Record<string, unknown>;
+};
+
+export type ModelRunResponse = {
+  id: string;
+  model_name: string;
+  model_version: string;
+  target_variable: string;
+  training_rows: number;
+  test_rows: number;
+  metrics_json: Record<string, unknown>;
+  feature_list_json: string[];
+  artifact_path?: string | null;
+  artifact_available: boolean;
+  artifact_status: ModelArtifactStatus;
+  created_at: string;
+};
+
+export type ModelRunListResponse = {
+  model_runs: ModelRunResponse[];
 };
 
 export type HotspotQuery = {
@@ -223,4 +270,8 @@ export function getHotspots(query: HotspotQuery = {}, init?: RequestInit): Promi
 
 export function getEventDetail(eventId: string, init?: RequestInit): Promise<EventDetailResponse> {
   return apiGet<EventDetailResponse>(`/api/events/${encodeURIComponent(eventId)}`, init);
+}
+
+export function getModelRuns(init?: RequestInit): Promise<ModelRunListResponse> {
+  return apiGet<ModelRunListResponse>("/api/analytics/model-runs", init);
 }

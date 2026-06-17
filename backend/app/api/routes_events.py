@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any
+from datetime import datetime, timedelta, timezone
+from typing import Any, Literal
 from uuid import UUID
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
@@ -18,6 +19,7 @@ from app.orm.event_dna import EventDna
 from app.orm.event_feature import EventFeature
 from app.orm.hotspot_cluster import HotspotCluster
 from app.orm.system_audit_log import SystemAuditLog
+from app.services.data_cleaning_service import clean_event_cause
 from app.services.event_dna_service import (
     EventDnaRebuildReport,
     persist_event_dna,
@@ -27,6 +29,7 @@ from app.services.event_dna_service import (
 from app.services.feature_engineering_service import build_features_for_event
 from app.services.prediction_service import predict_event, serialize_event_prediction
 from app.services.similar_event_service import find_similar_events, serialize_similar_event_match
+from app.services.text_normalization_service import normalize_description
 
 
 class EventRecordResponse(BaseModel):
@@ -155,6 +158,64 @@ class EventDnaRebuildResponse(BaseModel):
     message: str | None = None
 
 
+class SimilarEventSummaryResponse(BaseModel):
+    match_count: int
+    top_match_event_id: str | None = None
+    average_similarity: float | None = None
+    highest_similarity: float | None = None
+    top_matched_signals: list[str] = Field(default_factory=list)
+
+
+class CounterfactualResponse(BaseModel):
+    baseline_risk_score: float | None = None
+    event_impact_score: float | None = None
+    additional_event_delta: float | None = None
+    honesty_note: str
+
+
+class EventSimulationRequest(BaseModel):
+    event_type: Literal["planned", "unplanned"] = "planned"
+    event_cause: str = Field(min_length=1, max_length=128)
+    latitude: float = Field(ge=-90.0, le=90.0)
+    longitude: float = Field(ge=-180.0, le=180.0)
+    corridor: str | None = Field(default=None, max_length=255)
+    police_station: str | None = Field(default=None, max_length=255)
+    zone: str | None = Field(default=None, max_length=255)
+    junction: str | None = Field(default=None, max_length=255)
+    start_datetime: datetime
+    expected_duration_minutes: int | None = Field(default=None, ge=1, le=1440)
+    expected_crowd_size: int | None = Field(default=None, ge=0)
+    weather_condition: Literal["clear", "cloudy", "light_rain", "rain", "heavy_rain"] = "clear"
+    available_officers: int | None = Field(default=None, ge=0)
+    description: str | None = Field(default=None, max_length=2000)
+    veh_type: str | None = Field(default=None, max_length=64)
+
+
+class EventSimulationResponse(BaseModel):
+    event_dna: EventDnaResponse
+    similar_event_summary: SimilarEventSummaryResponse
+    predicted_priority: str | None = None
+    priority_confidence: float | None = None
+    road_closure_probability: float | None = None
+    predicted_road_closure: bool | None = None
+    estimated_clearance_minutes: float | None = None
+    clearance_prediction_method: str | None = None
+    clearance_confidence: float | None = None
+    clearance_confidence_note: str | None = None
+    historical_clearance_range_min: float | None = None
+    historical_clearance_range_max: float | None = None
+    estimated_impact_score: float | None = None
+    impact_category: str | None = None
+    impact_radius_km: float | None = None
+    vehicle_impact_factor: float | None = None
+    vehicle_impact_note: str | None = None
+    counterfactual: CounterfactualResponse
+    weather_adjustment: dict[str, object] = Field(default_factory=dict)
+    recommendations: dict[str, object] = Field(default_factory=dict)
+    map_overlays: dict[str, object] = Field(default_factory=dict)
+    prediction_explanation_json: dict[str, object] = Field(default_factory=dict)
+
+
 router = APIRouter(prefix="/api/events", tags=["events"])
 
 
@@ -258,6 +319,63 @@ def _serialize_hotspot_overlay(hotspot: HotspotCluster | None) -> HotspotOverlay
     )
 
 
+def _serialize_similar_event_summary(similar_events: list[Any]) -> SimilarEventSummaryResponse:
+    if not similar_events:
+        return SimilarEventSummaryResponse(match_count=0)
+
+    average_similarity = round(
+        sum(float(match.similarity) for match in similar_events) / len(similar_events),
+        4,
+    )
+    top_match = similar_events[0]
+    return SimilarEventSummaryResponse(
+        match_count=len(similar_events),
+        top_match_event_id=top_match.event_id,
+        average_similarity=average_similarity,
+        highest_similarity=round(float(top_match.similarity), 4),
+        top_matched_signals=list(top_match.matched_signals),
+    )
+
+
+def _build_simulated_event(payload: EventSimulationRequest) -> Event:
+    normalized_description = normalize_description(payload.description)
+    start_datetime = payload.start_datetime
+    if start_datetime.tzinfo is None:
+        start_datetime = start_datetime.replace(tzinfo=timezone.utc)
+    end_datetime = None
+    if payload.expected_duration_minutes is not None:
+        end_datetime = start_datetime + timedelta(minutes=payload.expected_duration_minutes)
+
+    return Event(
+        id=f"SIM-{uuid4().hex[:12].upper()}",
+        event_type=payload.event_type,
+        latitude=payload.latitude,
+        longitude=payload.longitude,
+        event_cause=payload.event_cause.strip(),
+        event_cause_clean=clean_event_cause(payload.event_cause),
+        requires_road_closure=False,
+        start_datetime=start_datetime,
+        end_datetime=end_datetime,
+        status="simulated",
+        description=normalized_description.raw,
+        description_language=normalized_description.language,
+        description_for_features=normalized_description.text_for_features,
+        description_normalization_method=normalized_description.method,
+        veh_type=payload.veh_type.strip() if payload.veh_type and payload.veh_type.strip() else None,
+        corridor=payload.corridor.strip() if payload.corridor and payload.corridor.strip() else None,
+        police_station=(payload.police_station.strip() if payload.police_station and payload.police_station.strip() else None),
+        zone=payload.zone.strip() if payload.zone and payload.zone.strip() else None,
+        junction=payload.junction.strip() if payload.junction and payload.junction.strip() else None,
+        raw_payload={
+            "simulation": True,
+            "expected_duration_minutes": payload.expected_duration_minutes,
+            "expected_crowd_size": payload.expected_crowd_size,
+            "weather_condition": payload.weather_condition,
+            "available_officers": payload.available_officers,
+        },
+    )
+
+
 def _get_primary_feature(db: Session, event_id: str) -> EventFeature | None:
     return db.scalars(
         select(EventFeature)
@@ -332,6 +450,8 @@ def get_event_detail(
             db,
             event,
             feature=feature,
+            hotspot=hotspot,
+            similar_events=similar_events,
             commit=False,
         )
         db.commit()
@@ -356,6 +476,95 @@ def get_event_detail(
         live_updates=[],
         map_overlays={"hotspot": hotspot_overlay.model_dump() if hotspot_overlay else None},
     )
+
+
+@router.post("/simulate", response_model=EventSimulationResponse)
+def simulate_event(
+    payload: EventSimulationRequest,
+    _auth: AuthContext = Depends(require_internal_event_access),
+    db: Session = Depends(get_db),
+):
+    try:
+        simulated_event = _build_simulated_event(payload)
+        db.add(simulated_event)
+        db.flush()
+
+        feature, _feature_created = build_features_for_event(db, simulated_event, commit=False)
+        hotspot = None
+        if feature.location_cluster_id:
+            hotspot = db.scalars(
+                select(HotspotCluster).where(HotspotCluster.location_cluster_id == feature.location_cluster_id)
+            ).first()
+
+        similar_events = find_similar_events(db, simulated_event.id, limit=5)
+        dna_record, _dna_created = persist_event_dna(
+            db,
+            simulated_event,
+            feature=feature,
+            hotspot=hotspot,
+            similar_event_ids=[row.event_id for row in similar_events],
+            commit=False,
+        )
+        prediction_record, _prediction_created = predict_event(
+            db,
+            simulated_event,
+            feature=feature,
+            hotspot=hotspot,
+            similar_events=similar_events,
+            weather_condition=payload.weather_condition,
+            commit=False,
+        )
+        serialized_prediction = serialize_event_prediction(prediction_record) or {}
+        event_dna_payload = serialize_event_dna(dna_record) or {}
+        hotspot_overlay = _serialize_hotspot_overlay(hotspot)
+        impact_explanation = dict(
+            (
+                prediction_record.prediction_explanation_json.get("impact", {})
+                if prediction_record.prediction_explanation_json
+                else {}
+            )
+            or {}
+        )
+        counterfactual = dict(impact_explanation.get("counterfactual", {}))
+        response = EventSimulationResponse(
+            event_dna=EventDnaResponse.model_validate(event_dna_payload),
+            similar_event_summary=_serialize_similar_event_summary(similar_events),
+            predicted_priority=serialized_prediction.get("predicted_priority"),
+            priority_confidence=serialized_prediction.get("priority_confidence"),
+            road_closure_probability=serialized_prediction.get("road_closure_probability"),
+            predicted_road_closure=serialized_prediction.get("predicted_road_closure"),
+            estimated_clearance_minutes=serialized_prediction.get("estimated_clearance_minutes"),
+            clearance_prediction_method=serialized_prediction.get("clearance_prediction_method"),
+            clearance_confidence=serialized_prediction.get("clearance_confidence"),
+            clearance_confidence_note=serialized_prediction.get("clearance_confidence_note"),
+            historical_clearance_range_min=serialized_prediction.get("historical_clearance_range_min"),
+            historical_clearance_range_max=serialized_prediction.get("historical_clearance_range_max"),
+            estimated_impact_score=serialized_prediction.get("estimated_impact_score"),
+            impact_category=serialized_prediction.get("impact_category"),
+            impact_radius_km=serialized_prediction.get("impact_radius_km"),
+            vehicle_impact_factor=serialized_prediction.get("vehicle_impact_factor"),
+            vehicle_impact_note=serialized_prediction.get("vehicle_impact_note"),
+            counterfactual=CounterfactualResponse(
+                baseline_risk_score=serialized_prediction.get("baseline_risk_score"),
+                event_impact_score=serialized_prediction.get("estimated_impact_score"),
+                additional_event_delta=serialized_prediction.get("additional_event_delta"),
+                honesty_note=str(
+                    counterfactual.get(
+                        "honesty_note",
+                        "Delta is a relative operational estimate, not measured vehicle delay.",
+                    )
+                ),
+            ),
+            weather_adjustment=dict(serialized_prediction.get("weather_adjustment_json") or {}),
+            recommendations={},
+            map_overlays={"hotspot": hotspot_overlay.model_dump() if hotspot_overlay else None},
+            prediction_explanation_json=dict(serialized_prediction.get("prediction_explanation_json") or {}),
+        )
+        db.rollback()
+        return response
+    except SQLAlchemyError:
+        db.rollback()
+        return error_response(503, "DATABASE_UNAVAILABLE", "Database is unavailable for event simulation.")
 
 
 @router.post("/rebuild-dna", response_model=EventDnaRebuildResponse)

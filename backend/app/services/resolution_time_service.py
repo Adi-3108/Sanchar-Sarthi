@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from sqlalchemy.orm import Session
+
 from app.ml.feature_pipeline import (
     DATA_FILTER_APPLIED,
     RESOLUTION_TIME_MODEL_PATH,
@@ -9,6 +11,7 @@ from app.ml.feature_pipeline import (
 )
 from app.orm.event import Event
 from app.orm.event_feature import EventFeature
+from app.services.impact_score_service import resolve_vehicle_impact
 
 RULE_BASED_ESTIMATES: dict[str, float] = {
     "vehicle_breakdown": 90.0,
@@ -46,18 +49,6 @@ RULE_BASED_RANGES: dict[str, tuple[float, float]] = {
     "unknown": (45.0, 180.0),
 }
 
-VEHICLE_TIME_ADJUSTMENT: dict[str, float] = {
-    "bmtc_bus": 1.42,
-    "truck": 1.42,
-    "heavy_vehicle": 1.37,
-    "private_bus": 1.36,
-    "ksrtc_bus": 1.13,
-    "lcv": 1.20,
-    "private_car": 1.0,
-    "auto": 0.93,
-    "others": 1.22,
-}
-
 CAUSE_ALIASES = {
     "water_logging": "waterlogging",
     "waterlogging": "waterlogging",
@@ -88,15 +79,19 @@ def _vehicle_key(value: str | None) -> str:
     return VEHICLE_TYPE_ALIASES.get(normalized, normalized)
 
 
-def _rule_estimate(event: Event) -> tuple[float, str]:
+def _vehicle_multiplier(event: Event, *, db: Session | None = None) -> float:
+    return resolve_vehicle_impact(event.veh_type, db=db).multiplier
+
+
+def _rule_estimate(event: Event, *, db: Session | None = None) -> tuple[float, str]:
     base = RULE_BASED_ESTIMATES.get(_cause_key(event), RULE_BASED_ESTIMATES["unknown"])
-    vehicle_factor = VEHICLE_TIME_ADJUSTMENT.get(_vehicle_key(event.veh_type), 1.0)
+    vehicle_factor = _vehicle_multiplier(event, db=db)
     return round(base * vehicle_factor, 1), "rule_fallback"
 
 
-def _rule_range(event: Event) -> tuple[float, float]:
+def _rule_range(event: Event, *, db: Session | None = None) -> tuple[float, float]:
     lower, upper = RULE_BASED_RANGES.get(_cause_key(event), RULE_BASED_RANGES["unknown"])
-    vehicle_factor = VEHICLE_TIME_ADJUSTMENT.get(_vehicle_key(event.veh_type), 1.0)
+    vehicle_factor = _vehicle_multiplier(event, db=db)
     return round(lower * vehicle_factor, 1), round(upper * vehicle_factor, 1)
 
 
@@ -104,14 +99,15 @@ def predict_resolution_time(
     event: Event,
     *,
     feature: EventFeature | None = None,
+    db: Session | None = None,
 ) -> dict[str, object]:
     if RESOLUTION_TIME_MODEL_PATH.exists():
         try:
             import joblib  # type: ignore[import-not-found]
             import pandas as pd  # type: ignore[import-not-found]
         except ModuleNotFoundError:
-            estimated_minutes, method = _rule_estimate(event)
-            lower_bound, upper_bound = _rule_range(event)
+            estimated_minutes, method = _rule_estimate(event, db=db)
+            lower_bound, upper_bound = _rule_range(event, db=db)
             return {
                 "estimated_clearance_minutes": estimated_minutes,
                 "clearance_prediction_method": method,
@@ -150,8 +146,8 @@ def predict_resolution_time(
         except Exception:
             pass
 
-    estimated_minutes, method = _rule_estimate(event)
-    lower_bound, upper_bound = _rule_range(event)
+    estimated_minutes, method = _rule_estimate(event, db=db)
+    lower_bound, upper_bound = _rule_range(event, db=db)
     return {
         "estimated_clearance_minutes": estimated_minutes,
         "clearance_prediction_method": method,

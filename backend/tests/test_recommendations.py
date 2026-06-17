@@ -126,6 +126,8 @@ def test_event_plan_route_generates_and_persists_recommendation_for_admin(tmp_pa
                     "available_officers": 7,
                     "include_logistics_impact": True,
                     "include_emergency_corridor": True,
+                    "weather_condition": "heavy_rain",
+                    "visibility_m": 700,
                 },
             )
     finally:
@@ -135,9 +137,13 @@ def test_event_plan_route_generates_and_persists_recommendation_for_admin(tmp_pa
     payload = response.json()
     assert payload["event_id"] == "REC-001"
     assert payload["risk_summary"]["impact_category"] in {"Low", "Medium", "High", "Critical"}
+    assert payload["weather_risk"]["weather_condition"] == "heavy_rain"
+    assert payload["weather_risk"]["low_visibility"] is True
     assert payload["manpower"]["recommended_total_officers"] >= 1
     assert payload["barricades"]["estimated_units"] >= 2
+    assert payload["barricades"]["field_note"]
     assert payload["diversions"]["strategy"]
+    assert payload["diversions"]["field_note"]
     assert payload["emergency_corridor"]["priority"]
     assert payload["flipkart_logistics_impact"]["impact_level"]
     assert len(payload["action_confidence_ledger"]) >= 4
@@ -378,11 +384,13 @@ def test_event_detail_and_simulate_include_recommendations(tmp_path, monkeypatch
         "High",
         "Critical",
     }
+    assert detail_payload["recommendation"]["weather_risk"]["weather_condition"] == "clear"
 
     assert simulate_response.status_code == 200
     simulate_payload = simulate_response.json()
     assert simulate_payload["recommendations"]["event_id"].startswith("SIM-")
     assert simulate_payload["recommendations"]["manpower"]["recommended_total_officers"] >= 1
+    assert simulate_payload["recommendations"]["weather_risk"]["weather_condition"] == "heavy_rain"
     assert len(simulate_payload["recommendations"]["action_confidence_ledger"]) >= 4
 
 

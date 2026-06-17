@@ -275,6 +275,9 @@ Request:
   "expected_duration_minutes": 120,
   "expected_crowd_size": 5000,
   "weather_condition": "heavy_rain",
+  "rain_mm": 12,
+  "visibility_m": 700,
+  "use_live_weather": false,
   "available_officers": 18,
   "description": "Large procession expected during evening peak"
 }
@@ -313,7 +316,19 @@ Response:
     "event_impact_score": 82,
     "additional_event_delta": 40
   },
-  "weather_adjustment": {},
+  "weather_adjustment": {
+    "weather_condition": "heavy_rain",
+    "weather_factor": 1.3,
+    "rain_mm": 12,
+    "visibility_m": 700,
+    "low_visibility": true,
+    "waterlogging_risk": "elevated",
+    "reason_codes": ["rain_or_wet_roads", "heavy_rain_waterlogging_risk", "low_visibility"],
+    "source": "manual_simulation_selector",
+    "provider": null,
+    "provider_status": "manual_override",
+    "note": "Weather modifier uses a manual scenario override for MVP planning and remains an operational estimate."
+  },
   "recommendations": {},
   "map_overlays": {}
 }
@@ -336,7 +351,11 @@ Request:
   "event_id": "SIM-001",
   "available_officers": 18,
   "include_logistics_impact": true,
-  "include_emergency_corridor": true
+  "include_emergency_corridor": true,
+  "weather_condition": "heavy_rain",
+  "rain_mm": 12,
+  "visibility_m": 700,
+  "use_live_weather": false
 }
 ```
 
@@ -356,6 +375,19 @@ Response:
     "additional_event_delta": 40,
     "honesty_note": "Recommended actions are dataset-backed operational guidance, not a live city-control guarantee."
   },
+  "weather_risk": {
+    "weather_condition": "heavy_rain",
+    "weather_factor": 1.3,
+    "rain_mm": 12,
+    "visibility_m": 700,
+    "low_visibility": true,
+    "waterlogging_risk": "elevated",
+    "reason_codes": ["rain_or_wet_roads", "heavy_rain_waterlogging_risk", "low_visibility"],
+    "source": "manual_event_plan_override",
+    "provider": null,
+    "provider_status": "manual_override",
+    "note": "Weather modifier uses a manual scenario override for MVP planning and remains an operational estimate."
+  },
   "manpower": {
     "recommended_total_officers": 12,
     "deployment_style": "ring_control",
@@ -369,21 +401,23 @@ Response:
     "note": "Recommended staffing is operational guidance, not a shift roster guarantee."
   },
   "barricades": {
-    "barricade_level": "controlled_entry_exit_points",
-    "estimated_units": 10,
+    "barricade_level": "extended_buffer_with_slow_speed_channelization",
+    "estimated_units": 12,
     "coverage_radius_km": 3,
     "placement_priority": ["incident_core", "upstream_filter", "diversion_split"],
-    "reason_codes": ["impact_score", "road_closure_probability"],
-    "note": "Barricade guidance is radius-based and should be adapted to field geometry."
+    "reason_codes": ["impact_score", "road_closure_probability", "rain_or_wet_roads", "heavy_rain_waterlogging_risk", "low_visibility"],
+    "note": "Barricade guidance is radius-based and should be adapted to field geometry.",
+    "field_note": "Increase taper distance and avoid pushing traffic through low-lying road segments."
   },
   "diversions": {
-    "strategy": "protect_primary_corridor_and_push_early_diversion",
+    "strategy": "weather_buffered_hotspot_bypass",
     "corridor_to_protect": "MG Road",
-    "diversion_scope": "corridor_plus_spillover",
-    "upstream_focus_points": ["MG Road", "Central zone upstream"],
-    "heavy_vehicle_advisory": "Divert heavy vehicles before the hotspot radius where possible.",
-    "reason_codes": ["corridor", "impact_radius_km", "vehicle_mix"],
-    "note": "Diversion guidance is advisory and not a citywide routing guarantee."
+    "diversion_scope": "avoid low-lying approaches and create wider upstream diversion buffers",
+    "upstream_focus_points": ["MG Road", "Central zone upstream", "avoid low-lying roads", "advance warning farther upstream"],
+    "heavy_vehicle_advisory": "Move heavy vehicles away from low-lying corridors and flooded underpasses before hotspot entry.",
+    "reason_codes": ["corridor", "impact_radius_km", "vehicle_mix", "rain_or_wet_roads", "heavy_rain_waterlogging_risk", "low_visibility"],
+    "note": "Diversion guidance is advisory and not a citywide routing guarantee.",
+    "field_note": "Do not route diversions through low-visibility or waterlogging-prone links without field confirmation."
   },
   "emergency_corridor": {
     "priority": "high_protection",

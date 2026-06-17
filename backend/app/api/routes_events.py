@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.api.recommendation_contracts import RecommendationPlanResponse
+from app.api.recommendation_contracts import RecommendationPlanResponse, WeatherAdjustmentResponse
 from app.core.officer_access import coerce_uuid, officer_has_event_access
 from app.core.security import AuthContext, require_role
 from app.db.session import get_db
@@ -44,6 +44,7 @@ from app.services.recommendation_orchestrator import (
 )
 from app.services.similar_event_service import find_similar_events, serialize_similar_event_match
 from app.services.text_normalization_service import normalize_description
+from app.services.weather_service import resolve_weather_adjustment
 
 
 class EventRecordResponse(BaseModel):
@@ -146,7 +147,7 @@ class EventPredictionResponse(BaseModel):
     vehicle_impact_note: str | None = None
     baseline_risk_score: float | None = None
     additional_event_delta: float | None = None
-    weather_adjustment_json: dict[str, object] | None = None
+    weather_adjustment_json: WeatherAdjustmentResponse | None = None
     multi_event_conflict_json: dict[str, object] | None = None
     prediction_explanation_json: dict[str, object] = Field(default_factory=dict)
     model_version: str | None = None
@@ -199,7 +200,10 @@ class EventSimulationRequest(BaseModel):
     start_datetime: datetime
     expected_duration_minutes: int | None = Field(default=None, ge=1, le=1440)
     expected_crowd_size: int | None = Field(default=None, ge=0)
-    weather_condition: Literal["clear", "cloudy", "light_rain", "rain", "heavy_rain"] = "clear"
+    weather_condition: Literal["clear", "cloudy", "light_rain", "rain", "heavy_rain"] | None = None
+    rain_mm: float | None = Field(default=None, ge=0, le=500)
+    visibility_m: float | None = Field(default=None, ge=0, le=20000)
+    use_live_weather: bool = False
     available_officers: int | None = Field(default=None, ge=0)
     description: str | None = Field(default=None, max_length=2000)
     veh_type: str | None = Field(default=None, max_length=64)
@@ -224,7 +228,7 @@ class EventSimulationResponse(BaseModel):
     vehicle_impact_factor: float | None = None
     vehicle_impact_note: str | None = None
     counterfactual: CounterfactualResponse
-    weather_adjustment: dict[str, object] = Field(default_factory=dict)
+    weather_adjustment: WeatherAdjustmentResponse
     recommendations: RecommendationPlanResponse
     map_overlays: dict[str, object] = Field(default_factory=dict)
     prediction_explanation_json: dict[str, object] = Field(default_factory=dict)
@@ -376,6 +380,9 @@ def _build_simulated_event(payload: EventSimulationRequest) -> Event:
             "expected_duration_minutes": payload.expected_duration_minutes,
             "expected_crowd_size": payload.expected_crowd_size,
             "weather_condition": payload.weather_condition,
+            "rain_mm": payload.rain_mm,
+            "visibility_m": payload.visibility_m,
+            "use_live_weather": payload.use_live_weather,
             "available_officers": payload.available_officers,
         },
     )
@@ -586,6 +593,15 @@ def simulate_event(
             commit=False,
             persist=False,
         )
+        weather_adjustment = resolve_weather_adjustment(
+            payload.latitude,
+            payload.longitude,
+            weather_condition=payload.weather_condition,
+            rain_mm=payload.rain_mm,
+            visibility_m=payload.visibility_m,
+            use_live_weather=payload.use_live_weather,
+            source_context="simulation",
+        )
         prediction_record, _prediction_created = predict_event(
             db,
             simulated_event,
@@ -593,6 +609,7 @@ def simulate_event(
             hotspot=hotspot,
             similar_events=similar_events,
             weather_condition=payload.weather_condition,
+            weather_adjustment_override=weather_adjustment,
             commit=False,
             persist=False,
         )
@@ -644,7 +661,9 @@ def simulate_event(
                     )
                 ),
             ),
-            weather_adjustment=dict(serialized_prediction.get("weather_adjustment_json") or {}),
+            weather_adjustment=WeatherAdjustmentResponse.model_validate(
+                dict(serialized_prediction.get("weather_adjustment_json") or {})
+            ),
             recommendations=RecommendationPlanResponse.model_validate(recommendation_payload),
             map_overlays={"hotspot": hotspot_overlay.model_dump() if hotspot_overlay else None},
             prediction_explanation_json=dict(serialized_prediction.get("prediction_explanation_json") or {}),

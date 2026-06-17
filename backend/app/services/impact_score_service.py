@@ -11,6 +11,7 @@ from app.ml.feature_pipeline import reliable_clearance_minutes
 from app.orm.event import Event
 from app.orm.hotspot_cluster import HotspotCluster
 from app.services.similar_event_service import SimilarEventMatch
+from app.services.weather_service import build_manual_weather_adjustment
 
 DEFAULT_VEHICLE_IMPACT_MULTIPLIER: dict[str, float] = {
     "bmtc_bus": 1.42,
@@ -291,25 +292,6 @@ def counterfactual_delta(
     }
 
 
-def build_weather_adjustment(weather_condition: str | None = None) -> dict[str, object]:
-    normalized = (weather_condition or "clear").strip().casefold()
-    factor_map = {
-        "clear": 1.0,
-        "cloudy": 1.01,
-        "light_rain": 1.05,
-        "rain": 1.08,
-        "heavy_rain": 1.15,
-    }
-    factor = factor_map.get(normalized, 1.0)
-    source = "manual_simulation_selector" if normalized in factor_map and normalized != "clear" else "phase8_default"
-    return {
-        "weather_condition": normalized,
-        "factor": factor,
-        "source": source,
-        "note": "Weather modifier is a manual MVP adjustment until dedicated weather risk integration is active.",
-    }
-
-
 def build_multi_event_adjustment() -> dict[str, object]:
     return {
         "factor": 1.0,
@@ -327,8 +309,15 @@ def build_impact_assessment(
     hotspot: HotspotCluster | None = None,
     similar_events: Sequence[SimilarEventMatch] = (),
     weather_condition: str | None = None,
+    weather_adjustment_override: dict[str, object] | None = None,
 ) -> dict[str, object]:
-    weather_adjustment = build_weather_adjustment(weather_condition)
+    weather_adjustment = dict(
+        weather_adjustment_override
+        or build_manual_weather_adjustment(
+            weather_condition=weather_condition,
+            source="manual_simulation_selector" if weather_condition is not None else "phase10_default",
+        )
+    )
     multi_event_adjustment = build_multi_event_adjustment()
     similar_event_risk, similar_event_meta = derive_similar_event_risk(similar_events)
     vehicle_impact = resolve_vehicle_impact(event.veh_type, db=db)
@@ -338,7 +327,7 @@ def build_impact_assessment(
         hotspot_risk_score=derive_hotspot_risk(hotspot),
         similar_event_risk=similar_event_risk,
         veh_type=event.veh_type,
-        weather_factor=float(weather_adjustment["factor"]),
+        weather_factor=float(weather_adjustment["weather_factor"]),
         multi_event_factor=float(multi_event_adjustment["factor"]),
     )
     impact = estimate_impact(impact_input, vehicle_impact=vehicle_impact)

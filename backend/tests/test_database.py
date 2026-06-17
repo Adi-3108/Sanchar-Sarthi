@@ -42,7 +42,9 @@ def test_updated_phase_one_and_two_contract_columns_are_present():
     feature_table = Base.metadata.tables["event_features"]
     dna_table = Base.metadata.tables["event_dna"]
     prediction_table = Base.metadata.tables["event_predictions"]
+    recommendation_table = Base.metadata.tables["event_recommendations"]
     prediction_columns = set(Base.metadata.tables["event_predictions"].columns.keys())
+    recommendation_columns = set(recommendation_table.columns.keys())
     officer_columns = set(Base.metadata.tables["police_officer_profiles"].columns.keys())
 
     assert {"assigned_corridors_json", "assigned_zones_json"}.issubset(officer_columns)
@@ -57,9 +59,14 @@ def test_updated_phase_one_and_two_contract_columns_are_present():
         "vehicle_impact_factor",
         "vehicle_impact_note",
     }.issubset(prediction_columns)
+    assert {"risk_summary_json", "weather_risk_json"}.issubset(recommendation_columns)
     assert any(constraint.name == "uq_event_features_event_id" for constraint in feature_table.constraints)
     assert any(constraint.name == "uq_event_dna_event_id" for constraint in dna_table.constraints)
     assert any(constraint.name == "uq_event_predictions_event_id" for constraint in prediction_table.constraints)
+    assert any(
+        constraint.name == "uq_event_recommendations_event_id"
+        for constraint in recommendation_table.constraints
+    )
 
 
 def test_sqlite_database_status_reports_connected(tmp_path):

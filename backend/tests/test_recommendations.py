@@ -151,8 +151,12 @@ def test_event_plan_route_generates_and_persists_recommendation_for_admin(tmp_pa
 
     with session_factory() as session:
         assert session.query(EventPrediction).filter(EventPrediction.event_id == "REC-001").count() == 1
+        prediction = session.query(EventPrediction).filter(EventPrediction.event_id == "REC-001").one()
         recommendation = session.query(EventRecommendation).filter(EventRecommendation.event_id == "REC-001").one()
+        assert prediction.weather_adjustment_json["weather_condition"] == "clear"
         assert recommendation.recommended_total_officers == payload["manpower"]["recommended_total_officers"]
+        assert recommendation.weather_risk_json["weather_condition"] == "heavy_rain"
+        assert recommendation.risk_summary_json["impact_category"] == payload["risk_summary"]["impact_category"]
         assert recommendation.deployment_plan_json["feasibility_status"] == "requires_reallocation"
         assert session.query(SystemAuditLog).filter(SystemAuditLog.action == "recommendation_plan_generate").count() == 1
 
@@ -347,7 +351,12 @@ def test_event_detail_and_simulate_include_recommendations(tmp_path, monkeypatch
         with TestClient(app) as client:
             plan_response = client.post(
                 "/api/recommendations/event-plan",
-                json={"event_id": "REC-001", "available_officers": 10},
+                json={
+                    "event_id": "REC-001",
+                    "available_officers": 10,
+                    "weather_condition": "heavy_rain",
+                    "visibility_m": 700,
+                },
             )
             detail_response = client.get("/api/events/REC-001")
             simulate_response = client.post(
@@ -378,13 +387,14 @@ def test_event_detail_and_simulate_include_recommendations(tmp_path, monkeypatch
     detail_payload = detail_response.json()
     assert detail_payload["recommendation"]["event_id"] == "REC-001"
     assert detail_payload["recommendation"]["manpower"]["recommended_total_officers"] >= 1
+    assert detail_payload["prediction"]["weather_adjustment_json"]["weather_condition"] == "clear"
     assert detail_payload["recommendation"]["risk_summary"]["impact_category"] in {
         "Low",
         "Medium",
         "High",
         "Critical",
     }
-    assert detail_payload["recommendation"]["weather_risk"]["weather_condition"] == "clear"
+    assert detail_payload["recommendation"]["weather_risk"]["weather_condition"] == "heavy_rain"
 
     assert simulate_response.status_code == 200
     simulate_payload = simulate_response.json()

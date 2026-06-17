@@ -165,6 +165,7 @@ Response:
 **Authentication:** Level-aware. Public users receive public advisories only; assigned officers receive officer-safe action plans; admins receive the full internal dossier.
 **Authorization note:** Level 2 officers must be assigned to the event, corridor, station, or zone to access event-specific operational details.
 **Behavior note:** This is a read-only dossier endpoint. If materialized features, DNA, or predictions are missing, the backend may compute them for the response without persisting new rows during the `GET`.
+**Recommendation note:** `prediction` remains the canonical persisted event prediction snapshot. `recommendation` may reflect the latest stored weather-aware planning scenario through its own `risk_summary` and `weather_risk` payloads.
 
 Response includes:
 
@@ -446,6 +447,12 @@ Response:
   "recommended_action_summary": "Deploy 12 officers in ring control around MG Road. Use controlled entry exit points and protect primary corridor and push early diversion operations."
 }
 ```
+
+Behavior note:
+
+- If weather fields are supplied, the backend may compute a transient weather-adjusted prediction input for planning.
+- The persisted `event_predictions` row remains the canonical prediction snapshot for the event.
+- The persisted `event_recommendations` row stores the latest recommendation snapshot, including scenario-specific `risk_summary` and `weather_risk`.
 
 Contract reuse note:
 

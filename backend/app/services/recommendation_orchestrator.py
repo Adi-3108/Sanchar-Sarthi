@@ -438,6 +438,8 @@ def persist_recommendation_plan(
         created = False
 
     manpower = dict(plan.get("manpower") or {})
+    record.risk_summary_json = dict(plan.get("risk_summary") or {})
+    record.weather_risk_json = dict(plan.get("weather_risk") or {})
     record.recommended_total_officers = int(manpower.get("recommended_total_officers") or 0)
     record.deployment_plan_json = manpower
     record.barricade_plan_json = dict(plan.get("barricades") or {})
@@ -471,8 +473,8 @@ def serialize_recommendation_plan(
         return None
     return {
         "event_id": record.event_id,
-        "risk_summary": {},
-        "weather_risk": None,
+        "risk_summary": dict(record.risk_summary_json or {}),
+        "weather_risk": dict(record.weather_risk_json or {}),
         "manpower": dict(record.deployment_plan_json or {}),
         "barricades": dict(record.barricade_plan_json or {}),
         "diversions": dict(record.diversion_plan_json or {}),
@@ -494,28 +496,30 @@ def merge_risk_summary_into_plan(
     if prediction is None:
         return plan
     merged = dict(plan)
-    merged["weather_risk"] = dict(prediction.weather_adjustment_json or {})
-    merged["risk_summary"] = {
-        "impact_score": _safe_float(prediction.estimated_impact_score),
-        "impact_category": prediction.impact_category or "Low",
-        "road_closure_probability": _safe_float(prediction.road_closure_probability),
-        "predicted_priority": prediction.predicted_priority,
-        "estimated_clearance_minutes": (
-            _safe_float(prediction.estimated_clearance_minutes)
-            if prediction.estimated_clearance_minutes is not None
-            else None
-        ),
-        "estimated_radius_km": _safe_float(prediction.impact_radius_km, default=1.5),
-        "baseline_risk_score": (
-            _safe_float(prediction.baseline_risk_score)
-            if prediction.baseline_risk_score is not None
-            else None
-        ),
-        "additional_event_delta": (
-            _safe_float(prediction.additional_event_delta)
-            if prediction.additional_event_delta is not None
-            else None
-        ),
-        "honesty_note": DATASET_HONESTY_NOTE,
-    }
+    if not dict(merged.get("weather_risk") or {}):
+        merged["weather_risk"] = dict(prediction.weather_adjustment_json or {})
+    if not dict(merged.get("risk_summary") or {}):
+        merged["risk_summary"] = {
+            "impact_score": _safe_float(prediction.estimated_impact_score),
+            "impact_category": prediction.impact_category or "Low",
+            "road_closure_probability": _safe_float(prediction.road_closure_probability),
+            "predicted_priority": prediction.predicted_priority,
+            "estimated_clearance_minutes": (
+                _safe_float(prediction.estimated_clearance_minutes)
+                if prediction.estimated_clearance_minutes is not None
+                else None
+            ),
+            "estimated_radius_km": _safe_float(prediction.impact_radius_km, default=1.5),
+            "baseline_risk_score": (
+                _safe_float(prediction.baseline_risk_score)
+                if prediction.baseline_risk_score is not None
+                else None
+            ),
+            "additional_event_delta": (
+                _safe_float(prediction.additional_event_delta)
+                if prediction.additional_event_delta is not None
+                else None
+            ),
+            "honesty_note": DATASET_HONESTY_NOTE,
+        }
     return merged

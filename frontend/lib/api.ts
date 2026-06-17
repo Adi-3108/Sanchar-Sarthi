@@ -351,6 +351,32 @@ export type EventPlanRequest = {
   use_live_weather?: boolean;
 };
 
+export type CitizenReportSource = "citizen" | "field_officer" | "control_room" | "demo";
+
+export type CitizenReportCreateRequest = {
+  report_source: CitizenReportSource;
+  report_type: string;
+  latitude: number;
+  longitude: number;
+  severity?: string | null;
+  description: string;
+  language?: string;
+  event_id?: string | null;
+};
+
+export type CitizenReportResponse = {
+  status: string;
+  matched_event_id?: string | null;
+  source_language?: string | null;
+  translation_status: string;
+  translated_description?: string | null;
+  location_match_confidence?: number | null;
+  report_confidence: number;
+  impact_score_change: number;
+  new_alert_level: string;
+  recommended_action: string;
+};
+
 export type ModelRunResponse = {
   id: string;
   model_name: string;
@@ -490,4 +516,11 @@ export function generateEventPlan(
   init?: RequestInit
 ): Promise<RecommendationPlanResponse> {
   return apiPost<RecommendationPlanResponse>("/api/recommendations/event-plan", payload, init);
+}
+
+export function submitCongestionReport(
+  payload: CitizenReportCreateRequest,
+  init?: RequestInit
+): Promise<CitizenReportResponse> {
+  return apiPost<CitizenReportResponse>("/api/reports/congestion", payload, init);
 }

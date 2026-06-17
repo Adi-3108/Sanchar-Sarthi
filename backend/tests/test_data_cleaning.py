@@ -84,6 +84,15 @@ def test_normalize_description_detects_kannada_and_glossary():
     assert normalized.method == "static_kannada_glossary"
 
 
+def test_normalize_description_detects_hindi_and_glossary():
+    normalized = normalize_description("सड़क दुर्घटना भारी ट्रैफिक")
+
+    assert detect_description_language("सड़क दुर्घटना भारी ट्रैफिक") == "hi"
+    assert normalized.language == "hi"
+    assert normalized.text_for_features == "road accident traffic heavy"
+    assert normalized.method == "static_hindi_glossary"
+
+
 def test_clean_astram_row_masks_sensitive_fields_and_normalizes_coordinates():
     cleaned = clean_astram_row(
         {

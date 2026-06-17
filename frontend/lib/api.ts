@@ -179,6 +179,64 @@ export type EventDetailResponse = {
   map_overlays: Record<string, unknown>;
 };
 
+export type SimilarEventSummaryResponse = {
+  match_count: number;
+  top_match_event_id?: string | null;
+  average_similarity?: number | null;
+  highest_similarity?: number | null;
+  top_matched_signals: string[];
+};
+
+export type CounterfactualResponse = {
+  baseline_risk_score?: number | null;
+  event_impact_score?: number | null;
+  additional_event_delta?: number | null;
+  honesty_note: string;
+};
+
+export type EventSimulationRequest = {
+  event_type: "planned" | "unplanned";
+  event_cause: string;
+  latitude: number;
+  longitude: number;
+  corridor?: string;
+  police_station?: string;
+  zone?: string;
+  junction?: string;
+  start_datetime: string;
+  expected_duration_minutes?: number;
+  expected_crowd_size?: number;
+  weather_condition?: "clear" | "cloudy" | "light_rain" | "rain" | "heavy_rain";
+  available_officers?: number;
+  description?: string;
+  veh_type?: string;
+};
+
+export type EventSimulationResponse = {
+  event_dna: EventDnaResponse;
+  similar_event_summary: SimilarEventSummaryResponse;
+  predicted_priority?: string | null;
+  priority_confidence?: number | null;
+  road_closure_probability?: number | null;
+  predicted_road_closure?: boolean | null;
+  estimated_clearance_minutes?: number | null;
+  clearance_prediction_method?: string | null;
+  clearance_confidence?: number | null;
+  clearance_confidence_note?: string | null;
+  historical_clearance_range_min?: number | null;
+  historical_clearance_range_max?: number | null;
+  estimated_impact_score?: number | null;
+  impact_category?: string | null;
+  impact_radius_km?: number | null;
+  vehicle_impact_factor?: number | null;
+  vehicle_impact_note?: string | null;
+  counterfactual: CounterfactualResponse;
+  weather_adjustment: Record<string, unknown>;
+  recommendations: Record<string, unknown>;
+  map_overlays: Record<string, unknown>;
+  prediction_explanation_json: Record<string, unknown>;
+};
+
 export type ModelRunResponse = {
   id: string;
   model_name: string;
@@ -250,6 +308,26 @@ export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
+export async function apiPost<T>(path: string, body: unknown, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    method: "POST",
+    cache: "no-store",
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {})
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const bodyText = await readResponseBody(response);
+    throw new ApiError(`API request failed with status ${response.status}`, response.status, bodyText);
+  }
+
+  return (await response.json()) as T;
+}
+
 export function getHealth(): Promise<HealthResponse> {
   return apiGet<HealthResponse>("/api/health");
 }
@@ -274,4 +352,11 @@ export function getEventDetail(eventId: string, init?: RequestInit): Promise<Eve
 
 export function getModelRuns(init?: RequestInit): Promise<ModelRunListResponse> {
   return apiGet<ModelRunListResponse>("/api/analytics/model-runs", init);
+}
+
+export function simulateEvent(
+  payload: EventSimulationRequest,
+  init?: RequestInit
+): Promise<EventSimulationResponse> {
+  return apiPost<EventSimulationResponse>("/api/events/simulate", payload, init);
 }

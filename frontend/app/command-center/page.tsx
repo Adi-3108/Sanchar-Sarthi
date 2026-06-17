@@ -7,15 +7,15 @@ import { getHealth, type HealthResponse } from "@/lib/api";
 const commandCards = [
   {
     title: "Predict",
-    description: "Historical ASTraM intelligence, explainable risk scoring, and phase-safe API health."
+    description: "Historical ASTraM intelligence, derived features, hotspot detection, and explainable risk signals."
   },
   {
     title: "Plan",
-    description: "Command-center workflows will layer manpower, barricade, diversion, and map intelligence next."
+    description: "Command-center workflows now have dataset-backed hotspot foundations for map and manpower planning."
   },
   {
     title: "Learn",
-    description: "Post-event feedback loops remain planned for later phases without breaking this base shell."
+    description: "Post-event feedback loops remain planned for later phases without breaking the current operational core."
   }
 ];
 
@@ -40,9 +40,10 @@ export default function CommandCenterPage() {
                 Predictive traffic command twin for event-driven congestion.
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-muted md:text-lg">
-                Phases 1 and 2 establish the backend shell, typed health contract, database
-                connectivity, and command-center entrypoint for the full Predict - Plan -
-                Monitor - Adapt - Learn workflow.
+                Phases 1 through 5 now cover the backend shell, typed health contract,
+                database connectivity, ASTraM ingestion, derived feature engineering, and
+                dataset-backed hotspot analytics for the full Predict - Plan - Monitor -
+                Adapt - Learn workflow.
               </p>
             </div>
             <div className="rounded-3xl border border-accent/30 bg-accent/10 px-5 py-4">
@@ -102,6 +103,7 @@ export default function CommandCenterPage() {
                   <p>Road closure model: {data.models.road_closure}</p>
                   <p>Resolution time model: {data.models.resolution_time}</p>
                   <p>Firebase: {data.auth.firebase}</p>
+                  <p>Phase 5: dataset-backed hotspot analytics ready</p>
                 </div>
               )}
             </div>
@@ -111,9 +113,9 @@ export default function CommandCenterPage() {
             <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Phase map</p>
             <h2 className="mt-2 text-2xl font-semibold">What this unlocks next</h2>
             <ul className="mt-5 space-y-3 text-sm leading-7 text-muted">
-              <li>Phase 2: PostgreSQL sessions, ORM models, and migrations.</li>
-              <li>Phase 3: ASTraM ingestion, masking, and text normalization.</li>
-              <li>Phase 14+: MapmyIndia primary rendering with OSM fallback.</li>
+              <li>Phase 4: derived time, duration, and historical risk features.</li>
+              <li>Phase 5: dataset-backed hotspot clustering and analytics endpoints.</li>
+              <li>Phase 6+: Event DNA, impact scoring, and operational planning layers.</li>
             </ul>
           </article>
         </section>

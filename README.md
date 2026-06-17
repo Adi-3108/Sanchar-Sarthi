@@ -36,6 +36,12 @@ Phase 5 adds:
 - analytics APIs for hotspot overlays and operational summary metrics
 - a reusable frontend `HotspotLayer` component contract for map overlays
 
+Phase 6 adds:
+
+- Event DNA persistence built from structured fields plus safe normalized text
+- similar-event memory scoring and internal event dossier retrieval
+- frontend recommendation components for Event DNA and historical memory panels
+
 ## Repository Layout
 
 ```text
@@ -118,6 +124,12 @@ future/
 
   ```bash
   python backend/scripts/rebuild_hotspots.py
+  ```
+
+- Event DNA rebuild smoke check:
+
+  ```bash
+  python backend/scripts/rebuild_event_dna.py
   ```
 
 The base MVP remains free-tier and dataset-honest. Optional Google Translate support stays disabled by default.

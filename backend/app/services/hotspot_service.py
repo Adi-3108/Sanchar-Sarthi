@@ -422,6 +422,7 @@ def rebuild_hotspots(
 
     for cluster in db.scalars(select(HotspotCluster)).all():
         db.delete(cluster)
+    db.flush()
 
     clustered_event_total = 0
     for cluster_index, members in enumerate(clusters, start=1):

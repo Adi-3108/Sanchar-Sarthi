@@ -1,0 +1,66 @@
+export type AppLanguage = "en" | "kn" | "hi";
+
+export const reportLabels: Record<AppLanguage, Record<string, string>> = {
+  en: {
+    reportIssue: "Report traffic issue",
+    issueType: "Issue type",
+    severity: "Severity",
+    description: "Description",
+    language: "Language",
+    latitude: "Latitude",
+    longitude: "Longitude",
+    useLocation: "Use my location",
+    submit: "Submit report",
+    submitting: "Submitting",
+    accepted: "Report accepted",
+    confidence: "Report confidence",
+    alertLevel: "Alert level",
+    recommendedAction: "Recommended action",
+    matchedEvent: "Matched event",
+    notMatched: "No event matched yet",
+    publicNote: "Public reports are accepted as signals and verified before official action.",
+  },
+  kn: {
+    reportIssue: "ಸಂಚಾರ ಸಮಸ್ಯೆಯನ್ನು ವರದಿ ಮಾಡಿ",
+    issueType: "ಸಮಸ್ಯೆಯ ಪ್ರಕಾರ",
+    severity: "ತೀವ್ರತೆ",
+    description: "ವಿವರಣೆ",
+    language: "ಭಾಷೆ",
+    latitude: "ಅಕ್ಷಾಂಶ",
+    longitude: "ರೇಖಾಂಶ",
+    useLocation: "ನನ್ನ ಸ್ಥಳ ಬಳಸಿ",
+    submit: "ವರದಿ ಸಲ್ಲಿಸಿ",
+    submitting: "ಸಲ್ಲಿಸಲಾಗುತ್ತಿದೆ",
+    accepted: "ವರದಿ ಸ್ವೀಕರಿಸಲಾಗಿದೆ",
+    confidence: "ವರದಿ ವಿಶ್ವಾಸ",
+    alertLevel: "ಎಚ್ಚರಿಕೆ ಮಟ್ಟ",
+    recommendedAction: "ಶಿಫಾರಸು ಕ್ರಮ",
+    matchedEvent: "ಹೊಂದಿದ ಘಟನೆ",
+    notMatched: "ಇನ್ನೂ ಘಟನೆ ಹೊಂದಿಲ್ಲ",
+    publicNote: "ಸಾರ್ವಜನಿಕ ವರದಿಗಳನ್ನು ಸಂಕೇತಗಳಾಗಿ ಸ್ವೀಕರಿಸಿ ಪರಿಶೀಲನೆಯ ನಂತರ ಕ್ರಮ ಕೈಗೊಳ್ಳಲಾಗುತ್ತದೆ.",
+  },
+  hi: {
+    reportIssue: "ट्रैफिक समस्या रिपोर्ट करें",
+    issueType: "समस्या का प्रकार",
+    severity: "गंभीरता",
+    description: "विवरण",
+    language: "भाषा",
+    latitude: "अक्षांश",
+    longitude: "देशांतर",
+    useLocation: "मेरी लोकेशन इस्तेमाल करें",
+    submit: "रिपोर्ट सबमिट करें",
+    submitting: "सबमिट हो रहा है",
+    accepted: "रिपोर्ट स्वीकार की गई",
+    confidence: "रिपोर्ट भरोसा",
+    alertLevel: "अलर्ट स्तर",
+    recommendedAction: "अनुशंसित कार्रवाई",
+    matchedEvent: "मिला हुआ इवेंट",
+    notMatched: "अभी कोई इवेंट मैच नहीं हुआ",
+    publicNote: "पब्लिक रिपोर्ट संकेत के रूप में स्वीकार होती है और आधिकारिक कार्रवाई से पहले सत्यापित होती है.",
+  },
+};
+
+export function t(language: AppLanguage, key: string): string {
+  return reportLabels[language]?.[key] ?? reportLabels.en[key] ?? key;
+}
+

@@ -24,3 +24,4 @@ def test_settings_defaults_stay_phase_one_safe():
     assert settings.google_translate_enabled is False
     assert settings.map_primary_provider == "mapmyindia"
     assert settings.map_fallback_provider == "osm"
+    assert settings.database_url.startswith("postgresql+psycopg://")

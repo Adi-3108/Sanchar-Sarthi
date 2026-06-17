@@ -9,6 +9,7 @@ export type HealthResponse = {
   environment: string;
   checked_at: string;
   database: string;
+  database_detail?: string | null;
   models: {
     priority: string;
     road_closure: string;
@@ -50,4 +51,8 @@ export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return (await response.json()) as T;
+}
+
+export function getHealth(): Promise<HealthResponse> {
+  return apiGet<HealthResponse>("/api/health");
 }

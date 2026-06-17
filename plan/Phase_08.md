@@ -103,6 +103,7 @@ Impact vocabulary contract:
 
 - `impact_category` uses the operational taxonomy `Low`, `Medium`, `High`, `Critical`.
 - This is separate from the raw ASTraM `priority` label, which remains a two-level dataset field in the current CSV.
+- When impact scoring is shown alongside closure scoring, `road_closure_probability` remains the primary signal and the boolean closure flag stays a heuristic operational helper.
 
 ### `backend/app/services/impact_score_service.py`
 ```python

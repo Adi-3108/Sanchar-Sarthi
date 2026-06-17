@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import asdict, dataclass
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.orm.event import Event
@@ -240,21 +239,51 @@ def rank_similar_events_for_event(
     )[:limit]
 
 
-def find_similar_events(db: Session, event_id: str, *, limit: int = 5) -> list[SimilarEventMatch]:
-    event = db.get(Event, event_id)
-    if event is None:
-        return []
+def _find_similar_events(
+    db: Session,
+    event: Event,
+    *,
+    limit: int,
+    feature_override: EventFeature | None = None,
+    persist_missing_feature: bool = True,
+) -> list[SimilarEventMatch]:
+    if feature_override is None and persist_missing_feature:
+        events, feature_by_event_id, hotspots_by_cluster_id = load_event_dna_support_maps(
+            db,
+            ensure_feature_for_event=event,
+        )
+    else:
+        events, feature_by_event_id, hotspots_by_cluster_id = load_event_dna_support_maps(db)
+        if feature_override is not None:
+            feature_by_event_id[event.id] = feature_override
 
-    events, feature_by_event_id, hotspots_by_cluster_id = load_event_dna_support_maps(
-        db,
-        ensure_feature_for_event=event,
-    )
     index = build_similarity_index(
         events,
         feature_by_event_id=feature_by_event_id,
         hotspots_by_cluster_id=hotspots_by_cluster_id,
     )
     return rank_similar_events_for_event(event, index, limit=limit)
+
+
+def find_similar_events(
+    db: Session,
+    event_id: str,
+    *,
+    limit: int = 5,
+    feature_override: EventFeature | None = None,
+    persist_missing_feature: bool = True,
+) -> list[SimilarEventMatch]:
+    event = db.get(Event, event_id)
+    if event is None:
+        return []
+
+    return _find_similar_events(
+        db,
+        event,
+        limit=limit,
+        feature_override=feature_override,
+        persist_missing_feature=persist_missing_feature,
+    )
 
 
 def serialize_similar_event_match(match: SimilarEventMatch) -> dict[str, object]:

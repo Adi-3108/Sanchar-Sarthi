@@ -6,13 +6,15 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
 
-from app.api import routes_events
+from app.api import routes_analytics, routes_events
 from app.core.database import build_engine
 from app.core.security import AuthContext
 from app.db.base import Base, import_model_modules
 from app.db.session import get_db
 from app.main import app
 from app.orm.event import Event
+from app.orm.event_dna import EventDna
+from app.orm.event_feature import EventFeature
 from app.orm.event_prediction import EventPrediction
 from app.orm.model_run import ModelRun
 from app.orm.user_account import UserAccount
@@ -169,14 +171,29 @@ def test_event_detail_route_includes_prediction_payload(tmp_path, monkeypatch):
     assert payload["prediction"]["estimated_impact_score"] > 0
     assert payload["prediction"]["prediction_explanation_json"]["road_closure"]["method"] == "primary_rule_history"
     assert payload["prediction"]["prediction_explanation_json"]["impact"]["counterfactual"]["honesty_note"]
+    assert payload["event_dna"]["weather_context"] == "Weather context deferred to Phase 10 weather integration."
+
+    with session_factory() as session:
+        assert session.query(EventFeature).filter(EventFeature.event_id == "PRED-001").count() == 0
+        assert session.query(EventDna).filter(EventDna.event_id == "PRED-001").count() == 0
+        assert session.query(EventPrediction).filter(EventPrediction.event_id == "PRED-001").count() == 0
 
 
 def test_model_runs_endpoint_returns_latest_run_per_model(tmp_path):
     session_factory = _build_session_factory(tmp_path, "model-runs-route.db")
+    actor_id = uuid4()
 
     with session_factory() as session:
         session.add_all(
             [
+                UserAccount(
+                    id=actor_id,
+                    role="admin",
+                    display_name="Model Run Admin",
+                    auth_provider="firebase",
+                    auth_provider_uid="firebase-admin-model-runs",
+                    is_active=True,
+                ),
                 ModelRun(
                     model_name="priority_model",
                     model_version="priority_rf_v1",
@@ -209,6 +226,12 @@ def test_model_runs_endpoint_returns_latest_run_per_model(tmp_path):
             db.close()
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[routes_analytics.require_internal_analytics_access] = lambda: AuthContext(
+        firebase_uid="firebase-admin-model-runs",
+        email="admin@example.com",
+        role="admin",
+        user_account_id=str(actor_id),
+    )
 
     try:
         with TestClient(app) as client:
@@ -219,10 +242,10 @@ def test_model_runs_endpoint_returns_latest_run_per_model(tmp_path):
     assert response.status_code == 200
     payload = response.json()
     assert len(payload["model_runs"]) == 2
-    assert {row["model_name"] for row in payload["model_runs"]} == {
-        "priority_model",
+    assert [row["model_name"] for row in payload["model_runs"]] == [
         "road_closure_model",
-    }
+        "priority_model",
+    ]
 
 
 def test_simulate_event_route_returns_ephemeral_prediction_payload(tmp_path, monkeypatch):

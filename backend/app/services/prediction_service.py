@@ -113,6 +113,7 @@ def predict_event(
     similar_events: list[SimilarEventMatch] | None = None,
     weather_condition: str | None = None,
     commit: bool = True,
+    persist: bool = True,
 ) -> tuple[EventPrediction, bool]:
     active_similar_events = similar_events if similar_events is not None else find_similar_events(db, event.id, limit=5)
     active_hotspot = _resolve_hotspot(db, feature, hotspot)
@@ -158,7 +159,11 @@ def predict_event(
     else:
         primary_model_run_id = None
 
-    record, created = _get_or_create_prediction_record(db, event.id)
+    if persist:
+        record, created = _get_or_create_prediction_record(db, event.id)
+    else:
+        record = EventPrediction(event_id=event.id)
+        created = False
     record.model_run_id = primary_model_run_id
     record.predicted_priority = predicted_priority
     record.priority_confidence = round(urgency_probability, 4)
@@ -191,6 +196,11 @@ def predict_event(
         "road_closure": {
             **closure,
             "model_run_id": str(road_closure_model_run.id) if road_closure_model_run is not None else None,
+            "operational_flag_threshold": 0.5,
+            "honesty_label": (
+                "Road-closure probability is the primary signal; "
+                "predicted_road_closure is a heuristic operational flag."
+            ),
         },
         "resolution_time": {
             **resolution,
@@ -208,10 +218,10 @@ def predict_event(
         else "priority_rule_or_optional_ml_v1"
     )
 
-    if commit:
+    if persist and commit:
         db.commit()
         db.refresh(record)
-    else:
+    elif persist:
         db.flush()
 
     return record, created

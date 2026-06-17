@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, Index, JSON, Numeric, String, Text, Uuid
+from sqlalchemy import Boolean, ForeignKey, Index, JSON, Numeric, String, Text, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CreatedAtMixin, UUIDPrimaryKeyMixin, Base
@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 class EventPrediction(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
     __tablename__ = "event_predictions"
     __table_args__ = (
+        UniqueConstraint("event_id", name="uq_event_predictions_event_id"),
         Index("idx_predictions_event", "event_id"),
         Index("idx_event_predictions_predicted_road_closure", "predicted_road_closure"),
         Index("idx_event_predictions_impact_category", "impact_category"),

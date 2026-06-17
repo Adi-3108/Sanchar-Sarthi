@@ -104,6 +104,7 @@ Implementation rules:
 - The hotspot rebuild must be idempotent. Delete-then-recreate cycles must flush deletions before inserting replacement clusters to avoid unique collisions on `location_cluster_id`.
 - Cluster outputs must also backfill `event_features.location_cluster_id` and related historical cluster metrics.
 - Public/internal analytics APIs should reuse the same rebuild/reporting service rather than maintaining a second clustering path.
+- Internal hotspot and model-insight style analytics must stay protected behind Level 1/Level 2 Firebase-backed access rather than being exposed as public-safe endpoints.
 ---
 
 ## Database Requirements

@@ -42,6 +42,8 @@ TEXT_SIGNAL_WEIGHT = {
     "crowd": 0.05,
     "breakdown": 0.05,
 }
+WEATHER_CONTEXT_DEFERRED = "Weather context deferred to Phase 10 weather integration."
+MULTI_EVENT_CONTEXT_DEFERRED = "Multi-event conflict context deferred to Phase 13 analysis."
 
 
 @dataclass(frozen=True)
@@ -232,6 +234,29 @@ def build_risk_indicators_json(context: EventDnaContext) -> dict[str, object]:
     }
 
 
+def build_event_dna_payload(
+    event: Event,
+    *,
+    feature: EventFeature | None = None,
+    hotspot: HotspotCluster | None = None,
+    similar_event_ids: list[str] | None = None,
+) -> dict[str, Any]:
+    context = build_event_dna_context(event, feature=feature, hotspot=hotspot)
+    active_similar_event_ids = list(similar_event_ids or [])
+    return {
+        "event_id": event.id,
+        "dna_summary": build_dna_summary(context, similar_event_count=len(active_similar_event_ids)),
+        "time_context": build_time_context(context),
+        "location_context": build_location_context(context),
+        "cause_context": build_cause_context(context),
+        "weather_context": WEATHER_CONTEXT_DEFERRED,
+        "multi_event_context": MULTI_EVENT_CONTEXT_DEFERRED,
+        "historical_pattern": build_historical_pattern(context),
+        "risk_indicators_json": build_risk_indicators_json(context),
+        "similar_event_ids_json": active_similar_event_ids,
+    }
+
+
 def build_dna_summary(context: EventDnaContext, similar_event_count: int = 0) -> str:
     event = context.event
     hotspot = context.hotspot
@@ -298,23 +323,29 @@ def persist_event_dna(
     hotspot: HotspotCluster | None = None,
     similar_event_ids: list[str] | None = None,
     commit: bool = True,
+    persist: bool = True,
 ) -> tuple[EventDna, bool]:
-    context = build_event_dna_context(event, feature=feature, hotspot=hotspot)
-    record, created = _get_or_create_event_dna_record(db, event.id)
-    record.time_context = build_time_context(context)
-    record.location_context = build_location_context(context)
-    record.cause_context = build_cause_context(context)
-    record.weather_context = None
-    record.multi_event_context = None
-    record.historical_pattern = build_historical_pattern(context)
-    record.risk_indicators_json = build_risk_indicators_json(context)
-    record.similar_event_ids_json = similar_event_ids or []
-    record.dna_summary = build_dna_summary(context, similar_event_count=len(record.similar_event_ids_json))
+    payload = build_event_dna_payload(
+        event,
+        feature=feature,
+        hotspot=hotspot,
+        similar_event_ids=similar_event_ids,
+    )
+    if persist:
+        record, created = _get_or_create_event_dna_record(db, event.id)
+    else:
+        record = EventDna(event_id=event.id)
+        created = False
 
-    if commit:
+    for field_name, value in payload.items():
+        if field_name == "event_id":
+            continue
+        setattr(record, field_name, value)
+
+    if persist and commit:
         db.commit()
         db.refresh(record)
-    else:
+    elif persist:
         db.flush()
 
     return record, created
@@ -391,8 +422,8 @@ def serialize_event_dna(record: EventDna | None) -> dict[str, Any] | None:
         "time_context": record.time_context,
         "location_context": record.location_context,
         "cause_context": record.cause_context,
-        "weather_context": record.weather_context,
-        "multi_event_context": record.multi_event_context,
+        "weather_context": record.weather_context or WEATHER_CONTEXT_DEFERRED,
+        "multi_event_context": record.multi_event_context or MULTI_EVENT_CONTEXT_DEFERRED,
         "historical_pattern": record.historical_pattern,
         "risk_indicators_json": record.risk_indicators_json,
         "similar_event_ids_json": record.similar_event_ids_json,

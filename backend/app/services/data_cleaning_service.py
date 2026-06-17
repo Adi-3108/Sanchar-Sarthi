@@ -50,6 +50,10 @@ def parse_datetime(value: Any) -> datetime | None:
     if text is None:
         return None
     normalized = text.replace("Z", "+00:00")
+    if " " in normalized and "T" not in normalized:
+        date_part, time_part = normalized.split(" ", 1)
+        if "-" in date_part and ":" in time_part:
+            normalized = f"{date_part}T{time_part}"
     if normalized.endswith("+00"):
         normalized = f"{normalized}:00"
     try:

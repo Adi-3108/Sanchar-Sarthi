@@ -66,6 +66,8 @@ future/
    pip install -r backend/requirements.txt
    ```
 
+   Use Python 3.11 or newer for the backend and ML scripts.
+
 2. Install frontend dependencies:
 
    ```bash

@@ -1,15 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { onAuthStateChanged, type User } from "firebase/auth";
 
 import {
+  ApiError,
   getHealth,
   getModelRuns,
-  type HealthResponse,
   type ModelArtifactStatus,
   type ModelRunResponse
 } from "@/lib/api";
+import { firebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
 
 const modelDefinitions = [
   {
@@ -130,6 +133,20 @@ function MetricItem({ label, value }: { label: string; value: string }) {
 }
 
 export default function ModelInsightsPage() {
+  const [authReady, setAuthReady] = useState(!isFirebaseConfigured);
+  const [currentUser, setCurrentUser] = useState<User | null>(firebaseAuth?.currentUser ?? null);
+
+  useEffect(() => {
+    if (!firebaseAuth) {
+      setAuthReady(true);
+      return;
+    }
+    return onAuthStateChanged(firebaseAuth, (user) => {
+      setCurrentUser(user);
+      setAuthReady(true);
+    });
+  }, []);
+
   const healthQuery = useQuery({
     queryKey: ["health"],
     queryFn: getHealth,
@@ -139,6 +156,7 @@ export default function ModelInsightsPage() {
   const modelRunsQuery = useQuery({
     queryKey: ["model-runs"],
     queryFn: getModelRuns,
+    enabled: authReady && Boolean(currentUser),
     retry: 1,
     refetchOnWindowFocus: false
   });
@@ -147,6 +165,13 @@ export default function ModelInsightsPage() {
   const modelRuns = modelRunsQuery.data?.model_runs ?? [];
   const modelRunMap = latestModelRunByName(modelRuns);
   const latestRecordedRun = [...modelRuns].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+  const accessNote = !authReady
+    ? "Checking internal session..."
+    : !isFirebaseConfigured
+      ? "Firebase web config is missing. Internal model metrics require a configured Firebase sign-in."
+      : !currentUser
+        ? "Sign in with an internal Firebase account to view protected model metrics."
+        : null;
 
   return (
     <main className="shell-grid min-h-screen px-6 py-8 text-copy md:px-10">
@@ -212,6 +237,7 @@ export default function ModelInsightsPage() {
               <li>`Artifact present, dependencies missing` means a model file exists but local ML packages are not installed.</li>
               <li>Road-closure likelihood stays rule-history first even when optional ML support is available.</li>
               <li>Resolution-time metrics only use rows that pass the reliable timestamp filter from Phase 7.</li>
+              <li>Priority and road-closure metrics still rely on dataset-wide historical aggregates, so read them as prototype diagnostics, not leakage-free production validation.</li>
             </ul>
           </article>
         </section>
@@ -260,11 +286,19 @@ export default function ModelInsightsPage() {
           })}
         </section>
 
+        {accessNote ? (
+          <section className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 text-sm text-muted shadow-panel">
+            {accessNote}
+          </section>
+        ) : null}
+
         {modelRunsQuery.isError ? (
           <section className="rounded-[24px] border border-danger/30 bg-danger/10 p-5 text-sm text-danger shadow-panel">
-            {modelRunsQuery.error instanceof Error
-              ? modelRunsQuery.error.message
-              : "Model insights endpoint is unavailable right now."}
+            {modelRunsQuery.error instanceof ApiError && [401, 403, 503].includes(modelRunsQuery.error.status)
+              ? "Internal model metrics require authenticated Firebase access and a configured backend auth setup."
+              : modelRunsQuery.error instanceof Error
+                ? modelRunsQuery.error.message
+                : "Model insights endpoint is unavailable right now."}
           </section>
         ) : null}
       </div>

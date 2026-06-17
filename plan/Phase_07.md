@@ -99,7 +99,9 @@ Implementation rule:
 - Primary output: explainable rule/history road-closure score.
 - Supporting output: optional class-weighted ML probability if the model artifact exists and metrics are acceptable.
 - UI label: "Estimated road-closure likelihood".
+- `predicted_road_closure` is a heuristic operational flag derived from the probability, not the primary truth signal.
 - Model Insights must show positive sample count, positive rate, PR-AUC, recall for TRUE, and the fact that rules remain active even when ML is available.
+- Model Insights should also make it clear that the current MVP uses dataset-wide historical aggregates, so reported metrics are prototype diagnostics rather than leakage-free production validation.
 
 ### Dataset-Specific Priority Contract
 

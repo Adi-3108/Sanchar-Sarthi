@@ -14,4 +14,4 @@ def test_health_endpoint_reports_database_status():
     assert payload["service"] == "eventflow-ai-backend"
     assert payload["database"] in {"connected", "unavailable"}
     assert "database_detail" in payload
-    assert payload["models"]["priority"] == "not_loaded"
+    assert payload["models"]["priority"] in {"not_loaded", "dependency_missing", "loaded"}

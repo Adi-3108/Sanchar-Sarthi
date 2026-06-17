@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 
 import { getHealth, type HealthResponse } from "@/lib/api";
@@ -7,11 +8,11 @@ import { getHealth, type HealthResponse } from "@/lib/api";
 const commandCards = [
   {
     title: "Predict",
-    description: "Historical ASTraM intelligence, derived features, hotspot detection, and explainable risk signals."
+    description: "Historical ASTraM intelligence, derived features, hotspot detection, Event DNA, and dataset-honest prediction signals."
   },
   {
     title: "Plan",
-    description: "Command-center workflows now have dataset-backed hotspot foundations for map and manpower planning."
+    description: "Command-center workflows now have hotspot, DNA, and prediction foundations ready for impact scoring and operational recommendations."
   },
   {
     title: "Learn",
@@ -40,11 +41,19 @@ export default function CommandCenterPage() {
                 Predictive traffic command twin for event-driven congestion.
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-muted md:text-lg">
-                Phases 1 through 5 now cover the backend shell, typed health contract,
-                database connectivity, ASTraM ingestion, derived feature engineering, and
-                dataset-backed hotspot analytics for the full Predict - Plan - Monitor -
-                Adapt - Learn workflow.
+                Phases 1 through 7 now cover the backend shell, typed health contract,
+                database connectivity, ASTraM ingestion, derived feature engineering,
+                dataset-backed hotspot analytics, Event DNA, and prediction services for
+                the full Predict - Plan - Monitor - Adapt - Learn workflow.
               </p>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <Link
+                  href="/model-insights"
+                  className="rounded-full border border-accent/40 bg-accent/10 px-4 py-2 text-sm text-copy transition hover:border-accent hover:bg-accent/20"
+                >
+                  Open model insights
+                </Link>
+              </div>
             </div>
             <div className="rounded-3xl border border-accent/30 bg-accent/10 px-5 py-4">
               <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">
@@ -103,7 +112,7 @@ export default function CommandCenterPage() {
                   <p>Road closure model: {data.models.road_closure}</p>
                   <p>Resolution time model: {data.models.resolution_time}</p>
                   <p>Firebase: {data.auth.firebase}</p>
-                  <p>Phase 5: dataset-backed hotspot analytics ready</p>
+                  <p>Phase 7: dataset-honest prediction layer wired</p>
                 </div>
               )}
             </div>
@@ -115,7 +124,8 @@ export default function CommandCenterPage() {
             <ul className="mt-5 space-y-3 text-sm leading-7 text-muted">
               <li>Phase 4: derived time, duration, and historical risk features.</li>
               <li>Phase 5: dataset-backed hotspot clustering and analytics endpoints.</li>
-              <li>Phase 6+: Event DNA, impact scoring, and operational planning layers.</li>
+              <li>Phase 6: Event DNA summaries and similar-event retrieval.</li>
+              <li>Phase 7: prediction diagnostics, road-closure scoring, and resolution-time estimates.</li>
             </ul>
           </article>
         </section>

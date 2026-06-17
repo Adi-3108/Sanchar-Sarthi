@@ -39,6 +39,8 @@ def test_updated_phase_one_and_two_contract_columns_are_present():
     import_model_modules()
 
     event_columns = set(Base.metadata.tables["events"].columns.keys())
+    feature_table = Base.metadata.tables["event_features"]
+    dna_table = Base.metadata.tables["event_dna"]
     prediction_columns = set(Base.metadata.tables["event_predictions"].columns.keys())
     officer_columns = set(Base.metadata.tables["police_officer_profiles"].columns.keys())
 
@@ -54,6 +56,8 @@ def test_updated_phase_one_and_two_contract_columns_are_present():
         "vehicle_impact_factor",
         "vehicle_impact_note",
     }.issubset(prediction_columns)
+    assert any(constraint.name == "uq_event_features_event_id" for constraint in feature_table.constraints)
+    assert any(constraint.name == "uq_event_dna_event_id" for constraint in dna_table.constraints)
 
 
 def test_sqlite_database_status_reports_connected(tmp_path):

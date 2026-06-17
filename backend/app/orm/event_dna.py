@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Index, JSON, String, Text
+from sqlalchemy import ForeignKey, Index, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CreatedAtMixin, UUIDPrimaryKeyMixin, Base
@@ -13,7 +13,10 @@ if TYPE_CHECKING:
 
 class EventDna(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
     __tablename__ = "event_dna"
-    __table_args__ = (Index("idx_event_dna_event_id", "event_id"),)
+    __table_args__ = (
+        UniqueConstraint("event_id", name="uq_event_dna_event_id"),
+        Index("idx_event_dna_event_id", "event_id"),
+    )
 
     event_id: Mapped[str] = mapped_column(
         String(64),

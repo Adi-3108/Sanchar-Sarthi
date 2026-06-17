@@ -1,17 +1,21 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.security import AuthContext, require_role
 from app.db.session import get_db
 from app.orm.hotspot_cluster import HotspotCluster
+from app.orm.model_run import ModelRun
 from app.orm.system_audit_log import SystemAuditLog
+from app.ml.feature_pipeline import serialize_model_run
 from app.services.hotspot_service import (
     HotspotFilters,
     HotspotRebuildReport,
@@ -67,6 +71,25 @@ class HotspotRebuildResponse(BaseModel):
     noise_events: int
     event_features_updated: int
     message: str | None = None
+
+
+class ModelRunItemResponse(BaseModel):
+    id: str
+    model_name: str
+    model_version: str
+    target_variable: str
+    training_rows: int
+    test_rows: int
+    metrics_json: dict[str, object] = Field(default_factory=dict)
+    feature_list_json: list[str] = Field(default_factory=list)
+    artifact_path: str | None = None
+    artifact_available: bool
+    artifact_status: str
+    created_at: datetime
+
+
+class ModelRunListResponse(BaseModel):
+    model_runs: list[ModelRunItemResponse]
 
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
@@ -166,6 +189,19 @@ def _serialize_hotspot(hotspot: HotspotCluster) -> HotspotItemResponse:
     )
 
 
+def _list_latest_model_runs(db: Session) -> list[ModelRun]:
+    rows = db.scalars(
+        select(ModelRun).order_by(ModelRun.created_at.desc(), ModelRun.id.desc())
+    ).all()
+    latest_by_model_name: dict[str, ModelRun] = {}
+    for row in rows:
+        latest_by_model_name.setdefault(row.model_name, row)
+    return sorted(
+        latest_by_model_name.values(),
+        key=lambda row: (row.model_name, row.created_at),
+    )
+
+
 @router.get("/summary", response_model=AnalyticsSummaryResponse)
 def get_summary(
     _auth: AuthContext = Depends(require_internal_analytics_access),
@@ -208,6 +244,21 @@ def get_hotspots(
             "requires_road_closure": requires_road_closure,
             "cluster_type": cluster_type,
         },
+    )
+
+
+@router.get("/model-runs", response_model=ModelRunListResponse)
+def get_model_runs(
+    db: Session = Depends(get_db),
+):
+    try:
+        model_runs = _list_latest_model_runs(db)
+    except SQLAlchemyError:
+        db.rollback()
+        return error_response(503, "DATABASE_UNAVAILABLE", "Database is unavailable for model insights.")
+
+    return ModelRunListResponse(
+        model_runs=[ModelRunItemResponse.model_validate(serialize_model_run(row)) for row in model_runs]
     )
 
 

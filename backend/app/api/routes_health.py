@@ -6,6 +6,12 @@ from pydantic import BaseModel
 
 from app.core.config import get_settings
 from app.core.database import get_database_status
+from app.ml.feature_pipeline import (
+    PRIORITY_MODEL_PATH,
+    RESOLUTION_TIME_MODEL_PATH,
+    ROAD_CLOSURE_MODEL_PATH,
+    artifact_status,
+)
 
 
 class ModelHealth(BaseModel):
@@ -51,9 +57,9 @@ def health() -> HealthResponse:
         database=database_status,
         database_detail=database_detail,
         models=ModelHealth(
-            priority="not_loaded",
-            road_closure="not_loaded",
-            resolution_time="not_loaded",
+            priority=artifact_status(PRIORITY_MODEL_PATH),
+            road_closure=artifact_status(ROAD_CLOSURE_MODEL_PATH),
+            resolution_time=artifact_status(RESOLUTION_TIME_MODEL_PATH),
         ),
         auth=AuthHealth(firebase=firebase_status),
     )

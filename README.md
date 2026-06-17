@@ -42,6 +42,24 @@ Phase 6 adds:
 - similar-event memory scoring and internal event dossier retrieval
 - frontend recommendation components for Event DNA and historical memory panels
 
+Phase 7 adds:
+
+- prediction diagnostics, artifact metadata, and protected model-run visibility
+- dataset-backed road-closure likelihood and resolution-time estimation
+- event simulation support for internal operational testing
+
+Phase 8 adds:
+
+- impact scoring, counterfactual deltas, and impact-category classification
+- vehicle-sensitive impact adjustment and simulation-ready impact summaries
+- richer prediction contracts for event detail and simulation workflows
+
+Phase 9 adds:
+
+- recommendation planning for manpower, barricades, diversions, emergency corridors, and Flipkart logistics impact
+- a protected `POST /api/recommendations/event-plan` endpoint with officer-assignment enforcement
+- typed recommendation payloads reused by event detail and simulation responses
+
 ## Repository Layout
 
 ```text
@@ -132,6 +150,12 @@ future/
 
   ```bash
   python backend/scripts/rebuild_event_dna.py
+  ```
+
+- Recommendation workflow smoke check:
+
+  ```bash
+  pytest backend/tests/test_recommendations.py
   ```
 
 The base MVP remains free-tier and dataset-honest. Optional Google Translate support stays disabled by default.

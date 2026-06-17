@@ -56,6 +56,7 @@ After completion:
 
 - **New functionality:** Generate manpower, barricade, diversion, emergency corridor, logistics impact, and confidence ledger.
 - **New APIs:** POST /api/recommendations/event-plan
+- **Shared response contracts:** Recommendation plan payload reused by event dossier and simulation responses.
 - **New workflows:** The product moves forward in the end-to-end traffic command workflow.
 - **New capabilities:** Weather, reports, map intelligence, post-event learning
 - **New infrastructure:** backend/app/services/manpower_service.py; backend/app/services/barricade_service.py; backend/app/services/diversion_service.py; backend/app/services/emergency_corridor_service.py; backend/app/services/logistics_impact_service.py; backend/app/services/recommendation_orchestrator.py
@@ -83,6 +84,15 @@ Required implementation standards:
 - backend/app/services/emergency_corridor_service.py
 - backend/app/services/logistics_impact_service.py
 - backend/app/services/recommendation_orchestrator.py
+- backend/app/api/recommendation_contracts.py
+- backend/app/api/routes_recommendations.py
+- backend/tests/test_recommendations.py
+- frontend/components/recommendations/ManpowerPlanPanel.tsx
+- frontend/components/recommendations/BarricadePlanPanel.tsx
+- frontend/components/recommendations/DiversionPlanPanel.tsx
+- frontend/components/recommendations/EmergencyCorridorPanel.tsx
+- frontend/components/recommendations/FlipkartLogisticsImpactPanel.tsx
+- frontend/components/recommendations/ActionConfidenceLedger.tsx
 
 
 ## Implementation Code Snippets
@@ -223,6 +233,7 @@ def generate_event_plan(payload: EventPlanRequest, db: Session = Depends(get_db)
 - **Error handling:** Return structured errors with code, message, and details.
 - **Authentication:** Enforce the three-level access model: Level 1 Admin / Control Room and Level 2 Registered Police Officer use Firebase Auth email/password with backend role and assignment checks; Level 3 Public / Citizen uses open rate-limited access.
 - **Authorization:** Shape responses by access level: admin full internal view, assigned officer operational view, public-safe advisory/report view. Firebase identity must be verified on protected routes, while EventFlow roles and officer assignments remain enforced by FastAPI/PostgreSQL.
+- **Assignment rule:** Recommendation generation and event-specific operational recommendation views must reject unassigned Level 2 officers with `OFFICER_ASSIGNMENT_REQUIRED`.
 - **Rate limiting:** Apply to upload/report/simulation endpoints where relevant.
 - **Audit logging:** Log dataset loads, admin actions, officer management, officer field confirmations, report submissions, simulations, live updates, post-event report generation, and model fallbacks without logging secret values.
 - **OpenAPI:** FastAPI must expose OpenAPI definitions automatically from schemas.
@@ -307,9 +318,9 @@ Ensure frontend TypeScript types match backend Pydantic response schemas.
 ## Cross-Phase References & Dependency Tracking
 
 - **Required previous phases:** Phase 08
-- **Integration method:** This phase reuses previous contracts and creates outputs consumed by Weather, reports, map intelligence, post-event learning.
+- **Integration method:** This phase reuses previous contracts and creates outputs consumed by event dossier views, simulation workflows, Weather, reports, map intelligence, post-event learning.
 - **Compatibility requirements:** Do not break existing API shapes, database schema contracts, environment variables, or frontend route expectations.
-- **Required interfaces:** POST /api/recommendations/event-plan
+- **Required interfaces:** POST /api/recommendations/event-plan plus shared recommendation payload compatibility with GET /api/events/{event_id} and POST /api/events/simulate
 - **Required contracts:** the database entities and file paths listed in this phase plus the shared schema in docs/Database_Design.md.
 - **Validation process:** Run this phase's validation commands plus smoke checks for earlier completed phases.
 
@@ -323,6 +334,15 @@ Every dependency is explicit in this file. No previous chat context is required.
 - backend/app/services/emergency_corridor_service.py
 - backend/app/services/logistics_impact_service.py
 - backend/app/services/recommendation_orchestrator.py
+- backend/app/api/recommendation_contracts.py
+- backend/app/api/routes_recommendations.py
+- backend/tests/test_recommendations.py
+- frontend/components/recommendations/ManpowerPlanPanel.tsx
+- frontend/components/recommendations/BarricadePlanPanel.tsx
+- frontend/components/recommendations/DiversionPlanPanel.tsx
+- frontend/components/recommendations/EmergencyCorridorPanel.tsx
+- frontend/components/recommendations/FlipkartLogisticsImpactPanel.tsx
+- frontend/components/recommendations/ActionConfidenceLedger.tsx
 
 ---
 
@@ -359,7 +379,8 @@ Measure the relevant endpoint/page timing against MVP targets.
 ## Validation Commands
 
 ```bash
-pytest backend/tests/test_recommendations.py
+pytest backend/tests/test_recommendations.py backend/tests/test_predictions.py backend/tests/test_event_dna.py backend/tests/test_database.py
+npm run build
 ```
 
 ---

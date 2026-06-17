@@ -163,6 +163,7 @@ Response:
 
 **Description:** Full event dossier.
 **Authentication:** Level-aware. Public users receive public advisories only; assigned officers receive officer-safe action plans; admins receive the full internal dossier.
+**Authorization note:** Level 2 officers must be assigned to the event, corridor, station, or zone to access event-specific operational details.
 **Behavior note:** This is a read-only dossier endpoint. If materialized features, DNA, or predictions are missing, the backend may compute them for the response without persisting new rows during the `GET`.
 
 Response includes:
@@ -343,15 +344,79 @@ Response:
 
 ```json
 {
-  "risk_summary": {},
-  "manpower": {},
-  "barricades": {},
-  "diversions": {},
-  "emergency_corridor": {},
-  "flipkart_logistics_impact": {},
-  "action_confidence_ledger": []
+  "event_id": "SIM-001",
+  "risk_summary": {
+    "impact_score": 82,
+    "impact_category": "Critical",
+    "road_closure_probability": 0.78,
+    "predicted_priority": "High",
+    "estimated_clearance_minutes": 47,
+    "estimated_radius_km": 3,
+    "baseline_risk_score": 42,
+    "additional_event_delta": 40,
+    "honesty_note": "Recommended actions are dataset-backed operational guidance, not a live city-control guarantee."
+  },
+  "manpower": {
+    "recommended_total_officers": 12,
+    "deployment_style": "ring_control",
+    "reserve_officers": 3,
+    "sector_count": 4,
+    "available_officers": 18,
+    "officer_gap": 0,
+    "feasibility_status": "covered",
+    "primary_positions": ["incident_core", "upstream_junction", "downstream_release"],
+    "reason_codes": ["impact_category", "road_closure_probability", "impact_radius_km"],
+    "note": "Recommended staffing is operational guidance, not a shift roster guarantee."
+  },
+  "barricades": {
+    "barricade_level": "controlled_entry_exit_points",
+    "estimated_units": 10,
+    "coverage_radius_km": 3,
+    "placement_priority": ["incident_core", "upstream_filter", "diversion_split"],
+    "reason_codes": ["impact_score", "road_closure_probability"],
+    "note": "Barricade guidance is radius-based and should be adapted to field geometry."
+  },
+  "diversions": {
+    "strategy": "protect_primary_corridor_and_push_early_diversion",
+    "corridor_to_protect": "MG Road",
+    "diversion_scope": "corridor_plus_spillover",
+    "upstream_focus_points": ["MG Road", "Central zone upstream"],
+    "heavy_vehicle_advisory": "Divert heavy vehicles before the hotspot radius where possible.",
+    "reason_codes": ["corridor", "impact_radius_km", "vehicle_mix"],
+    "note": "Diversion guidance is advisory and not a citywide routing guarantee."
+  },
+  "emergency_corridor": {
+    "priority": "high_protection",
+    "lane_policy": "keep_one_lane_clear",
+    "protected_corridor": "MG Road",
+    "activation_trigger": "activate when closure likelihood or impact severity is high",
+    "authentication_note": "Ambulance verification is future scope; MVP protects corridor advisory only.",
+    "reason_codes": ["impact_category", "road_closure_probability"]
+  },
+  "flipkart_logistics_impact": {
+    "impact_level": "high",
+    "delivery_risk_window_minutes": 60,
+    "affected_radius_km": 3,
+    "dispatch_recommendation": "Consider dispatch staggering or alternate approach routing for the active risk window.",
+    "warehouse_note": "Use recommendation as a delivery-risk indicator, not as a guaranteed SLA breach forecast.",
+    "reason_codes": ["impact_score", "estimated_clearance_minutes"]
+  },
+  "action_confidence_ledger": [
+    {
+      "input": "ASTraM historical events",
+      "confidence": 0.85,
+      "note": "Core event patterns, corridors, and closure history come from the loaded ASTraM dataset.",
+      "source": "dataset_history"
+    }
+  ],
+  "recommended_action_summary": "Deploy 12 officers in ring control around MG Road. Use controlled entry exit points and protect primary corridor and push early diversion operations."
 }
 ```
+
+Contract reuse note:
+
+- `GET /api/events/{event_id}` returns the same shape under `recommendation`.
+- `POST /api/events/simulate` returns the same shape under `recommendations`.
 
 ## 11. POST /api/reports/congestion
 

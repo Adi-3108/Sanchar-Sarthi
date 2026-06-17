@@ -306,6 +306,11 @@ Stores action plans.
 | recommended_action_summary | text | |
 | created_at | timestamp | default now() |
 
+Operational note:
+
+- MVP write paths treat `event_id` as the single active recommendation key for an event and overwrite/coalesce stale duplicates when a plan is regenerated.
+- Historical recommendation versioning is future scope; current consumers should read the latest operational plan only.
+
 ### hotspot_clusters
 
 Stores risk clusters.

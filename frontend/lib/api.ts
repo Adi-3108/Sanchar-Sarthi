@@ -127,6 +127,87 @@ export type SimilarEventResponse = {
   historical_cluster_closure_rate?: number | null;
 };
 
+export type ActionConfidenceLedgerItemResponse = {
+  input: string;
+  confidence: number;
+  note?: string | null;
+  source?: string | null;
+};
+
+export type RecommendationRiskSummaryResponse = {
+  impact_score: number;
+  impact_category: string;
+  road_closure_probability: number;
+  predicted_priority?: string | null;
+  estimated_clearance_minutes?: number | null;
+  estimated_radius_km: number;
+  baseline_risk_score?: number | null;
+  additional_event_delta?: number | null;
+  honesty_note: string;
+};
+
+export type RecommendationManpowerResponse = {
+  recommended_total_officers: number;
+  deployment_style: string;
+  reserve_officers: number;
+  sector_count: number;
+  available_officers?: number | null;
+  officer_gap: number;
+  feasibility_status: string;
+  primary_positions: string[];
+  reason_codes: string[];
+  note: string;
+};
+
+export type RecommendationBarricadeResponse = {
+  barricade_level: string;
+  estimated_units: number;
+  coverage_radius_km: number;
+  placement_priority: string[];
+  reason_codes: string[];
+  note: string;
+};
+
+export type RecommendationDiversionResponse = {
+  strategy: string;
+  corridor_to_protect?: string | null;
+  diversion_scope: string;
+  upstream_focus_points: string[];
+  heavy_vehicle_advisory: string;
+  reason_codes: string[];
+  note: string;
+};
+
+export type RecommendationEmergencyCorridorResponse = {
+  priority: string;
+  lane_policy: string;
+  protected_corridor?: string | null;
+  activation_trigger: string;
+  authentication_note: string;
+  reason_codes: string[];
+};
+
+export type RecommendationLogisticsImpactResponse = {
+  impact_level: string;
+  delivery_risk_window_minutes: number;
+  affected_radius_km: number;
+  dispatch_recommendation: string;
+  warehouse_note: string;
+  reason_codes: string[];
+};
+
+export type RecommendationPlanResponse = {
+  event_id: string;
+  risk_summary: RecommendationRiskSummaryResponse;
+  manpower: RecommendationManpowerResponse;
+  barricades: RecommendationBarricadeResponse;
+  diversions: RecommendationDiversionResponse;
+  emergency_corridor?: RecommendationEmergencyCorridorResponse | null;
+  flipkart_logistics_impact?: RecommendationLogisticsImpactResponse | null;
+  action_confidence_ledger: ActionConfidenceLedgerItemResponse[];
+  recommended_action_summary: string;
+};
+
 export type EventPredictionResponse = {
   event_id: string;
   model_run_id?: string | null;
@@ -174,7 +255,7 @@ export type EventDetailResponse = {
   features?: EventFeatureResponse | null;
   event_dna?: EventDnaResponse | null;
   prediction?: EventPredictionResponse | null;
-  recommendation?: Record<string, unknown> | null;
+  recommendation?: RecommendationPlanResponse | null;
   similar_events: SimilarEventResponse[];
   citizen_reports: Array<Record<string, unknown>>;
   live_updates: Array<Record<string, unknown>>;
@@ -234,9 +315,16 @@ export type EventSimulationResponse = {
   vehicle_impact_note?: string | null;
   counterfactual: CounterfactualResponse;
   weather_adjustment: Record<string, unknown>;
-  recommendations: Record<string, unknown>;
+  recommendations: RecommendationPlanResponse;
   map_overlays: Record<string, unknown>;
   prediction_explanation_json: Record<string, unknown>;
+};
+
+export type EventPlanRequest = {
+  event_id: string;
+  available_officers?: number;
+  include_logistics_impact?: boolean;
+  include_emergency_corridor?: boolean;
 };
 
 export type ModelRunResponse = {
@@ -371,4 +459,11 @@ export function simulateEvent(
   init?: RequestInit
 ): Promise<EventSimulationResponse> {
   return apiPost<EventSimulationResponse>("/api/events/simulate", payload, init);
+}
+
+export function generateEventPlan(
+  payload: EventPlanRequest,
+  init?: RequestInit
+): Promise<RecommendationPlanResponse> {
+  return apiPost<RecommendationPlanResponse>("/api/recommendations/event-plan", payload, init);
 }

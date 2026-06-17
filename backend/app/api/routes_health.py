@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.core.config import get_settings
+from app.core.database import get_database_status
 
 
 class ModelHealth(BaseModel):
@@ -23,6 +24,7 @@ class HealthResponse(BaseModel):
     environment: str
     checked_at: datetime
     database: str
+    database_detail: str | None = None
     models: ModelHealth
     auth: AuthHealth
 
@@ -33,6 +35,7 @@ router = APIRouter(prefix="/api", tags=["health"])
 @router.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     settings = get_settings()
+    database_status, database_detail = get_database_status()
     firebase_status = (
         "configured"
         if settings.firebase_project_id
@@ -45,7 +48,8 @@ def health() -> HealthResponse:
         service="eventflow-ai-backend",
         environment=settings.environment,
         checked_at=datetime.now(timezone.utc),
-        database="not_configured",
+        database=database_status,
+        database_detail=database_detail,
         models=ModelHealth(
             priority="not_loaded",
             road_closure="not_loaded",

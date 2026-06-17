@@ -29,6 +29,8 @@ class AuthContext:
     officer_profile_id: str | None = None
     officer_id: str | None = None
     police_station: str | None = None
+    assigned_corridors: list[str] | None = None
+    assigned_zones: list[str] | None = None
 
 
 def verify_firebase_token(
@@ -61,10 +63,7 @@ def verify_firebase_token(
         ) from None
 
 
-def get_auth_context(
-    token_payload: dict[str, Any] = Depends(verify_firebase_token),
-    db: Session = Depends(get_db),
-) -> AuthContext:
+def load_auth_context(db: Session, token_payload: dict[str, Any]) -> AuthContext:
     account = (
         db.query(UserAccount)
         .filter(UserAccount.auth_provider == "firebase")
@@ -99,11 +98,24 @@ def get_auth_context(
         officer_profile_id=str(officer_profile.id) if officer_profile else None,
         officer_id=officer_profile.officer_id if officer_profile else None,
         police_station=officer_profile.police_station if officer_profile else None,
+        assigned_corridors=officer_profile.assigned_corridors_json if officer_profile else None,
+        assigned_zones=officer_profile.assigned_zones_json if officer_profile else None,
     )
 
 
+def get_auth_context(
+    token_payload: dict[str, Any] = Depends(verify_firebase_token),
+    db: Session = Depends(get_db),
+) -> AuthContext:
+    return load_auth_context(db, token_payload)
+
+
 def require_role(*allowed_roles: str):
-    def dependency(auth: AuthContext = Depends(get_auth_context)) -> AuthContext:
+    def dependency(
+        token_payload: dict[str, Any] = Depends(verify_firebase_token),
+        db: Session = Depends(get_db),
+    ) -> AuthContext:
+        auth = load_auth_context(db, token_payload)
         if auth.role not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

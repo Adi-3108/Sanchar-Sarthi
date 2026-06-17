@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import Engine, create_engine, event, text
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.core.config import get_settings
+from app.core.config import resolve_database_url
 
 
 def _build_connect_args(database_url: str) -> dict[str, Any]:
@@ -31,7 +31,7 @@ def _configure_sqlite(engine: Engine) -> None:
 
 
 def build_engine(database_url: str | None = None) -> Engine:
-    url = database_url or get_settings().database_url
+    url = resolve_database_url(database_url)
     engine = create_engine(
         url,
         pool_pre_ping=True,

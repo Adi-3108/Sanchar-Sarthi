@@ -1,12 +1,24 @@
 from collections.abc import Generator
-from typing import Any, cast
 
-try:
-    from sqlalchemy.orm import Session
-except ModuleNotFoundError:  # pragma: no cover - exercised before dependency install
-    Session = Any
+from sqlalchemy.orm import Session, sessionmaker
+
+from app.core.database import get_engine
+from app.db.base import import_model_modules
+
+import_model_modules()
+
+engine = get_engine()
+SessionLocal = sessionmaker(
+    bind=engine,
+    autoflush=False,
+    autocommit=False,
+    expire_on_commit=False,
+)
 
 
 def get_db() -> Generator[Session, None, None]:
-    raise RuntimeError("Database sessions are introduced in Phase 2.")
-    yield cast(Session, None)
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

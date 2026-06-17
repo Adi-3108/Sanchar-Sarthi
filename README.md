@@ -12,6 +12,12 @@ Phase 1 establishes:
 - environment documentation for backend, Firebase, and map providers
 - baseline backend tests for config, health, Firebase bootstrap, and auth guards
 
+Phase 2 adds:
+
+- SQLAlchemy models for the core EventFlow schema
+- Alembic migration support for the initial database
+- backend database sessions and health-aware connectivity checks
+
 ## Repository Layout
 
 ```text
@@ -68,6 +74,13 @@ future/
 
   ```bash
   pytest backend/tests
+  ```
+
+- Database migration smoke check:
+  This uses the SQLite fallback in `alembic.ini` unless `DATABASE_URL` is set in your shell or `.env`.
+
+  ```bash
+  alembic upgrade head
   ```
 
 The base MVP remains free-tier and dataset-honest. Optional Google Translate support stays disabled by default.

@@ -60,7 +60,7 @@ After completion:
 - **New workflows:** The product moves forward in the end-to-end traffic command workflow.
 - **New capabilities:** Weather, reports, map intelligence, post-event learning
 - **New infrastructure:** backend/app/services/manpower_service.py; backend/app/services/barricade_service.py; backend/app/services/diversion_service.py; backend/app/services/emergency_corridor_service.py; backend/app/services/logistics_impact_service.py; backend/app/services/recommendation_orchestrator.py
-- **New data models:** event_recommendations
+- **New data models:** event_recommendations with one active row per event plus persisted risk/weather recommendation snapshots
 
 ---
 
@@ -209,7 +209,7 @@ def generate_event_plan(payload: EventPlanRequest, db: Session = Depends(get_db)
 
 ## Database Requirements
 
-- **Database entities affected:** event_recommendations
+- **Database entities affected:** event_recommendations, including one active row per `event_id` and persisted `risk_summary_json` / `weather_risk_json` snapshots
 - **Migration requirements:** Create or reuse Alembic migrations when schema changes are required. If this phase only reads existing tables, no new migration is required.
 - **SQL statements:** Use SQLAlchemy ORM and parameterized queries. Raw SQL is allowed only for safe analytics/materialized-view style operations.
 - **Indexes:** Ensure referenced filters and joins are backed by indexes defined in docs/Database_Design.md.
@@ -319,6 +319,7 @@ Ensure frontend TypeScript types match backend Pydantic response schemas.
 
 - **Required previous phases:** Phase 08
 - **Integration method:** This phase reuses previous contracts and creates outputs consumed by event dossier views, simulation workflows, Weather, reports, map intelligence, post-event learning.
+- **Snapshot rule:** Recommendation persistence must keep the latest operational plan snapshot on `event_recommendations` without requiring scenario-specific overwrites of the canonical `event_predictions` row.
 - **Compatibility requirements:** Do not break existing API shapes, database schema contracts, environment variables, or frontend route expectations.
 - **Required interfaces:** POST /api/recommendations/event-plan plus shared recommendation payload compatibility with GET /api/events/{event_id} and POST /api/events/simulate
 - **Required contracts:** the database entities and file paths listed in this phase plus the shared schema in docs/Database_Design.md.

@@ -289,6 +289,7 @@ Impact category contract:
 - Keep `predicted_priority` separate from `impact_category`; the ASTraM priority label remains dataset-backed `High`/`Low` for the current CSV.
 - Treat `road_closure_probability` as the primary signal; `predicted_road_closure` is an operational threshold flag derived from it.
 - `weather_adjustment_json` stores the active weather modifier metadata used during prediction, including rain, visibility, waterlogging risk, and source attribution.
+- `event_predictions` should remain the canonical persisted prediction snapshot for an event. Weather-aware planning scenarios may compute transient overrides in-memory, but those scenario-specific recommendation snapshots belong in `event_recommendations`.
 
 ### event_recommendations
 
@@ -297,7 +298,9 @@ Stores action plans.
 | Column | Type | Constraints |
 |---|---|---|
 | id | uuid | primary key |
-| event_id | text | FK events(id), indexed |
+| event_id | text | FK events(id), unique indexed |
+| risk_summary_json | jsonb | |
+| weather_risk_json | jsonb | |
 | recommended_total_officers | integer | |
 | deployment_plan_json | jsonb | |
 | barricade_plan_json | jsonb | |
@@ -310,9 +313,11 @@ Stores action plans.
 
 Operational note:
 
-- MVP write paths treat `event_id` as the single active recommendation key for an event and overwrite/coalesce stale duplicates when a plan is regenerated.
+- MVP enforces one active recommendation row per event with a DB-level unique constraint on `event_id`.
+- `risk_summary_json` and `weather_risk_json` persist the exact planning snapshot used for the latest generated recommendation, including weather-aware scenario overrides when present.
+- Weather-aware recommendation generation must not overwrite the canonical `event_predictions` row just to store a scenario-specific planning variant.
 - Historical recommendation versioning is future scope; current consumers should read the latest operational plan only.
-- Weather-aware barricade/diversion notes are stored inside the existing JSON plan sections rather than a separate recommendation table in MVP.
+- Weather-aware barricade/diversion notes still live inside the existing JSON plan sections rather than a separate recommendation table in MVP.
 
 ### hotspot_clusters
 

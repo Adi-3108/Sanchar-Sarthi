@@ -17,8 +17,8 @@ frontend/out/
 backend/.coverage
 backend/htmlcov/
 
-docs/
-future/
-plan/
+# docs/
+# future/
+# plan/
 DISCREPANCY_AUDIT_REPORT.md
 REVIEW_REPORT.md

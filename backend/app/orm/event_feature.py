@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Index, Numeric, String
+from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Index, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import CreatedAtMixin, UUIDPrimaryKeyMixin, Base
@@ -18,6 +18,7 @@ class EventFeature(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
             "duration_source IN ('end_datetime', 'closed_datetime', 'resolved_datetime', 'unavailable')",
             name="ck_event_features_duration_source",
         ),
+        UniqueConstraint("event_id", name="uq_event_features_event_id"),
         Index("idx_event_features_event_id", "event_id"),
         Index("idx_event_features_location_cluster_id", "location_cluster_id"),
     )

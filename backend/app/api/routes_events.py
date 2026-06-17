@@ -25,6 +25,7 @@ from app.services.event_dna_service import (
     serialize_event_dna,
 )
 from app.services.feature_engineering_service import build_features_for_event
+from app.services.prediction_service import predict_event, serialize_event_prediction
 from app.services.similar_event_service import find_similar_events, serialize_similar_event_match
 
 
@@ -108,11 +109,37 @@ class HotspotOverlayResponse(BaseModel):
     cluster_top_event_cause: str | None = None
 
 
+class EventPredictionResponse(BaseModel):
+    event_id: str
+    model_run_id: str | None = None
+    predicted_priority: str | None = None
+    priority_confidence: float | None = None
+    road_closure_probability: float | None = None
+    predicted_road_closure: bool | None = None
+    estimated_clearance_minutes: float | None = None
+    clearance_prediction_method: str | None = None
+    clearance_confidence: float | None = None
+    clearance_confidence_note: str | None = None
+    historical_clearance_range_min: float | None = None
+    historical_clearance_range_max: float | None = None
+    estimated_impact_score: float | None = None
+    impact_category: str | None = None
+    impact_radius_km: float | None = None
+    vehicle_impact_factor: float | None = None
+    vehicle_impact_note: str | None = None
+    baseline_risk_score: float | None = None
+    additional_event_delta: float | None = None
+    weather_adjustment_json: dict[str, object] | None = None
+    multi_event_conflict_json: dict[str, object] | None = None
+    prediction_explanation_json: dict[str, object] = Field(default_factory=dict)
+    model_version: str | None = None
+
+
 class EventDossierResponse(BaseModel):
     event: EventRecordResponse
     features: EventFeatureResponse | None = None
     event_dna: EventDnaResponse | None = None
-    prediction: dict[str, object] | None = None
+    prediction: EventPredictionResponse | None = None
     recommendation: dict[str, object] | None = None
     similar_events: list[SimilarEventResponse] = Field(default_factory=list)
     citizen_reports: list[dict[str, object]] = Field(default_factory=list)
@@ -301,17 +328,28 @@ def get_event_detail(
             similar_event_ids=[row.event_id for row in similar_events],
             commit=False,
         )
+        prediction_record, _prediction_created = predict_event(
+            db,
+            event,
+            feature=feature,
+            commit=False,
+        )
         db.commit()
     except SQLAlchemyError:
         db.rollback()
         return error_response(503, "DATABASE_UNAVAILABLE", "Database is unavailable for event detail.")
 
     hotspot_overlay = _serialize_hotspot_overlay(hotspot)
+    serialized_prediction = serialize_event_prediction(prediction_record)
     return EventDossierResponse(
         event=_serialize_event(event),
         features=_serialize_feature(feature),
         event_dna=EventDnaResponse.model_validate(serialize_event_dna(dna_record) or {}),
-        prediction=None,
+        prediction=(
+            EventPredictionResponse.model_validate(serialized_prediction)
+            if serialized_prediction is not None
+            else None
+        ),
         recommendation=None,
         similar_events=[SimilarEventResponse.model_validate(serialize_similar_event_match(row)) for row in similar_events],
         citizen_reports=[],

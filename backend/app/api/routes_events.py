@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 from typing import Any, Literal
-from uuid import UUID
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Query
@@ -12,12 +11,15 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.api.recommendation_contracts import RecommendationPlanResponse
+from app.core.officer_access import coerce_uuid, officer_has_event_access
 from app.core.security import AuthContext, require_role
 from app.db.session import get_db
 from app.orm.event import Event
 from app.orm.event_dna import EventDna
 from app.orm.event_feature import EventFeature
 from app.orm.event_prediction import EventPrediction
+from app.orm.event_recommendation import EventRecommendation
 from app.orm.hotspot_cluster import HotspotCluster
 from app.orm.system_audit_log import SystemAuditLog
 from app.services.data_cleaning_service import clean_event_cause
@@ -34,6 +36,12 @@ from app.services.feature_engineering_service import (
     build_transient_feature,
 )
 from app.services.prediction_service import predict_event, serialize_event_prediction
+from app.services.recommendation_orchestrator import (
+    build_recommendation_input,
+    generate_recommendation_plan,
+    merge_risk_summary_into_plan,
+    serialize_recommendation_plan,
+)
 from app.services.similar_event_service import find_similar_events, serialize_similar_event_match
 from app.services.text_normalization_service import normalize_description
 
@@ -149,7 +157,7 @@ class EventDossierResponse(BaseModel):
     features: EventFeatureResponse | None = None
     event_dna: EventDnaResponse | None = None
     prediction: EventPredictionResponse | None = None
-    recommendation: dict[str, object] | None = None
+    recommendation: RecommendationPlanResponse | None = None
     similar_events: list[SimilarEventResponse] = Field(default_factory=list)
     citizen_reports: list[dict[str, object]] = Field(default_factory=list)
     live_updates: list[dict[str, object]] = Field(default_factory=list)
@@ -217,7 +225,7 @@ class EventSimulationResponse(BaseModel):
     vehicle_impact_note: str | None = None
     counterfactual: CounterfactualResponse
     weather_adjustment: dict[str, object] = Field(default_factory=dict)
-    recommendations: dict[str, object] = Field(default_factory=dict)
+    recommendations: RecommendationPlanResponse
     map_overlays: dict[str, object] = Field(default_factory=dict)
     prediction_explanation_json: dict[str, object] = Field(default_factory=dict)
 
@@ -253,15 +261,6 @@ def require_event_dna_rebuild_access(
     auth: AuthContext = Depends(require_role("admin", "control_room")),
 ) -> AuthContext:
     return auth
-
-
-def _coerce_uuid(value: str | None) -> UUID | None:
-    if value is None:
-        return None
-    try:
-        return UUID(value)
-    except (ValueError, TypeError):
-        return None
 
 
 def _serialize_event(event: Event) -> EventRecordResponse:
@@ -386,7 +385,7 @@ def _get_primary_feature(db: Session, event_id: str) -> EventFeature | None:
     return db.scalars(
         select(EventFeature)
         .where(EventFeature.event_id == event_id)
-        .order_by(EventFeature.created_at, EventFeature.id)
+        .order_by(EventFeature.created_at.desc(), EventFeature.id.desc())
     ).first()
 
 
@@ -394,7 +393,7 @@ def _get_primary_event_dna(db: Session, event_id: str) -> EventDna | None:
     return db.scalars(
         select(EventDna)
         .where(EventDna.event_id == event_id)
-        .order_by(EventDna.created_at, EventDna.id)
+        .order_by(EventDna.created_at.desc(), EventDna.id.desc())
     ).first()
 
 
@@ -406,6 +405,40 @@ def _get_primary_prediction(db: Session, event_id: str) -> EventPrediction | Non
     ).first()
 
 
+def _get_primary_recommendation(db: Session, event_id: str) -> EventRecommendation | None:
+    return db.scalars(
+        select(EventRecommendation)
+        .where(EventRecommendation.event_id == event_id)
+        .order_by(EventRecommendation.created_at.desc(), EventRecommendation.id.desc())
+    ).first()
+
+
+def _build_recommendation_payload(
+    event: Event,
+    prediction: EventPrediction | None,
+    *,
+    recommendation_record: EventRecommendation | None = None,
+    available_officers: int | None = None,
+    include_logistics_impact: bool = True,
+    include_emergency_corridor: bool = True,
+) -> dict[str, object] | None:
+    if prediction is None:
+        return None
+    if recommendation_record is not None:
+        serialized = serialize_recommendation_plan(recommendation_record)
+        if serialized is not None:
+            return merge_risk_summary_into_plan(serialized, prediction)
+
+    recommendation_input = build_recommendation_input(
+        event,
+        prediction,
+        available_officers=available_officers,
+        include_logistics_impact=include_logistics_impact,
+        include_emergency_corridor=include_emergency_corridor,
+    )
+    return generate_recommendation_plan(recommendation_input)
+
+
 def _record_event_dna_rebuild_audit_log(
     db: Session,
     auth: AuthContext,
@@ -415,7 +448,7 @@ def _record_event_dna_rebuild_audit_log(
 ) -> None:
     db.add(
         SystemAuditLog(
-            actor_user_id=_coerce_uuid(auth.user_account_id),
+            actor_user_id=coerce_uuid(auth.user_account_id),
             actor_role=auth.role,
             action="event_dna_rebuild",
             resource_type="event_dna",
@@ -439,6 +472,13 @@ def get_event_detail(
     event = db.get(Event, event_id)
     if event is None:
         return error_response(404, "EVENT_NOT_FOUND", "Requested event was not found.", {"event_id": event_id})
+    if not officer_has_event_access(db, _auth, event):
+        return error_response(
+            403,
+            "OFFICER_ASSIGNMENT_REQUIRED",
+            "Officer is not assigned to the requested event, corridor, station, or zone.",
+            {"event_id": event_id},
+        )
 
     try:
         feature = _get_primary_feature(db, event_id)
@@ -486,6 +526,12 @@ def get_event_detail(
                 persist=False,
             )
             serialized_prediction = serialize_event_prediction(prediction_record)
+        recommendation_record = _get_primary_recommendation(db, event_id)
+        recommendation_payload = _build_recommendation_payload(
+            event,
+            prediction_record,
+            recommendation_record=recommendation_record,
+        )
     except SQLAlchemyError:
         db.rollback()
         return error_response(503, "DATABASE_UNAVAILABLE", "Database is unavailable for event detail.")
@@ -500,7 +546,11 @@ def get_event_detail(
             if serialized_prediction is not None
             else None
         ),
-        recommendation=None,
+        recommendation=(
+            RecommendationPlanResponse.model_validate(recommendation_payload)
+            if recommendation_payload is not None
+            else None
+        ),
         similar_events=[SimilarEventResponse.model_validate(serialize_similar_event_match(row)) for row in similar_events],
         citizen_reports=[],
         live_updates=[],
@@ -548,6 +598,13 @@ def simulate_event(
         )
         serialized_prediction = serialize_event_prediction(prediction_record) or {}
         event_dna_payload = serialize_event_dna(dna_record) or {}
+        recommendation_payload = _build_recommendation_payload(
+            simulated_event,
+            prediction_record,
+            available_officers=payload.available_officers,
+            include_logistics_impact=True,
+            include_emergency_corridor=True,
+        )
         hotspot_overlay = _serialize_hotspot_overlay(hotspot)
         impact_explanation = dict(
             (
@@ -588,7 +645,7 @@ def simulate_event(
                 ),
             ),
             weather_adjustment=dict(serialized_prediction.get("weather_adjustment_json") or {}),
-            recommendations={},
+            recommendations=RecommendationPlanResponse.model_validate(recommendation_payload),
             map_overlays={"hotspot": hotspot_overlay.model_dump() if hotspot_overlay else None},
             prediction_explanation_json=dict(serialized_prediction.get("prediction_explanation_json") or {}),
         )

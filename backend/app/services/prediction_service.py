@@ -112,6 +112,7 @@ def predict_event(
     hotspot: HotspotCluster | None = None,
     similar_events: list[SimilarEventMatch] | None = None,
     weather_condition: str | None = None,
+    weather_adjustment_override: dict[str, object] | None = None,
     commit: bool = True,
     persist: bool = True,
 ) -> tuple[EventPrediction, bool]:
@@ -142,6 +143,7 @@ def predict_event(
         hotspot=active_hotspot,
         similar_events=active_similar_events,
         weather_condition=weather_condition,
+        weather_adjustment_override=weather_adjustment_override,
     )
     impact = dict(impact_assessment["impact"])
     counterfactual = dict(impact_assessment["counterfactual"])

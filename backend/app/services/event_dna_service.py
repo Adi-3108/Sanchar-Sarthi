@@ -42,7 +42,9 @@ TEXT_SIGNAL_WEIGHT = {
     "crowd": 0.05,
     "breakdown": 0.05,
 }
-WEATHER_CONTEXT_DEFERRED = "Weather context deferred to Phase 10 weather integration."
+WEATHER_CONTEXT_DEFAULT = (
+    "No linked weather observation exists in ASTraM history; Phase 10 weather adjustments apply only when manual or live weather inputs are provided."
+)
 MULTI_EVENT_CONTEXT_DEFERRED = "Multi-event conflict context deferred to Phase 13 analysis."
 
 
@@ -111,6 +113,21 @@ def build_event_dna_context(
         feature=feature,
         hotspot=hotspot,
     )
+
+
+def build_weather_context(event: Event) -> str:
+    raw_payload = dict(event.raw_payload or {})
+    weather_condition = _normalize_text(raw_payload.get("weather_condition"))
+    if raw_payload.get("simulation") and weather_condition and weather_condition != "clear":
+        return (
+            f"Simulation weather scenario: {weather_condition.replace('_', ' ')}. "
+            "Weather-aware impact and recommendation modifiers may widen risk buffers."
+        )
+    if raw_payload.get("simulation") and raw_payload.get("use_live_weather"):
+        return (
+            "Simulation is configured for optional live weather lookup; downstream prediction and planning layers may apply a live weather modifier."
+        )
+    return WEATHER_CONTEXT_DEFAULT
 
 
 def build_event_fingerprint(context: EventDnaContext) -> dict[str, float]:
@@ -249,7 +266,7 @@ def build_event_dna_payload(
         "time_context": build_time_context(context),
         "location_context": build_location_context(context),
         "cause_context": build_cause_context(context),
-        "weather_context": WEATHER_CONTEXT_DEFERRED,
+        "weather_context": build_weather_context(event),
         "multi_event_context": MULTI_EVENT_CONTEXT_DEFERRED,
         "historical_pattern": build_historical_pattern(context),
         "risk_indicators_json": build_risk_indicators_json(context),
@@ -422,7 +439,7 @@ def serialize_event_dna(record: EventDna | None) -> dict[str, Any] | None:
         "time_context": record.time_context,
         "location_context": record.location_context,
         "cause_context": record.cause_context,
-        "weather_context": record.weather_context or WEATHER_CONTEXT_DEFERRED,
+        "weather_context": record.weather_context or WEATHER_CONTEXT_DEFAULT,
         "multi_event_context": record.multi_event_context or MULTI_EVENT_CONTEXT_DEFERRED,
         "historical_pattern": record.historical_pattern,
         "risk_indicators_json": record.risk_indicators_json,

@@ -171,7 +171,9 @@ def test_event_detail_route_includes_prediction_payload(tmp_path, monkeypatch):
     assert payload["prediction"]["estimated_impact_score"] > 0
     assert payload["prediction"]["prediction_explanation_json"]["road_closure"]["method"] == "primary_rule_history"
     assert payload["prediction"]["prediction_explanation_json"]["impact"]["counterfactual"]["honesty_note"]
-    assert payload["event_dna"]["weather_context"] == "Weather context deferred to Phase 10 weather integration."
+    assert payload["event_dna"]["weather_context"] == (
+        "No linked weather observation exists in ASTraM history; Phase 10 weather adjustments apply only when manual or live weather inputs are provided."
+    )
 
     with session_factory() as session:
         assert session.query(EventFeature).filter(EventFeature.event_id == "PRED-001").count() == 0
@@ -324,7 +326,10 @@ def test_simulate_event_route_returns_ephemeral_prediction_payload(tmp_path, mon
     assert payload["impact_category"] in {"Low", "Medium", "High", "Critical"}
     assert payload["counterfactual"]["additional_event_delta"] >= 0
     assert payload["weather_adjustment"]["weather_condition"] == "heavy_rain"
+    assert payload["weather_adjustment"]["provider_status"] == "manual_override"
+    assert payload["weather_adjustment"]["low_visibility"] is True
     assert payload["event_dna"]["event_id"].startswith("SIM-")
+    assert "heavy rain" in payload["event_dna"]["weather_context"]
     assert payload["similar_event_summary"]["match_count"] >= 0
 
     with session_factory() as session:

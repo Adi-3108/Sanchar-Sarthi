@@ -56,6 +56,7 @@ After completion:
 
 - **New functionality:** Adjust impact, barricading, and diversion for rain, waterlogging, and low visibility.
 - **New APIs:** Weather fields in simulate/event-plan APIs
+- **Shared response contracts:** typed weather-adjustment payloads in simulation and recommendation responses
 - **New workflows:** The product moves forward in the end-to-end traffic command workflow.
 - **New capabilities:** Weather-aware demo and post-event learning
 - **New infrastructure:** backend/app/services/weather_service.py; frontend/components/recommendations/WeatherRiskPanel.tsx
@@ -79,6 +80,7 @@ Required implementation standards:
 
 - backend/app/services/weather_service.py
 - frontend/components/recommendations/WeatherRiskPanel.tsx
+- backend/tests/test_weather_service.py
 
 
 ## Implementation Code Snippets
@@ -245,6 +247,7 @@ Ensure frontend TypeScript types match backend Pydantic response schemas.
 
 - **Required previous phases:** Phase 09
 - **Integration method:** This phase reuses previous contracts and creates outputs consumed by Weather-aware demo and post-event learning.
+- **Integration method:** This phase reuses previous contracts and creates outputs consumed by weather-aware simulation, event planning, Weather-aware demo, and post-event learning.
 - **Compatibility requirements:** Do not break existing API shapes, database schema contracts, environment variables, or frontend route expectations.
 - **Required interfaces:** Weather fields in simulate/event-plan APIs
 - **Required contracts:** the database entities and file paths listed in this phase plus the shared schema in docs/Database_Design.md.
@@ -292,7 +295,8 @@ Measure the relevant endpoint/page timing against MVP targets.
 ## Validation Commands
 
 ```bash
-pytest backend/tests/test_weather_service.py
+pytest backend/tests/test_weather_service.py backend/tests/test_recommendations.py backend/tests/test_predictions.py backend/tests/test_event_dna.py backend/tests/test_impact_score.py
+npm run build
 ```
 
 ---

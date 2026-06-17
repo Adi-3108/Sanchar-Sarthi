@@ -3,6 +3,20 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 
+class WeatherAdjustmentResponse(BaseModel):
+    weather_condition: str
+    weather_factor: float
+    rain_mm: float
+    visibility_m: float | None = None
+    low_visibility: bool = False
+    waterlogging_risk: str
+    reason_codes: list[str] = Field(default_factory=list)
+    source: str
+    provider: str | None = None
+    provider_status: str
+    note: str
+
+
 class ActionConfidenceLedgerItemResponse(BaseModel):
     input: str
     confidence: float
@@ -42,6 +56,7 @@ class RecommendationBarricadeResponse(BaseModel):
     placement_priority: list[str] = Field(default_factory=list)
     reason_codes: list[str] = Field(default_factory=list)
     note: str
+    field_note: str | None = None
 
 
 class RecommendationDiversionResponse(BaseModel):
@@ -52,6 +67,7 @@ class RecommendationDiversionResponse(BaseModel):
     heavy_vehicle_advisory: str
     reason_codes: list[str] = Field(default_factory=list)
     note: str
+    field_note: str | None = None
 
 
 class RecommendationEmergencyCorridorResponse(BaseModel):
@@ -75,6 +91,7 @@ class RecommendationLogisticsImpactResponse(BaseModel):
 class RecommendationPlanResponse(BaseModel):
     event_id: str
     risk_summary: RecommendationRiskSummaryResponse
+    weather_risk: WeatherAdjustmentResponse
     manpower: RecommendationManpowerResponse
     barricades: RecommendationBarricadeResponse
     diversions: RecommendationDiversionResponse
@@ -89,3 +106,7 @@ class EventPlanRequest(BaseModel):
     available_officers: int | None = Field(default=None, ge=0)
     include_logistics_impact: bool = True
     include_emergency_corridor: bool = True
+    weather_condition: str | None = Field(default=None, pattern="^(clear|cloudy|light_rain|rain|heavy_rain)$")
+    rain_mm: float | None = Field(default=None, ge=0, le=500)
+    visibility_m: float | None = Field(default=None, ge=0, le=20000)
+    use_live_weather: bool = False

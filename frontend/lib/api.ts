@@ -127,6 +127,20 @@ export type SimilarEventResponse = {
   historical_cluster_closure_rate?: number | null;
 };
 
+export type WeatherAdjustmentResponse = {
+  weather_condition: string;
+  weather_factor: number;
+  rain_mm: number;
+  visibility_m?: number | null;
+  low_visibility: boolean;
+  waterlogging_risk: string;
+  reason_codes: string[];
+  source: string;
+  provider?: string | null;
+  provider_status: string;
+  note: string;
+};
+
 export type ActionConfidenceLedgerItemResponse = {
   input: string;
   confidence: number;
@@ -166,6 +180,7 @@ export type RecommendationBarricadeResponse = {
   placement_priority: string[];
   reason_codes: string[];
   note: string;
+  field_note?: string | null;
 };
 
 export type RecommendationDiversionResponse = {
@@ -176,6 +191,7 @@ export type RecommendationDiversionResponse = {
   heavy_vehicle_advisory: string;
   reason_codes: string[];
   note: string;
+  field_note?: string | null;
 };
 
 export type RecommendationEmergencyCorridorResponse = {
@@ -199,6 +215,7 @@ export type RecommendationLogisticsImpactResponse = {
 export type RecommendationPlanResponse = {
   event_id: string;
   risk_summary: RecommendationRiskSummaryResponse;
+  weather_risk: WeatherAdjustmentResponse;
   manpower: RecommendationManpowerResponse;
   barricades: RecommendationBarricadeResponse;
   diversions: RecommendationDiversionResponse;
@@ -228,7 +245,7 @@ export type EventPredictionResponse = {
   vehicle_impact_note?: string | null;
   baseline_risk_score?: number | null;
   additional_event_delta?: number | null;
-  weather_adjustment_json?: Record<string, unknown> | null;
+  weather_adjustment_json?: WeatherAdjustmentResponse | null;
   multi_event_conflict_json?: Record<string, unknown> | null;
   prediction_explanation_json: Record<string, unknown>;
   model_version?: string | null;
@@ -290,6 +307,9 @@ export type EventSimulationRequest = {
   expected_duration_minutes?: number;
   expected_crowd_size?: number;
   weather_condition?: "clear" | "cloudy" | "light_rain" | "rain" | "heavy_rain";
+  rain_mm?: number;
+  visibility_m?: number;
+  use_live_weather?: boolean;
   available_officers?: number;
   description?: string;
   veh_type?: string;
@@ -314,7 +334,7 @@ export type EventSimulationResponse = {
   vehicle_impact_factor?: number | null;
   vehicle_impact_note?: string | null;
   counterfactual: CounterfactualResponse;
-  weather_adjustment: Record<string, unknown>;
+  weather_adjustment: WeatherAdjustmentResponse;
   recommendations: RecommendationPlanResponse;
   map_overlays: Record<string, unknown>;
   prediction_explanation_json: Record<string, unknown>;
@@ -325,6 +345,10 @@ export type EventPlanRequest = {
   available_officers?: number;
   include_logistics_impact?: boolean;
   include_emergency_corridor?: boolean;
+  weather_condition?: "clear" | "cloudy" | "light_rain" | "rain" | "heavy_rain";
+  rain_mm?: number;
+  visibility_m?: number;
+  use_live_weather?: boolean;
 };
 
 export type ModelRunResponse = {

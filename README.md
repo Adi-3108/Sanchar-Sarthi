@@ -60,6 +60,12 @@ Phase 9 adds:
 - a protected `POST /api/recommendations/event-plan` endpoint with officer-assignment enforcement
 - typed recommendation payloads reused by event detail and simulation responses
 
+Phase 10 adds:
+
+- weather-aware impact adjustment for simulation and event-plan workflows
+- optional Open-Meteo-backed weather resolution with safe neutral fallback behavior
+- rain, waterlogging, and low-visibility modifiers for barricade and diversion recommendations
+
 ## Repository Layout
 
 ```text
@@ -156,6 +162,12 @@ future/
 
   ```bash
   pytest backend/tests/test_recommendations.py
+  ```
+
+- Weather workflow smoke check:
+
+  ```bash
+  pytest backend/tests/test_weather_service.py
   ```
 
 The base MVP remains free-tier and dataset-honest. Optional Google Translate support stays disabled by default.

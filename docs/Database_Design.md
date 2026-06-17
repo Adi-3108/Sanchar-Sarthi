@@ -248,7 +248,8 @@ Stores operational fingerprints.
 
 Operational note:
 
-- Before weather and multi-event phases are implemented, `weather_context` and `multi_event_context` should carry explicit deferred-context text rather than unexplained nulls in internal APIs.
+- `weather_context` should describe dataset weather availability honestly. Historical ASTraM events usually carry a neutral availability note, while simulations may carry manual or live-weather scenario context.
+- `multi_event_context` should remain explicit deferred-context text until the dedicated multi-event phase is implemented.
 
 ### event_predictions
 
@@ -287,6 +288,7 @@ Impact category contract:
 - Use the four-level operational taxonomy `Low`, `Medium`, `High`, `Critical`.
 - Keep `predicted_priority` separate from `impact_category`; the ASTraM priority label remains dataset-backed `High`/`Low` for the current CSV.
 - Treat `road_closure_probability` as the primary signal; `predicted_road_closure` is an operational threshold flag derived from it.
+- `weather_adjustment_json` stores the active weather modifier metadata used during prediction, including rain, visibility, waterlogging risk, and source attribution.
 
 ### event_recommendations
 
@@ -310,6 +312,7 @@ Operational note:
 
 - MVP write paths treat `event_id` as the single active recommendation key for an event and overwrite/coalesce stale duplicates when a plan is regenerated.
 - Historical recommendation versioning is future scope; current consumers should read the latest operational plan only.
+- Weather-aware barricade/diversion notes are stored inside the existing JSON plan sections rather than a separate recommendation table in MVP.
 
 ### hotspot_clusters
 

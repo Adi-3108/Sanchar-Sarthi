@@ -60,7 +60,7 @@ After completion:
 - **New workflows:** The product moves forward in the end-to-end traffic command workflow.
 - **New capabilities:** Weather-aware demo and post-event learning
 - **New infrastructure:** backend/app/services/weather_service.py; frontend/components/recommendations/WeatherRiskPanel.tsx
-- **New data models:** event_predictions weather_adjustment_json, event_recommendations JSON
+- **New data models:** event_predictions weather_adjustment_json, event_recommendations risk_summary_json, event_recommendations weather_risk_json
 
 ---
 
@@ -138,7 +138,8 @@ def apply_weather_to_barricades(barricade_plan: dict[str, object], weather: dict
 
 ## Database Requirements
 
-- **Database entities affected:** event_predictions weather_adjustment_json, event_recommendations JSON
+- **Database entities affected:** event_predictions weather_adjustment_json, event_recommendations risk_summary_json/weather_risk_json
+- **Scenario rule:** Weather-aware event-plan generation may use transient weather-adjusted prediction inputs, but it must preserve the canonical persisted `event_predictions` row and store the scenario snapshot on `event_recommendations`.
 - **Migration requirements:** Create or reuse Alembic migrations when schema changes are required. If this phase only reads existing tables, no new migration is required.
 - **SQL statements:** Use SQLAlchemy ORM and parameterized queries. Raw SQL is allowed only for safe analytics/materialized-view style operations.
 - **Indexes:** Ensure referenced filters and joins are backed by indexes defined in docs/Database_Design.md.

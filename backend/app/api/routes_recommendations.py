@@ -120,13 +120,22 @@ def generate_event_plan(
         if feature is None:
             feature, _feature_created = build_features_for_event(db, event, commit=False)
 
-        prediction = _get_primary_prediction(db, event.id)
         weather_requested = (
             payload.weather_condition is not None
             or payload.rain_mm is not None
             or payload.visibility_m is not None
             or payload.use_live_weather
         )
+        persisted_prediction = _get_primary_prediction(db, event.id)
+        if persisted_prediction is None:
+            persisted_prediction, _prediction_created = predict_event(
+                db,
+                event,
+                feature=feature,
+                commit=False,
+                persist=True,
+            )
+
         weather_adjustment = (
             resolve_weather_adjustment(
                 float(event.latitude),
@@ -140,20 +149,21 @@ def generate_event_plan(
             if weather_requested
             else None
         )
-        if prediction is None or weather_requested:
-            prediction, _prediction_created = predict_event(
+        prediction_for_plan = persisted_prediction
+        if weather_requested:
+            prediction_for_plan, _transient_prediction_created = predict_event(
                 db,
                 event,
                 feature=feature,
                 weather_condition=payload.weather_condition,
                 weather_adjustment_override=weather_adjustment,
                 commit=False,
-                persist=True,
+                persist=False,
             )
 
         recommendation_input = build_recommendation_input(
             event,
-            prediction,
+            prediction_for_plan,
             available_officers=payload.available_officers,
             include_logistics_impact=payload.include_logistics_impact,
             include_emergency_corridor=payload.include_emergency_corridor,
@@ -172,7 +182,7 @@ def generate_event_plan(
             available_officers=payload.available_officers,
             include_logistics_impact=payload.include_logistics_impact,
             include_emergency_corridor=payload.include_emergency_corridor,
-            weather_adjustment=weather_adjustment or dict(prediction.weather_adjustment_json or {}),
+            weather_adjustment=weather_adjustment or dict(persisted_prediction.weather_adjustment_json or {}),
         )
         db.commit()
         return RecommendationPlanResponse.model_validate(plan)

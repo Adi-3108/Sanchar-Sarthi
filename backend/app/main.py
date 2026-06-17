@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes_analytics import router as analytics_router
 from app.api.routes_datasets import router as datasets_router
 from app.api.routes_health import router as health_router
 from app.core.config import get_settings
@@ -35,3 +36,4 @@ app.add_middleware(
 
 app.include_router(health_router)
 app.include_router(datasets_router)
+app.include_router(analytics_router)

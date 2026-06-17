@@ -30,6 +30,12 @@ Phase 4 adds:
 - a protected feature rebuild endpoint for admin/control-room operators
 - backend scripts and tests for rebuilding `event_features`
 
+Phase 5 adds:
+
+- dataset-backed hotspot clustering and persisted hotspot profiles
+- analytics APIs for hotspot overlays and operational summary metrics
+- a reusable frontend `HotspotLayer` component contract for map overlays
+
 ## Repository Layout
 
 ```text
@@ -106,6 +112,12 @@ future/
 
   ```bash
   python backend/scripts/create_features.py
+  ```
+
+- Hotspot rebuild smoke check:
+
+  ```bash
+  python backend/scripts/rebuild_hotspots.py
   ```
 
 The base MVP remains free-tier and dataset-honest. Optional Google Translate support stays disabled by default.

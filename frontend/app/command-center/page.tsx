@@ -12,7 +12,7 @@ const commandCards = [
   },
   {
     title: "Plan",
-    description: "Command-center workflows now have hotspot, DNA, prediction, and counterfactual impact foundations ready for operational recommendations."
+    description: "Command-center workflows now include dataset-backed manpower, barricade, diversion, emergency corridor, and logistics recommendation planning."
   },
   {
     title: "Learn",
@@ -41,11 +41,11 @@ export default function CommandCenterPage() {
                 Predictive traffic command twin for event-driven congestion.
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-muted md:text-lg">
-                Phases 1 through 8 now cover the backend shell, typed health contract,
+                Phases 1 through 9 now cover the backend shell, typed health contract,
                 database connectivity, ASTraM ingestion, derived feature engineering,
                 dataset-backed hotspot analytics, Event DNA, prediction services, and
-                estimated impact scoring for the full Predict - Plan - Monitor - Adapt -
-                Learn workflow.
+                estimated impact scoring plus recommendation orchestration for the full
+                Predict - Plan - Monitor - Adapt - Learn workflow.
               </p>
               <div className="mt-5 flex flex-wrap gap-3">
                 <Link
@@ -113,7 +113,7 @@ export default function CommandCenterPage() {
                   <p>Road closure model: {data.models.road_closure}</p>
                   <p>Resolution time model: {data.models.resolution_time}</p>
                   <p>Firebase: {data.auth.firebase}</p>
-                  <p>Phase 8: estimated impact scoring and counterfactuals wired</p>
+                  <p>Phase 9: recommendation planning and confidence ledger wired</p>
                 </div>
               )}
             </div>
@@ -128,6 +128,7 @@ export default function CommandCenterPage() {
               <li>Phase 6: Event DNA summaries and similar-event retrieval.</li>
               <li>Phase 7: prediction diagnostics, road-closure scoring, and resolution-time estimates.</li>
               <li>Phase 8: counterfactual impact scoring and simulation-ready impact fields.</li>
+              <li>Phase 9: operational recommendation planning across manpower, barricades, diversions, and logistics impact.</li>
             </ul>
           </article>
         </section>

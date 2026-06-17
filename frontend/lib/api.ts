@@ -72,6 +72,85 @@ export type HotspotListResponse = {
   filters_applied: Record<string, unknown>;
 };
 
+export type EventFeatureResponse = {
+  event_hour?: number | null;
+  event_day?: number | null;
+  event_month?: number | null;
+  event_weekday?: number | null;
+  is_weekend: boolean;
+  is_peak_hour: boolean;
+  is_night_event: boolean;
+  event_duration_minutes?: number | null;
+  closure_duration_minutes?: number | null;
+  resolution_duration_minutes?: number | null;
+  duration_source?: string | null;
+  location_cluster_id?: string | null;
+  historical_corridor_risk?: number | null;
+  historical_police_station_risk?: number | null;
+  historical_cluster_risk?: number | null;
+  historical_cause_closure_rate?: number | null;
+  historical_corridor_closure_rate?: number | null;
+  historical_police_station_closure_rate?: number | null;
+  historical_cluster_closure_rate?: number | null;
+};
+
+export type EventDnaResponse = {
+  event_id: string;
+  dna_summary: string;
+  time_context: string;
+  location_context: string;
+  cause_context: string;
+  weather_context?: string | null;
+  multi_event_context?: string | null;
+  historical_pattern: string;
+  risk_indicators_json: Record<string, unknown>;
+  similar_event_ids_json: string[];
+};
+
+export type SimilarEventResponse = {
+  event_id: string;
+  similarity: number;
+  matched_signals: string[];
+  event_cause_clean?: string | null;
+  corridor?: string | null;
+  police_station?: string | null;
+  priority?: string | null;
+  event_type?: string | null;
+  requires_road_closure: boolean;
+  hotspot_cluster_id?: string | null;
+  hotspot_risk_score?: number | null;
+  historical_corridor_closure_rate?: number | null;
+  historical_cluster_closure_rate?: number | null;
+};
+
+export type EventDetailResponse = {
+  event: {
+    id: string;
+    event_type?: string | null;
+    event_cause_clean?: string | null;
+    priority?: string | null;
+    status?: string | null;
+    corridor?: string | null;
+    police_station?: string | null;
+    zone?: string | null;
+    junction?: string | null;
+    requires_road_closure: boolean;
+    start_datetime: string;
+    end_datetime?: string | null;
+    description_language: string;
+    description_normalization_method?: string | null;
+    veh_type?: string | null;
+  };
+  features?: EventFeatureResponse | null;
+  event_dna?: EventDnaResponse | null;
+  prediction?: Record<string, unknown> | null;
+  recommendation?: Record<string, unknown> | null;
+  similar_events: SimilarEventResponse[];
+  citizen_reports: Array<Record<string, unknown>>;
+  live_updates: Array<Record<string, unknown>>;
+  map_overlays: Record<string, unknown>;
+};
+
 export type HotspotQuery = {
   eventCause?: string;
   priority?: string;
@@ -140,4 +219,8 @@ export function getHotspots(query: HotspotQuery = {}, init?: RequestInit): Promi
     cluster_type: query.clusterType
   });
   return apiGet<HotspotListResponse>(`/api/analytics/hotspots${search}`, init);
+}
+
+export function getEventDetail(eventId: string, init?: RequestInit): Promise<EventDetailResponse> {
+  return apiGet<EventDetailResponse>(`/api/events/${encodeURIComponent(eventId)}`, init);
 }

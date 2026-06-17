@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import sys
 from logging.config import fileConfig
 from pathlib import Path
@@ -11,7 +10,7 @@ BACKEND_ROOT = Path(__file__).resolve().parents[1]
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
-from app.core.config import get_settings
+from app.core.config import resolve_database_url
 from app.core.database import build_engine
 from app.db.base import Base, import_model_modules
 
@@ -25,14 +24,10 @@ target_metadata = Base.metadata
 
 
 def get_database_url() -> str:
-    if explicit_database_url := os.getenv("DATABASE_URL"):
-        return explicit_database_url
-
-    settings = get_settings()
-    if "database_url" in settings.model_fields_set:
-        return settings.database_url
-
-    return config.get_main_option("sqlalchemy.url") or settings.database_url
+    configured_url = config.get_main_option("sqlalchemy.url")
+    return resolve_database_url(
+        configured_url if configured_url and configured_url != "sqlite:///./eventflow_local.db" else None
+    )
 
 
 def run_migrations_offline() -> None:

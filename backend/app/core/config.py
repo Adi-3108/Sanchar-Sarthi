@@ -1,7 +1,12 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_RAW_DATASET_NAME = "Astram event data_anonymized - Astram event data_anonymizedb40ac87 (1).csv"
+LOCAL_SQLITE_DB_NAME = "eventflow_local.db"
 
 
 class Settings(BaseSettings):
@@ -21,6 +26,10 @@ class Settings(BaseSettings):
     database_url: str = Field(
         default="postgresql+psycopg://postgres:postgres@localhost:5432/eventflow",
         validation_alias="DATABASE_URL",
+    )
+    raw_data_path: str = Field(
+        default=DEFAULT_RAW_DATASET_NAME,
+        validation_alias="RAW_DATA_PATH",
     )
     frontend_origin: str = Field(
         default="http://localhost:3000",
@@ -106,7 +115,34 @@ class Settings(BaseSettings):
     def cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.frontend_origin.split(",") if origin.strip()]
 
+    @property
+    def resolved_raw_data_path(self) -> Path:
+        configured_path = Path(self.raw_data_path)
+        if configured_path.is_absolute():
+            return configured_path
+
+        candidates = (
+            Path.cwd() / configured_path,
+            PROJECT_ROOT / configured_path,
+        )
+        for candidate in candidates:
+            if candidate.exists():
+                return candidate.resolve()
+
+        return (PROJECT_ROOT / configured_path).resolve()
+
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+def resolve_database_url(database_url: str | None = None) -> str:
+    if database_url:
+        return database_url
+
+    settings = get_settings()
+    if "database_url" in settings.model_fields_set:
+        return settings.database_url
+
+    return f"sqlite:///{(PROJECT_ROOT / LOCAL_SQLITE_DB_NAME).as_posix()}"

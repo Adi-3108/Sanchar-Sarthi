@@ -18,6 +18,12 @@ Phase 2 adds:
 - Alembic migration support for the initial database
 - backend database sessions and health-aware connectivity checks
 
+Phase 3 adds:
+
+- ASTraM CSV cleaning, masking, and ingestion services
+- protected dataset upload and bundled demo-load endpoints
+- backend scripts for loading the bundled Bengaluru event dataset
+
 ## Repository Layout
 
 ```text
@@ -49,6 +55,7 @@ future/
    ```
 
 3. Copy `.env.example` to `.env` and provide real credentials only where needed.
+   If `DATABASE_URL` is omitted, the backend falls back to a local SQLite database for local development and scripts.
 
 4. Run the backend from the `backend` directory:
 
@@ -81,6 +88,12 @@ future/
 
   ```bash
   alembic upgrade head
+  ```
+
+- Dataset load smoke check:
+
+  ```bash
+  python backend/scripts/seed_demo_data.py
   ```
 
 The base MVP remains free-tier and dataset-honest. Optional Google Translate support stays disabled by default.

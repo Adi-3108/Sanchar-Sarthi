@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-import { apiGet, type HealthResponse } from "@/lib/api";
+import { getHealth, type HealthResponse } from "@/lib/api";
 
 const commandCards = [
   {
@@ -22,7 +22,7 @@ const commandCards = [
 export default function CommandCenterPage() {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["health"],
-    queryFn: () => apiGet<HealthResponse>("/api/health"),
+    queryFn: getHealth,
     retry: 1,
     refetchOnWindowFocus: false
   });
@@ -40,8 +40,9 @@ export default function CommandCenterPage() {
                 Predictive traffic command twin for event-driven congestion.
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-muted md:text-lg">
-                Phase 1 establishes the backend shell, health contract, and command-center
-                entrypoint for the full Predict - Plan - Monitor - Adapt - Learn workflow.
+                Phases 1 and 2 establish the backend shell, typed health contract, database
+                connectivity, and command-center entrypoint for the full Predict - Plan -
+                Monitor - Adapt - Learn workflow.
               </p>
             </div>
             <div className="rounded-3xl border border-accent/30 bg-accent/10 px-5 py-4">
@@ -78,7 +79,7 @@ export default function CommandCenterPage() {
                 <h2 className="mt-2 text-2xl font-semibold">Typed `/api/health` contract</h2>
               </div>
               <span className="rounded-full border border-line px-3 py-1 text-xs uppercase tracking-[0.18em] text-muted">
-                Phase 1
+                Phase 2
               </span>
             </div>
 
@@ -96,6 +97,7 @@ export default function CommandCenterPage() {
                   <p>Service: {data.service}</p>
                   <p>Environment: {data.environment}</p>
                   <p>Database: {data.database}</p>
+                  {data.database_detail ? <p>Database detail: {data.database_detail}</p> : null}
                   <p>Priority model: {data.models.priority}</p>
                   <p>Road closure model: {data.models.road_closure}</p>
                   <p>Resolution time model: {data.models.resolution_time}</p>

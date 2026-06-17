@@ -1,1 +1,1 @@
-"""Lightweight ORM placeholders used until Phase 2 schema implementation."""
+"""ORM models for EventFlow AI."""

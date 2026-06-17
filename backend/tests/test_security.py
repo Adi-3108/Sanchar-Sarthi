@@ -70,6 +70,48 @@ def test_get_auth_context_returns_admin_context():
         officer_profile_id=None,
         officer_id=None,
         police_station=None,
+        assigned_corridors=None,
+        assigned_zones=None,
+    )
+
+
+def test_get_auth_context_returns_officer_assignment_context():
+    db = FakeSession(
+        {
+            UserAccount: UserAccount(
+                id="user-2",
+                role="police_officer",
+                is_active=True,
+                auth_provider_uid="firebase-user-2",
+            ),
+            PoliceOfficerProfile: PoliceOfficerProfile(
+                id="officer-profile-2",
+                user_account_id="user-2",
+                officer_id="BTP-HSR-001",
+                display_name="Officer Demo",
+                police_station="HSR Layout",
+                assigned_corridors_json=["ORR East 1"],
+                assigned_zones_json=["East"],
+                active=True,
+            ),
+        }
+    )
+
+    context = get_auth_context(
+        token_payload={"uid": "firebase-user-2", "email": "officer@example.com"},
+        db=db,
+    )
+
+    assert context == AuthContext(
+        firebase_uid="firebase-user-2",
+        email="officer@example.com",
+        role="police_officer",
+        user_account_id="user-2",
+        officer_profile_id="officer-profile-2",
+        officer_id="BTP-HSR-001",
+        police_station="HSR Layout",
+        assigned_corridors=["ORR East 1"],
+        assigned_zones=["East"],
     )
 
 
@@ -98,15 +140,21 @@ def test_get_auth_context_requires_active_officer_profile():
 
 def test_require_role_rejects_non_matching_role():
     dependency = require_role("admin", "control_room")
+    db = FakeSession(
+        {
+            UserAccount: UserAccount(
+                id="user-3",
+                role="public_viewer",
+                is_active=True,
+                auth_provider_uid="firebase-user-3",
+            )
+        }
+    )
 
     with pytest.raises(HTTPException) as exc_info:
         dependency(
-            auth=AuthContext(
-                firebase_uid="firebase-user-3",
-                email="officer@example.com",
-                role="police_officer",
-                user_account_id="user-3",
-            )
+            token_payload={"uid": "firebase-user-3", "email": "viewer@example.com"},
+            db=db,
         )
 
     assert exc_info.value.status_code == 403

@@ -1,0 +1,7 @@
+{
+  "name": "eventflow-ai",
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix frontend run build"
+  }
+}

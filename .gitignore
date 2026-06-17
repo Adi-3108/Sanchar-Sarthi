@@ -1,0 +1,21 @@
+.env
+.env.local
+.venv/
+__pycache__/
+*.pyc
+# pytest*
+.pytest_cache/
+.mypy_cache/
+node_modules/
+
+frontend/.next/
+frontend/node_modules/
+frontend/out/
+
+backend/.coverage
+backend/htmlcov/
+
+docs/
+future/
+plan/
+DISCREPANCY_AUDIT_REPORT.md

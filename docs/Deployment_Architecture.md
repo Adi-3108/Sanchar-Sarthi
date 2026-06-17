@@ -37,6 +37,10 @@ pytest
 uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
+Backend runtime note:
+
+- Use Python 3.11 or newer so ASTraM timestamp parsing, ML dependencies, and local scripts stay aligned with the documented backend stack.
+
 ## 3.1 Environment Variables
 
 Backend-only variables:

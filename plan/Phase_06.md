@@ -120,7 +120,8 @@ Implementation rules:
 - Similar-event ranking must combine structured matches first (cause, corridor, station, cluster, zone, junction, time band, closure flag, priority) and only then apply cosine similarity over the Event DNA fingerprint.
 - Rebuilds must stay idempotent: one `event_dna` row per event, updated in place on rerun.
 - `backend/app/services/similar_event_service.py` is part of the canonical contract; similar-event retrieval must not be embedded as ad-hoc SQL inside API handlers.
-- Event-detail APIs should return both the persisted Event DNA record and serialized similar-event evidence.
+- Until weather and multi-event phases are implemented, `weather_context` and `multi_event_context` should return explicit deferred-context text instead of unexplained nulls.
+- Event-detail APIs should return both the persisted Event DNA record and serialized similar-event evidence, or an equivalent read-only computed projection when the dossier has not been materialized yet.
 ---
 
 ## Database Requirements

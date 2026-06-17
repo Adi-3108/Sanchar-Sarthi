@@ -1,3 +1,5 @@
+import { firebaseAuth } from "@/lib/firebase";
+
 export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000").replace(
   /\/$/,
   ""
@@ -278,6 +280,22 @@ async function readResponseBody(response: Response): Promise<string> {
   return text || response.statusText;
 }
 
+async function buildRequestHeaders(initHeaders?: HeadersInit): Promise<Headers> {
+  const headers = new Headers(initHeaders);
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+  if (!headers.has("Authorization") && firebaseAuth?.currentUser) {
+    try {
+      const token = await firebaseAuth.currentUser.getIdToken();
+      headers.set("Authorization", `Bearer ${token}`);
+    } catch {
+      // Leave the request unauthenticated so protected endpoints return a clear backend error.
+    }
+  }
+  return headers;
+}
+
 function buildQueryString(params: Record<string, string | number | boolean | undefined>): string {
   const searchParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -294,10 +312,7 @@ export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     cache: "no-store",
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {})
-    }
+    headers: await buildRequestHeaders(init?.headers)
   });
 
   if (!response.ok) {
@@ -313,10 +328,7 @@ export async function apiPost<T>(path: string, body: unknown, init?: RequestInit
     ...init,
     method: "POST",
     cache: "no-store",
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {})
-    },
+    headers: await buildRequestHeaders(init?.headers),
     body: JSON.stringify(body)
   });
 

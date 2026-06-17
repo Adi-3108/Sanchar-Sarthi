@@ -89,6 +89,8 @@ def best_duration_timestamp(event: Event) -> tuple[datetime | None, str]:
 
 
 def build_historical_feature_stats(events: list[Event]) -> HistoricalFeatureStats:
+    # These dataset-wide aggregates support the current MVP analytics and prototype ML flows.
+    # Before claiming production-grade validation, training/evaluation should switch to time-aware splits.
     cause_counts: Counter[str] = Counter()
     cause_closures: Counter[str] = Counter()
     corridor_counts: Counter[str] = Counter()
@@ -224,6 +226,16 @@ def build_feature_payload(
             location_cluster_id,
         ),
     }
+
+
+def build_transient_feature(
+    event: Event,
+    stats: HistoricalFeatureStats,
+) -> EventFeature:
+    return EventFeature(
+        event_id=event.id,
+        **build_feature_payload(event, stats),
+    )
 
 
 def _get_or_create_feature_record(db: Session, event_id: str) -> tuple[EventFeature, bool]:

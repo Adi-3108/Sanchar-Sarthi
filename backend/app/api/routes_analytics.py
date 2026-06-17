@@ -198,7 +198,8 @@ def _list_latest_model_runs(db: Session) -> list[ModelRun]:
         latest_by_model_name.setdefault(row.model_name, row)
     return sorted(
         latest_by_model_name.values(),
-        key=lambda row: (row.model_name, row.created_at),
+        key=lambda row: (row.created_at, row.model_name),
+        reverse=True,
     )
 
 
@@ -221,6 +222,7 @@ def get_hotspots(
     priority: str | None = Query(default=None, max_length=64),
     requires_road_closure: bool | None = Query(default=None),
     cluster_type: Literal["low", "medium", "high", "critical"] | None = Query(default=None),
+    _auth: AuthContext = Depends(require_internal_analytics_access),
     db: Session = Depends(get_db),
 ):
     try:
@@ -249,6 +251,7 @@ def get_hotspots(
 
 @router.get("/model-runs", response_model=ModelRunListResponse)
 def get_model_runs(
+    _auth: AuthContext = Depends(require_internal_analytics_access),
     db: Session = Depends(get_db),
 ):
     try:

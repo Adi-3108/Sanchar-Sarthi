@@ -17,16 +17,22 @@ from app.db.session import get_db
 from app.orm.event import Event
 from app.orm.event_dna import EventDna
 from app.orm.event_feature import EventFeature
+from app.orm.event_prediction import EventPrediction
 from app.orm.hotspot_cluster import HotspotCluster
 from app.orm.system_audit_log import SystemAuditLog
 from app.services.data_cleaning_service import clean_event_cause
 from app.services.event_dna_service import (
     EventDnaRebuildReport,
+    build_event_dna_payload,
     persist_event_dna,
     rebuild_event_dna_records,
     serialize_event_dna,
 )
-from app.services.feature_engineering_service import build_features_for_event
+from app.services.feature_engineering_service import (
+    build_features_for_event,
+    build_historical_feature_stats,
+    build_transient_feature,
+)
 from app.services.prediction_service import predict_event, serialize_event_prediction
 from app.services.similar_event_service import find_similar_events, serialize_similar_event_match
 from app.services.text_normalization_service import normalize_description
@@ -392,6 +398,14 @@ def _get_primary_event_dna(db: Session, event_id: str) -> EventDna | None:
     ).first()
 
 
+def _get_primary_prediction(db: Session, event_id: str) -> EventPrediction | None:
+    return db.scalars(
+        select(EventPrediction)
+        .where(EventPrediction.event_id == event_id)
+        .order_by(EventPrediction.created_at.desc(), EventPrediction.id.desc())
+    ).first()
+
+
 def _record_event_dna_rebuild_audit_log(
     db: Session,
     auth: AuthContext,
@@ -429,7 +443,10 @@ def get_event_detail(
     try:
         feature = _get_primary_feature(db, event_id)
         if feature is None:
-            feature, _ = build_features_for_event(db, event, commit=False)
+            stats = build_historical_feature_stats(
+                db.scalars(select(Event).order_by(Event.start_datetime, Event.id)).all()
+            )
+            feature = build_transient_feature(event, stats)
 
         hotspot = None
         if feature and feature.location_cluster_id:
@@ -437,34 +454,47 @@ def get_event_detail(
                 select(HotspotCluster).where(HotspotCluster.location_cluster_id == feature.location_cluster_id)
             ).first()
 
-        similar_events = find_similar_events(db, event_id, limit=5)
-        dna_record, _created = persist_event_dna(
+        similar_events = find_similar_events(
             db,
-            event,
-            feature=feature,
-            hotspot=hotspot,
-            similar_event_ids=[row.event_id for row in similar_events],
-            commit=False,
+            event_id,
+            limit=5,
+            feature_override=feature,
+            persist_missing_feature=False,
         )
-        prediction_record, _prediction_created = predict_event(
-            db,
-            event,
-            feature=feature,
-            hotspot=hotspot,
-            similar_events=similar_events,
-            commit=False,
+        dna_record = _get_primary_event_dna(db, event_id)
+        dna_payload = (
+            serialize_event_dna(dna_record)
+            if dna_record is not None
+            else build_event_dna_payload(
+                event,
+                feature=feature,
+                hotspot=hotspot,
+                similar_event_ids=[row.event_id for row in similar_events],
+            )
         )
-        db.commit()
+        prediction_record = _get_primary_prediction(db, event_id)
+        if prediction_record is not None:
+            serialized_prediction = serialize_event_prediction(prediction_record)
+        else:
+            prediction_record, _prediction_created = predict_event(
+                db,
+                event,
+                feature=feature,
+                hotspot=hotspot,
+                similar_events=similar_events,
+                commit=False,
+                persist=False,
+            )
+            serialized_prediction = serialize_event_prediction(prediction_record)
     except SQLAlchemyError:
         db.rollback()
         return error_response(503, "DATABASE_UNAVAILABLE", "Database is unavailable for event detail.")
 
     hotspot_overlay = _serialize_hotspot_overlay(hotspot)
-    serialized_prediction = serialize_event_prediction(prediction_record)
     return EventDossierResponse(
         event=_serialize_event(event),
         features=_serialize_feature(feature),
-        event_dna=EventDnaResponse.model_validate(serialize_event_dna(dna_record) or {}),
+        event_dna=EventDnaResponse.model_validate(dna_payload),
         prediction=(
             EventPredictionResponse.model_validate(serialized_prediction)
             if serialized_prediction is not None
@@ -504,6 +534,7 @@ def simulate_event(
             hotspot=hotspot,
             similar_event_ids=[row.event_id for row in similar_events],
             commit=False,
+            persist=False,
         )
         prediction_record, _prediction_created = predict_event(
             db,
@@ -513,6 +544,7 @@ def simulate_event(
             similar_events=similar_events,
             weather_condition=payload.weather_condition,
             commit=False,
+            persist=False,
         )
         serialized_prediction = serialize_event_prediction(prediction_record) or {}
         event_dna_payload = serialize_event_dna(dna_record) or {}

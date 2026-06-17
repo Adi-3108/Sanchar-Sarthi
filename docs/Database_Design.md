@@ -246,6 +246,10 @@ Stores operational fingerprints.
 | similar_event_ids_json | jsonb | |
 | created_at | timestamp | default now() |
 
+Operational note:
+
+- Before weather and multi-event phases are implemented, `weather_context` and `multi_event_context` should carry explicit deferred-context text rather than unexplained nulls in internal APIs.
+
 ### event_predictions
 
 Stores model outputs and estimated impact.
@@ -253,7 +257,7 @@ Stores model outputs and estimated impact.
 | Column | Type | Constraints |
 |---|---|---|
 | id | uuid | primary key |
-| event_id | text | FK events(id), indexed |
+| event_id | text | FK events(id), unique indexed |
 | model_run_id | uuid | nullable FK model_runs(id) |
 | predicted_priority | text | |
 | priority_confidence | numeric | |
@@ -282,6 +286,7 @@ Impact category contract:
 
 - Use the four-level operational taxonomy `Low`, `Medium`, `High`, `Critical`.
 - Keep `predicted_priority` separate from `impact_category`; the ASTraM priority label remains dataset-backed `High`/`Low` for the current CSV.
+- Treat `road_closure_probability` as the primary signal; `predicted_road_closure` is an operational threshold flag derived from it.
 
 ### event_recommendations
 

@@ -163,6 +163,7 @@ Response:
 
 **Description:** Full event dossier.
 **Authentication:** Level-aware. Public users receive public advisories only; assigned officers receive officer-safe action plans; admins receive the full internal dossier.
+**Behavior note:** This is a read-only dossier endpoint. If materialized features, DNA, or predictions are missing, the backend may compute them for the response without persisting new rows during the `GET`.
 
 Response includes:
 
@@ -201,6 +202,7 @@ Response:
 ## 8. GET /api/analytics/hotspots
 
 **Description:** Hotspot clusters and GeoJSON overlays.
+**Authentication:** Level 1 Admin / Control Room or Level 2 Registered Police Officer.
 
 Query parameters:
 
@@ -226,6 +228,28 @@ Response:
     }
   ],
   "geojson": {}
+}
+```
+
+## 8.1 GET /api/analytics/model-runs
+
+**Description:** Latest recorded training/inference metadata per model family for internal diagnostics.
+**Authentication:** Level 1 Admin / Control Room or Level 2 Registered Police Officer.
+
+Response:
+
+```json
+{
+  "model_runs": [
+    {
+      "model_name": "priority_model",
+      "model_version": "priority_rf_v1",
+      "training_rows": 6536,
+      "test_rows": 1634,
+      "artifact_available": true,
+      "artifact_status": "loaded"
+    }
+  ]
 }
 ```
 
@@ -293,6 +317,11 @@ Response:
   "map_overlays": {}
 }
 ```
+
+Road-closure note:
+
+- `road_closure_probability` is the primary signal.
+- `predicted_road_closure` is a heuristic operational flag derived from that probability for command-center workflows.
 
 ## 10. POST /api/recommendations/event-plan
 

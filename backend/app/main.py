@@ -8,6 +8,7 @@ from app.api.routes_datasets import router as datasets_router
 from app.api.routes_events import router as events_router
 from app.api.routes_health import router as health_router
 from app.api.routes_recommendations import router as recommendations_router
+from app.api.routes_reports import router as reports_router
 from app.core.config import get_settings
 from app.core.firebase import initialize_firebase
 from app.db.base import import_model_modules
@@ -41,3 +42,4 @@ app.include_router(datasets_router)
 app.include_router(analytics_router)
 app.include_router(events_router)
 app.include_router(recommendations_router)
+app.include_router(reports_router)

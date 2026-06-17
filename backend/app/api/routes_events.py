@@ -15,6 +15,7 @@ from app.api.recommendation_contracts import RecommendationPlanResponse, Weather
 from app.core.officer_access import coerce_uuid, officer_has_event_access
 from app.core.security import AuthContext, require_role
 from app.db.session import get_db
+from app.orm.citizen_report import CitizenReport
 from app.orm.event import Event
 from app.orm.event_dna import EventDna
 from app.orm.event_feature import EventFeature
@@ -42,6 +43,7 @@ from app.services.recommendation_orchestrator import (
     merge_risk_summary_into_plan,
     serialize_recommendation_plan,
 )
+from app.services.citizen_report_service import serialize_citizen_report
 from app.services.similar_event_service import find_similar_events, serialize_similar_event_match
 from app.services.text_normalization_service import normalize_description
 from app.services.weather_service import resolve_weather_adjustment
@@ -420,6 +422,15 @@ def _get_primary_recommendation(db: Session, event_id: str) -> EventRecommendati
     ).first()
 
 
+def _list_event_reports(db: Session, event_id: str) -> list[CitizenReport]:
+    return db.scalars(
+        select(CitizenReport)
+        .where(CitizenReport.event_id == event_id)
+        .order_by(CitizenReport.created_at.desc(), CitizenReport.id.desc())
+        .limit(25)
+    ).all()
+
+
 def _build_recommendation_payload(
     event: Event,
     prediction: EventPrediction | None,
@@ -539,6 +550,7 @@ def get_event_detail(
             prediction_record,
             recommendation_record=recommendation_record,
         )
+        citizen_reports = _list_event_reports(db, event_id)
     except SQLAlchemyError:
         db.rollback()
         return error_response(503, "DATABASE_UNAVAILABLE", "Database is unavailable for event detail.")
@@ -559,7 +571,7 @@ def get_event_detail(
             else None
         ),
         similar_events=[SimilarEventResponse.model_validate(serialize_similar_event_match(row)) for row in similar_events],
-        citizen_reports=[],
+        citizen_reports=[serialize_citizen_report(row) for row in citizen_reports],
         live_updates=[],
         map_overlays={"hotspot": hotspot_overlay.model_dump() if hotspot_overlay else None},
     )

@@ -13,10 +13,31 @@ KANNADA_TRAFFIC_GLOSSARY = {
     "ಮಳೆ": "rain",
     "ನೀರು": "water",
     "ಸಂಚಾರ": "traffic",
+    "ಟ್ರಾಫಿಕ್": "traffic",
+    "ಜಾಮ್": "jam",
     "ವಾಹನ": "vehicle",
     "ಭಾರಿ": "heavy",
     "ನಿಧಾನ": "slow",
     "ಮರ": "tree",
+}
+
+HINDI_TRAFFIC_GLOSSARY = {
+    "चौराहा": "junction",
+    "जंक्शन": "junction",
+    "सड़क": "road",
+    "रास्ता": "road",
+    "दुर्घटना": "accident",
+    "हादसा": "accident",
+    "बारिश": "rain",
+    "पानी": "water",
+    "ट्रैफिक": "traffic",
+    "यातायात": "traffic",
+    "जाम": "jam",
+    "वाहन": "vehicle",
+    "भारी": "heavy",
+    "धीमा": "slow",
+    "पेड़": "tree",
+    "भीड़": "crowd",
 }
 
 
@@ -51,6 +72,19 @@ def _ascii_tokens(text: str) -> list[str]:
     return re.findall(r"[a-z0-9]+", text.lower())
 
 
+def _mapped_glossary_terms(text: str, language: str) -> list[str]:
+    glossaries = []
+    if language in {"kn", "mixed"}:
+        glossaries.append(KANNADA_TRAFFIC_GLOSSARY)
+    if language in {"hi", "mixed"}:
+        glossaries.append(HINDI_TRAFFIC_GLOSSARY)
+
+    mapped_terms: list[str] = []
+    for glossary in glossaries:
+        mapped_terms.extend(english for source, english in glossary.items() if source in text)
+    return mapped_terms
+
+
 def normalize_description(value: Any) -> NormalizedDescription:
     if is_empty(value):
         return NormalizedDescription(None, "unknown", None, "empty", 0.0)
@@ -61,14 +95,19 @@ def normalize_description(value: Any) -> NormalizedDescription:
     if language == "en":
         return NormalizedDescription(raw, "en", " ".join(_ascii_tokens(raw)), "raw_ascii", 0.95)
 
-    mapped_terms = [
-        english for kannada, english in KANNADA_TRAFFIC_GLOSSARY.items() if kannada in raw
-    ]
+    mapped_terms = _mapped_glossary_terms(raw, language)
     ascii_terms = _ascii_tokens(raw) if language == "mixed" else []
     combined_terms = list(dict.fromkeys(mapped_terms + ascii_terms))
 
     if combined_terms:
-        method = "static_kannada_glossary" if mapped_terms else "mixed_ascii_preserved"
+        if language == "kn" and mapped_terms:
+            method = "static_kannada_glossary"
+        elif language == "hi" and mapped_terms:
+            method = "static_hindi_glossary"
+        elif mapped_terms:
+            method = "static_multilingual_glossary"
+        else:
+            method = "mixed_ascii_preserved"
         confidence = 0.6 if mapped_terms else 0.35
         return NormalizedDescription(
             raw=raw,

@@ -54,6 +54,12 @@ export default function CommandCenterPage() {
                 >
                   Open model insights
                 </Link>
+                <Link
+                  href="/reports"
+                  className="rounded-full border border-cyan-300/40 bg-cyan-300/10 px-4 py-2 text-sm text-copy transition hover:border-cyan-200 hover:bg-cyan-300/20"
+                >
+                  Submit report
+                </Link>
               </div>
             </div>
             <div className="rounded-3xl border border-accent/30 bg-accent/10 px-5 py-4">

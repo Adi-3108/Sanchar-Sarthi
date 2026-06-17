@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -12,6 +13,8 @@ from app.ml.feature_pipeline import (
 from app.orm.event import Event
 from app.orm.event_feature import EventFeature
 from app.services.impact_score_service import resolve_vehicle_impact
+
+logger = logging.getLogger(__name__)
 
 RULE_BASED_ESTIMATES: dict[str, float] = {
     "vehicle_breakdown": 90.0,
@@ -49,6 +52,8 @@ RULE_BASED_RANGES: dict[str, tuple[float, float]] = {
     "unknown": (45.0, 180.0),
 }
 
+# `water_logging` arrives from the cleaner, while the rules table keeps the historical
+# `waterlogging` key. This alias bridge is load-bearing for ASTraM compatibility.
 CAUSE_ALIASES = {
     "water_logging": "waterlogging",
     "waterlogging": "waterlogging",
@@ -95,6 +100,31 @@ def _rule_range(event: Event, *, db: Session | None = None) -> tuple[float, floa
     return round(lower * vehicle_factor, 1), round(upper * vehicle_factor, 1)
 
 
+def _build_rule_response(
+    event: Event,
+    *,
+    db: Session | None = None,
+    confidence: float,
+    note: str,
+    fallback_reason: str | None = None,
+) -> dict[str, object]:
+    estimated_minutes, method = _rule_estimate(event, db=db)
+    lower_bound, upper_bound = _rule_range(event, db=db)
+    payload: dict[str, object] = {
+        "estimated_clearance_minutes": estimated_minutes,
+        "clearance_prediction_method": method,
+        "clearance_confidence": confidence,
+        "clearance_confidence_note": note,
+        "historical_clearance_range_min": lower_bound,
+        "historical_clearance_range_max": upper_bound,
+        "honesty_label": "Estimated clearance time, not a guaranteed operational commitment.",
+        "data_filter_applied": DATA_FILTER_APPLIED,
+    }
+    if fallback_reason is not None:
+        payload["fallback_reason"] = fallback_reason
+    return payload
+
+
 def predict_resolution_time(
     event: Event,
     *,
@@ -106,18 +136,13 @@ def predict_resolution_time(
             import joblib  # type: ignore[import-not-found]
             import pandas as pd  # type: ignore[import-not-found]
         except ModuleNotFoundError:
-            estimated_minutes, method = _rule_estimate(event, db=db)
-            lower_bound, upper_bound = _rule_range(event, db=db)
-            return {
-                "estimated_clearance_minutes": estimated_minutes,
-                "clearance_prediction_method": method,
-                "clearance_confidence": 0.4,
-                "clearance_confidence_note": "Rule-based estimate from ASTraM cause/vehicle patterns; ML dependencies are not installed locally.",
-                "historical_clearance_range_min": lower_bound,
-                "historical_clearance_range_max": upper_bound,
-                "honesty_label": "Estimated clearance time, not a guaranteed operational commitment.",
-                "data_filter_applied": DATA_FILTER_APPLIED,
-            }
+            return _build_rule_response(
+                event,
+                db=db,
+                confidence=0.4,
+                note="Rule-based estimate from ASTraM cause/vehicle patterns; ML dependencies are not installed locally.",
+                fallback_reason="ml_dependencies_missing",
+            )
 
         try:
             bundle: dict[str, Any] = joblib.load(RESOLUTION_TIME_MODEL_PATH)
@@ -143,18 +168,23 @@ def predict_resolution_time(
                 "honesty_label": "Estimated clearance time, not a guaranteed operational commitment.",
                 "data_filter_applied": metrics.get("data_filter", DATA_FILTER_APPLIED),
             }
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning(
+                "Resolution-time ML inference failed; using rule fallback.",
+                exc_info=exc,
+            )
+            return _build_rule_response(
+                event,
+                db=db,
+                confidence=0.4,
+                note="Rule-based estimate from ASTraM cause/vehicle patterns after ML inference fallback.",
+                fallback_reason="ml_inference_error",
+            )
 
-    estimated_minutes, method = _rule_estimate(event, db=db)
-    lower_bound, upper_bound = _rule_range(event, db=db)
-    return {
-        "estimated_clearance_minutes": estimated_minutes,
-        "clearance_prediction_method": method,
-        "clearance_confidence": 0.45,
-        "clearance_confidence_note": "Rule-based estimate from ASTraM cause/vehicle patterns",
-        "historical_clearance_range_min": lower_bound,
-        "historical_clearance_range_max": upper_bound,
-        "honesty_label": "Estimated clearance time, not a guaranteed operational commitment.",
-        "data_filter_applied": DATA_FILTER_APPLIED,
-    }
+    return _build_rule_response(
+        event,
+        db=db,
+        confidence=0.45,
+        note="Rule-based estimate from ASTraM cause/vehicle patterns",
+        fallback_reason="artifact_not_loaded",
+    )

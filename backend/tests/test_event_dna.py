@@ -15,6 +15,7 @@ from app.db.session import get_db
 from app.main import app
 from app.orm.event import Event
 from app.orm.event_dna import EventDna
+from app.orm.event_prediction import EventPrediction
 from app.orm.system_audit_log import SystemAuditLog
 from app.orm.user_account import UserAccount
 from app.services.event_dna_service import persist_event_dna, rebuild_event_dna_records
@@ -110,6 +111,8 @@ def test_persist_event_dna_prefers_structured_fields_and_downweights_low_confide
         assert "Duration" in record.time_context
         assert "Corridor: Central Spine." in record.location_context
         assert "Historical corridor risk" in record.historical_pattern
+        assert record.weather_context == "Weather context deferred to Phase 10 weather integration."
+        assert record.multi_event_context == "Multi-event conflict context deferred to Phase 13 analysis."
 
 
 def test_event_detail_route_returns_dna_and_similar_events(tmp_path):
@@ -157,13 +160,15 @@ def test_event_detail_route_returns_dna_and_similar_events(tmp_path):
     assert payload["event"]["id"] == "DNA-001"
     assert payload["features"]["location_cluster_id"] == "CL-001"
     assert payload["event_dna"]["event_id"] == "DNA-001"
+    assert payload["event_dna"]["weather_context"] == "Weather context deferred to Phase 10 weather integration."
+    assert payload["event_dna"]["multi_event_context"] == "Multi-event conflict context deferred to Phase 13 analysis."
     assert len(payload["similar_events"]) == 2
     assert payload["similar_events"][0]["event_id"] == "DNA-002"
     assert payload["map_overlays"]["hotspot"]["location_cluster_id"] == "CL-001"
 
     with session_factory() as session:
-        record = session.query(EventDna).filter(EventDna.event_id == "DNA-001").one()
-        assert record.similar_event_ids_json[0] == "DNA-002"
+        assert session.query(EventDna).filter(EventDna.event_id == "DNA-001").count() == 0
+        assert session.query(EventPrediction).filter(EventPrediction.event_id == "DNA-001").count() == 0
 
 
 def test_rebuild_event_dna_route_updates_records_and_audit_log(tmp_path):

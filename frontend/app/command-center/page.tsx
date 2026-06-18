@@ -41,12 +41,12 @@ export default function CommandCenterPage() {
                 Predictive traffic command twin for event-driven congestion.
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-muted md:text-lg">
-                Phases 1 through 12 now cover the backend shell, typed health contract,
+                Phases 1 through 14 now cover the backend shell, typed health contract,
                 database connectivity, ASTraM ingestion, derived feature engineering,
                 dataset-backed hotspot analytics, Event DNA, prediction services, and
                 estimated impact scoring plus recommendation orchestration with weather-aware
                 planning, multilingual citizen reporting, live operational escalation,
-                and multi-event coordination
+                multi-event coordination, and MapmyIndia-first operational map intelligence
                 for the full Predict - Plan - Monitor - Adapt - Learn workflow.
               </p>
               <div className="mt-5 flex flex-wrap gap-3">
@@ -61,6 +61,12 @@ export default function CommandCenterPage() {
                   className="rounded-full border border-cyan-300/40 bg-cyan-300/10 px-4 py-2 text-sm text-copy transition hover:border-cyan-200 hover:bg-cyan-300/20"
                 >
                   Submit report
+                </Link>
+                <Link
+                  href="/map-intelligence"
+                  className="rounded-full border border-amber-300/40 bg-amber-300/10 px-4 py-2 text-sm text-copy transition hover:border-amber-200 hover:bg-amber-300/20"
+                >
+                  Open map intelligence
                 </Link>
               </div>
             </div>
@@ -141,6 +147,7 @@ export default function CommandCenterPage() {
               <li>Phase 11: citizen and field reporting with multilingual normalization and confidence scoring.</li>
               <li>Phase 12: live escalation updates that compare expected vs current impact and suggest adaptive actions.</li>
               <li>Phase 13: simultaneous event conflict detection across time, space, diversions, and manpower.</li>
+              <li>Phase 14: MapmyIndia-first map intelligence with route/geocode adapters, budget guardrails, and OSM fallback.</li>
             </ul>
           </article>
         </section>

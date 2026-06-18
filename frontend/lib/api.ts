@@ -441,6 +441,59 @@ export type MultiEventAnalysisResponse = {
   honesty_note: string;
 };
 
+export type MapProvider = "mapmyindia" | "osm";
+
+export type MapFallbackReason = "missing_key" | "api_error" | "credit_guard" | "manual_demo";
+
+export type MapConfigResponse = {
+  activeProvider: MapProvider;
+  primaryProvider: "mapmyindia";
+  fallbackProvider: "osm";
+  mapKeyAvailable: boolean;
+  creditsBudgetInr: number;
+  budgetGuardEnabled: boolean;
+  fallbackReason?: MapFallbackReason | null;
+  defaultCenter: [number, number];
+  defaultZoom: number;
+  fallbackNote: string;
+};
+
+export type MapRouteRequest = {
+  origin: [number, number];
+  destination: [number, number];
+  mode?: "driving";
+  purpose?: string;
+};
+
+export type MapRouteResponse = {
+  provider: MapProvider;
+  polyline: Array<[number, number]>;
+  distanceMeters: number;
+  durationSeconds: number;
+  confidence: "provider_route" | "local_demo_route";
+  cached: boolean;
+  fallbackReason?: string | null;
+  honestyNote: string;
+};
+
+export type MapGeocodeRequest = {
+  query: string;
+  proximity?: [number, number] | null;
+  purpose?: string;
+};
+
+export type MapGeocodeResponse = {
+  provider: MapProvider;
+  status: "success" | "manual_required";
+  candidates: Array<{
+    label: string;
+    coordinate: [number, number];
+    confidence: string;
+  }>;
+  fallbackReason?: string | null;
+  honestyNote: string;
+};
+
 export type ModelRunResponse = {
   id: string;
   model_name: string;
@@ -568,6 +621,10 @@ export function getModelRuns(init?: RequestInit): Promise<ModelRunListResponse> 
   return apiGet<ModelRunListResponse>("/api/analytics/model-runs", init);
 }
 
+export function getMapConfig(init?: RequestInit): Promise<MapConfigResponse> {
+  return apiGet<MapConfigResponse>("/api/map/config", init);
+}
+
 export function simulateEvent(
   payload: EventSimulationRequest,
   init?: RequestInit
@@ -602,4 +659,18 @@ export function analyzeMultiEvent(
   init?: RequestInit
 ): Promise<MultiEventAnalysisResponse> {
   return apiPost<MultiEventAnalysisResponse>("/api/events/multi-event-analysis", payload, init);
+}
+
+export function getMapRoute(
+  payload: MapRouteRequest,
+  init?: RequestInit
+): Promise<MapRouteResponse> {
+  return apiPost<MapRouteResponse>("/api/map/route", payload, init);
+}
+
+export function geocodeMapAddress(
+  payload: MapGeocodeRequest,
+  init?: RequestInit
+): Promise<MapGeocodeResponse> {
+  return apiPost<MapGeocodeResponse>("/api/map/geocode", payload, init);
 }

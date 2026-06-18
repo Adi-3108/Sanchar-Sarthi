@@ -152,7 +152,7 @@ function HotspotOverlay({
             type="button"
             onClick={() => onSelectHotspot?.(hotspot)}
             className="group absolute -translate-x-1/2 -translate-y-1/2"
-            style={{ left: `${projected.x}px`, top: `${projected.y}px` }}
+            style={{ left: `${projected.x}%`, top: `${projected.y}%` }}
           >
             <span
               className={`absolute left-1/2 top-1/2 rounded-full border transition ${

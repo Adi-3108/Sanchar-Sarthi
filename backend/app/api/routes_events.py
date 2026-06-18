@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -46,6 +46,7 @@ from app.services.recommendation_orchestrator import (
 )
 from app.services.citizen_report_service import serialize_citizen_report
 from app.services.live_escalation_service import serialize_live_update
+from app.services.multi_event_service import EventCoordinationInput, analyze_multi_event_conflicts
 from app.services.similar_event_service import find_similar_events, serialize_similar_event_match
 from app.services.text_normalization_service import normalize_description
 from app.services.weather_service import resolve_weather_adjustment
@@ -236,6 +237,47 @@ class EventSimulationResponse(BaseModel):
     recommendations: RecommendationPlanResponse
     map_overlays: dict[str, object] = Field(default_factory=dict)
     prediction_explanation_json: dict[str, object] = Field(default_factory=dict)
+
+
+class MultiEventAnalysisRequest(BaseModel):
+    event_ids: list[str] = Field(min_length=2, max_length=8)
+    available_officers: int = Field(ge=0, le=500)
+
+    @field_validator("event_ids")
+    @classmethod
+    def _normalize_event_ids(cls, values: list[str]) -> list[str]:
+        normalized = [str(value).strip() for value in values if str(value).strip()]
+        if len(normalized) < 2:
+            raise ValueError("At least two event_ids are required.")
+        if len(set(normalized)) != len(normalized):
+            raise ValueError("event_ids must be unique.")
+        return normalized
+
+
+class MultiEventPairConflictResponse(BaseModel):
+    event_ids: list[str]
+    conflict_score: float
+    conflict_level: str
+    distance_km: float
+    overlap_minutes: float
+    manpower_gap: int
+    reason_codes: list[str] = Field(default_factory=list)
+    reason_labels: list[str] = Field(default_factory=list)
+
+
+class MultiEventAnalysisResponse(BaseModel):
+    conflict_detected: bool
+    combined_risk: str
+    coordination_mode: str
+    high_conflict_count: int
+    conflict_signals: list[str] = Field(default_factory=list)
+    total_manpower_demand: int
+    available_officers: int
+    officer_gap: int
+    coordination_plan: list[str] = Field(default_factory=list)
+    conflicts: list[MultiEventPairConflictResponse] = Field(default_factory=list)
+    map_overlay: dict[str, object] = Field(default_factory=dict)
+    honesty_note: str
 
 
 router = APIRouter(prefix="/api/events", tags=["events"])
@@ -490,6 +532,211 @@ def _record_event_dna_rebuild_audit_log(
             },
         )
     )
+
+
+def _float_or_default(value: object | None, *, default: float = 0.0) -> float:
+    if value is None:
+        return default
+    return float(value)
+
+
+def _int_or_default(value: object | None, *, default: int = 0) -> int:
+    if value is None:
+        return default
+    return int(value)
+
+
+def _coordination_end_datetime(event: Event, prediction: EventPrediction) -> datetime | None:
+    if event.end_datetime is not None:
+        return event.end_datetime
+    if prediction.estimated_clearance_minutes is None:
+        return None
+    return event.start_datetime + timedelta(minutes=float(prediction.estimated_clearance_minutes))
+
+
+def _build_event_coordination_input(
+    db: Session,
+    event: Event,
+) -> tuple[EventCoordinationInput, EventPrediction]:
+    feature = _get_primary_feature(db, event.id)
+    if feature is None:
+        feature, _feature_created = build_features_for_event(db, event, commit=False)
+
+    prediction = _get_primary_prediction(db, event.id)
+    if prediction is None:
+        prediction, _prediction_created = predict_event(
+            db,
+            event,
+            feature=feature,
+            commit=False,
+            persist=True,
+        )
+
+    recommendation_record = _get_primary_recommendation(db, event.id)
+    recommendation_payload = _build_recommendation_payload(
+        event,
+        prediction,
+        recommendation_record=recommendation_record,
+        available_officers=None,
+    ) or {}
+    manpower = dict(recommendation_payload.get("manpower") or {})
+    diversions = dict(recommendation_payload.get("diversions") or {})
+    risk_summary = dict(recommendation_payload.get("risk_summary") or {})
+
+    return (
+        EventCoordinationInput(
+            event_id=event.id,
+            latitude=float(event.latitude),
+            longitude=float(event.longitude),
+            start_datetime=event.start_datetime,
+            end_datetime=_coordination_end_datetime(event, prediction),
+            corridor=event.corridor,
+            police_station=event.police_station,
+            zone=event.zone,
+            junction=event.junction,
+            estimated_impact_score=_float_or_default(
+                prediction.estimated_impact_score,
+                default=_float_or_default(risk_summary.get("impact_score")),
+            ),
+            impact_radius_km=_float_or_default(
+                prediction.impact_radius_km,
+                default=_float_or_default(risk_summary.get("estimated_radius_km"), default=1.5),
+            ),
+            recommended_personnel=_int_or_default(manpower.get("recommended_total_officers")),
+            diversion_strategy=str(diversions.get("strategy")) if diversions.get("strategy") is not None else None,
+            diversion_corridor=(
+                str(diversions.get("corridor_to_protect"))
+                if diversions.get("corridor_to_protect") is not None
+                else event.corridor
+            ),
+            upstream_focus_points=tuple(
+                str(point)
+                for point in list(diversions.get("upstream_focus_points") or [])
+                if point is not None and str(point).strip()
+            ),
+        ),
+        prediction,
+    )
+
+
+def _build_prediction_multi_event_snapshot(
+    analysis: dict[str, object],
+    *,
+    event_id: str,
+    selected_event_ids: list[str],
+) -> dict[str, object]:
+    relevant_conflicts = [
+        item
+        for item in list(analysis.get("conflicts", []))
+        if event_id in list(dict(item).get("event_ids", []))
+    ][:5]
+    return {
+        "status": "analyzed",
+        "selected_event_ids": selected_event_ids,
+        "conflict_detected": bool(analysis.get("conflict_detected")),
+        "combined_risk": analysis.get("combined_risk"),
+        "coordination_mode": analysis.get("coordination_mode"),
+        "officer_gap": analysis.get("officer_gap"),
+        "conflict_signals": list(analysis.get("conflict_signals", [])),
+        "relevant_conflicts": relevant_conflicts,
+        "honesty_note": analysis.get("honesty_note"),
+    }
+
+
+def _record_multi_event_analysis_audit_log(
+    db: Session,
+    auth: AuthContext,
+    *,
+    payload: MultiEventAnalysisRequest,
+    analysis: dict[str, object],
+) -> None:
+    db.add(
+        SystemAuditLog(
+            actor_user_id=coerce_uuid(auth.user_account_id),
+            actor_role=auth.role,
+            action="multi_event_analysis_run",
+            resource_type="multi_event_analysis",
+            resource_id=",".join(payload.event_ids),
+            metadata_json={
+                "event_count": len(payload.event_ids),
+                "available_officers": payload.available_officers,
+                "total_manpower_demand": analysis.get("total_manpower_demand"),
+                "officer_gap": analysis.get("officer_gap"),
+                "combined_risk": analysis.get("combined_risk"),
+                "conflict_detected": analysis.get("conflict_detected"),
+                "high_conflict_count": analysis.get("high_conflict_count"),
+                "conflict_signals": list(analysis.get("conflict_signals", [])),
+            },
+        )
+    )
+
+
+@router.post("/multi-event-analysis", response_model=MultiEventAnalysisResponse)
+def analyze_multi_event(
+    payload: MultiEventAnalysisRequest,
+    auth: AuthContext = Depends(require_internal_event_access),
+    db: Session = Depends(get_db),
+):
+    events: list[Event] = []
+    missing_event_ids: list[str] = []
+    for event_id in payload.event_ids:
+        event = db.get(Event, event_id)
+        if event is None:
+            missing_event_ids.append(event_id)
+        else:
+            events.append(event)
+
+    if missing_event_ids:
+        return error_response(
+            404,
+            "EVENT_NOT_FOUND",
+            "One or more requested events were not found.",
+            {"event_ids": missing_event_ids},
+        )
+
+    unassigned_event_ids = [
+        event.id
+        for event in events
+        if not officer_has_event_access(db, auth, event)
+    ]
+    if unassigned_event_ids:
+        return error_response(
+            403,
+            "OFFICER_ASSIGNMENT_REQUIRED",
+            "Officer is not assigned to one or more requested events, corridors, stations, or zones.",
+            {"event_ids": unassigned_event_ids},
+        )
+
+    try:
+        coordination_inputs: list[EventCoordinationInput] = []
+        predictions: list[EventPrediction] = []
+        for event in events:
+            coordination_input, prediction = _build_event_coordination_input(db, event)
+            coordination_inputs.append(coordination_input)
+            predictions.append(prediction)
+
+        analysis = analyze_multi_event_conflicts(
+            coordination_inputs,
+            available_personnel=payload.available_officers,
+        )
+        for prediction in predictions:
+            prediction.multi_event_conflict_json = _build_prediction_multi_event_snapshot(
+                analysis,
+                event_id=prediction.event_id,
+                selected_event_ids=payload.event_ids,
+            )
+        _record_multi_event_analysis_audit_log(
+            db,
+            auth,
+            payload=payload,
+            analysis=analysis,
+        )
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        return error_response(503, "DATABASE_UNAVAILABLE", "Database is unavailable for multi-event analysis.")
+
+    return MultiEventAnalysisResponse.model_validate(analysis)
 
 
 @router.get("/{event_id}", response_model=EventDossierResponse)

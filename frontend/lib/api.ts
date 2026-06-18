@@ -410,6 +410,37 @@ export type LiveUpdateResponse = LiveEventUpdateRecordResponse & {
   honesty_note: string;
 };
 
+export type MultiEventAnalysisRequest = {
+  event_ids: string[];
+  available_officers: number;
+};
+
+export type MultiEventPairConflictResponse = {
+  event_ids: string[];
+  conflict_score: number;
+  conflict_level: string;
+  distance_km: number;
+  overlap_minutes: number;
+  manpower_gap: number;
+  reason_codes: string[];
+  reason_labels: string[];
+};
+
+export type MultiEventAnalysisResponse = {
+  conflict_detected: boolean;
+  combined_risk: string;
+  coordination_mode: string;
+  high_conflict_count: number;
+  conflict_signals: string[];
+  total_manpower_demand: number;
+  available_officers: number;
+  officer_gap: number;
+  coordination_plan: string[];
+  conflicts: MultiEventPairConflictResponse[];
+  map_overlay: Record<string, unknown>;
+  honesty_note: string;
+};
+
 export type ModelRunResponse = {
   id: string;
   model_name: string;
@@ -564,4 +595,11 @@ export function submitLiveUpdate(
   init?: RequestInit
 ): Promise<LiveUpdateResponse> {
   return apiPost<LiveUpdateResponse>(`/api/events/${encodeURIComponent(eventId)}/live-update`, payload, init);
+}
+
+export function analyzeMultiEvent(
+  payload: MultiEventAnalysisRequest,
+  init?: RequestInit
+): Promise<MultiEventAnalysisResponse> {
+  return apiPost<MultiEventAnalysisResponse>("/api/events/multi-event-analysis", payload, init);
 }

@@ -16,7 +16,7 @@ const commandCards = [
   },
   {
     title: "Adapt",
-    description: "Citizen reporting and live escalation updates now push the prototype toward a real monitor-and-adapt operational loop."
+    description: "Citizen reports, live escalation, and multi-event coordination now push the prototype toward a real monitor-and-adapt operational loop."
   }
 ];
 
@@ -45,7 +45,8 @@ export default function CommandCenterPage() {
                 database connectivity, ASTraM ingestion, derived feature engineering,
                 dataset-backed hotspot analytics, Event DNA, prediction services, and
                 estimated impact scoring plus recommendation orchestration with weather-aware
-                planning, multilingual citizen reporting, and live operational escalation
+                planning, multilingual citizen reporting, live operational escalation,
+                and multi-event coordination
                 for the full Predict - Plan - Monitor - Adapt - Learn workflow.
               </p>
               <div className="mt-5 flex flex-wrap gap-3">
@@ -139,6 +140,7 @@ export default function CommandCenterPage() {
               <li>Phase 10: weather-aware impact, barricade, and diversion adjustment for simulation and event-plan workflows.</li>
               <li>Phase 11: citizen and field reporting with multilingual normalization and confidence scoring.</li>
               <li>Phase 12: live escalation updates that compare expected vs current impact and suggest adaptive actions.</li>
+              <li>Phase 13: simultaneous event conflict detection across time, space, diversions, and manpower.</li>
             </ul>
           </article>
         </section>

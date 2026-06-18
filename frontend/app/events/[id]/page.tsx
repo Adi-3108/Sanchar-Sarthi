@@ -1,16 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import AuthPanel from "@/components/auth/AuthPanel";
+import ActionConfidenceLedger from "@/components/recommendations/ActionConfidenceLedger";
+import BarricadePlanPanel from "@/components/recommendations/BarricadePlanPanel";
+import CounterfactualImpactCard from "@/components/recommendations/CounterfactualImpactCard";
+import DiversionPlanPanel from "@/components/recommendations/DiversionPlanPanel";
+import EmergencyCorridorPanel from "@/components/recommendations/EmergencyCorridorPanel";
+import EventDNACard from "@/components/recommendations/EventDNACard";
+import FlipkartLogisticsImpactPanel from "@/components/recommendations/FlipkartLogisticsImpactPanel";
+import ImpactScorePanel from "@/components/recommendations/ImpactScorePanel";
+import LiveEscalationTimeline from "@/components/recommendations/LiveEscalationTimeline";
+import ManpowerPlanPanel from "@/components/recommendations/ManpowerPlanPanel";
+import SimilarEventMemoryPanel from "@/components/recommendations/SimilarEventMemoryPanel";
+import WeatherRiskPanel from "@/components/recommendations/WeatherRiskPanel";
 import {
   generateEventPlan,
   getEventDetail,
   submitLiveUpdate,
+  type EventCitizenReportRecordResponse,
   type EventPlanRequest,
+  type EventPredictionResponse,
   type LiveUpdateRequest,
+  type LiveUpdateResponse,
   type RecommendationPlanResponse
 } from "@/lib/api";
 import { useFirebaseAuthState } from "@/lib/auth";
@@ -34,6 +49,52 @@ function formatDate(value?: string | null): string {
     dateStyle: "medium",
     timeStyle: "short"
   }).format(parsed);
+}
+
+function formatPercent(value?: number | null): string {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "n/a";
+  }
+  return `${Math.round(value * 100)}%`;
+}
+
+function formatNumber(value?: number | null, digits = 1): string {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "n/a";
+  }
+  return value.toFixed(digits);
+}
+
+function predictionScoreReasonCodes(prediction?: EventPredictionResponse | null): string[] {
+  const impactRoot = prediction?.prediction_explanation_json?.impact;
+  if (!impactRoot || typeof impactRoot !== "object") {
+    return [];
+  }
+
+  const impactRecord = impactRoot as Record<string, unknown>;
+  const nestedImpact =
+    "impact" in impactRecord && impactRecord.impact && typeof impactRecord.impact === "object"
+      ? (impactRecord.impact as Record<string, unknown>)
+      : impactRecord;
+  const reasonCodes = nestedImpact.score_reason_codes;
+  return Array.isArray(reasonCodes) ? reasonCodes.filter((value): value is string => typeof value === "string") : [];
+}
+
+function counterfactualHonestyNote(prediction?: EventPredictionResponse | null): string | null {
+  const impactRoot = prediction?.prediction_explanation_json?.impact;
+  if (!impactRoot || typeof impactRoot !== "object") {
+    return null;
+  }
+  const impactRecord = impactRoot as Record<string, unknown>;
+  const counterfactual =
+    "counterfactual" in impactRecord && impactRecord.counterfactual && typeof impactRecord.counterfactual === "object"
+      ? (impactRecord.counterfactual as Record<string, unknown>)
+      : null;
+  return typeof counterfactual?.honesty_note === "string" ? counterfactual.honesty_note : null;
+}
+
+function reportHeadline(report: EventCitizenReportRecordResponse): string {
+  return report.translated_description || report.description || "No description provided.";
 }
 
 export default function EventDetailPage({ params }: EventDetailPageProps) {
@@ -61,8 +122,8 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
       await queryClient.invalidateQueries({ queryKey: ["event-detail", eventId] });
     }
   });
-  const liveUpdateMutation = useMutation({
-    mutationFn: (payload: LiveUpdateRequest) => submitLiveUpdate(eventId, payload),
+  const liveUpdateMutation = useMutation<LiveUpdateResponse, unknown, LiveUpdateRequest>({
+    mutationFn: (payload) => submitLiveUpdate(eventId, payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["event-detail", eventId] });
     }
@@ -93,6 +154,9 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
 
   const detail = detailQuery.data;
   const recommendation = planMutation.data ?? detail?.recommendation;
+  const prediction = detail?.prediction;
+  const scoreReasonCodes = useMemo(() => predictionScoreReasonCodes(prediction), [prediction]);
+  const counterfactualNote = useMemo(() => counterfactualHonestyNote(prediction), [prediction]);
 
   return (
     <main className="shell-grid min-h-screen px-6 py-8 text-copy md:px-10">
@@ -107,17 +171,29 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
               </p>
             </div>
             <nav className="flex flex-wrap gap-3">
-              <Link href="/explorer" className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy">
+              <Link
+                href="/explorer"
+                className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
+              >
                 Explorer
               </Link>
-              <Link href="/officer" className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy">
+              <Link
+                href="/officer"
+                className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
+              >
                 Officer portal
+              </Link>
+              <Link
+                href="/post-event-learning"
+                className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
+              >
+                Post-event learning
               </Link>
             </nav>
           </div>
         </section>
 
-        <section className="grid gap-5 lg:grid-cols-[0.34fr_0.66fr]">
+        <section className="grid gap-5 lg:grid-cols-[0.32fr_0.68fr]">
           <aside className="space-y-5">
             <AuthPanel
               preferredRole="control_room"
@@ -128,31 +204,53 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
             {detail ? (
               <>
                 <article className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel">
-                  <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Event</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Event snapshot</p>
                   <div className="mt-4 grid gap-3">
                     <Metric label="Cause" value={detail.event.event_cause_clean ?? "n/a"} />
                     <Metric label="Priority" value={detail.event.priority ?? "n/a"} />
                     <Metric label="Corridor" value={detail.event.corridor ?? "n/a"} />
+                    <Metric label="Police station" value={detail.event.police_station ?? "n/a"} />
                     <Metric label="Start" value={formatDate(detail.event.start_datetime)} />
+                    <Metric label="Status" value={detail.event.status ?? "n/a"} />
                   </div>
                 </article>
 
                 <article className="rounded-[24px] border border-line/70 bg-panel/85 p-5 shadow-panel">
-                  <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Prediction</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Signals</p>
                   <div className="mt-4 grid gap-3">
-                    <Metric label="Impact score" value={detail.prediction?.estimated_impact_score?.toFixed(1) ?? "n/a"} />
-                    <Metric label="Impact category" value={detail.prediction?.impact_category ?? "n/a"} />
-                    <Metric label="Clearance" value={detail.prediction?.estimated_clearance_minutes ? `${Math.round(detail.prediction.estimated_clearance_minutes)} min` : "n/a"} />
-                    <Metric label="Road closure" value={detail.prediction?.road_closure_probability ? `${Math.round(detail.prediction.road_closure_probability * 100)}%` : "n/a"} />
+                    <Metric label="Impact score" value={formatNumber(prediction?.estimated_impact_score)} />
+                    <Metric label="Impact category" value={prediction?.impact_category ?? "n/a"} />
+                    <Metric
+                      label="Road closure"
+                      value={formatPercent(prediction?.road_closure_probability)}
+                    />
+                    <Metric
+                      label="Weather source"
+                      value={prediction?.weather_adjustment_json?.source ?? "n/a"}
+                    />
+                    <Metric label="Similar events" value={String(detail.similar_events.length)} />
+                    <Metric label="Live updates" value={String(detail.live_updates.length)} />
                   </div>
                 </article>
 
                 <article className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel">
-                  <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Activity</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Citizen and field reports</p>
                   <div className="mt-4 grid gap-3">
-                    <Metric label="Similar events" value={String(detail.similar_events.length)} />
-                    <Metric label="Citizen reports" value={String(detail.citizen_reports.length)} />
-                    <Metric label="Live updates" value={String(detail.live_updates.length)} />
+                    {detail.citizen_reports.length ? (
+                      detail.citizen_reports.slice(0, 4).map((report) => (
+                        <div key={report.id} className="rounded-2xl border border-line/70 bg-bg/60 p-4">
+                          <p className="text-[11px] uppercase tracking-[0.18em] text-accentSoft">
+                            {report.report_source.replaceAll("_", " ")}
+                          </p>
+                          <p className="mt-2 text-sm leading-7 text-copy">{reportHeadline(report)}</p>
+                          <p className="mt-2 text-xs text-muted">
+                            {report.new_alert_level ?? "Info"} alert, {formatPercent(report.report_confidence)} confidence
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted">No linked citizen or field reports yet.</p>
+                    )}
                   </div>
                 </article>
               </>
@@ -172,17 +270,41 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
 
             {detail ? (
               <>
-                <article className="rounded-[24px] border border-line/70 bg-panel/85 p-5 shadow-panel">
-                  <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Event DNA</p>
-                  <h2 className="mt-2 text-2xl font-semibold">{detail.event_dna?.time_context ?? "DNA not generated yet"}</h2>
-                  <p className="mt-4 text-sm leading-7 text-muted">{detail.event_dna?.dna_summary ?? "Run the backend DNA rebuild pipeline to populate this event."}</p>
-                </article>
+                <EventDNACard eventDna={detail.event_dna} />
+                <SimilarEventMemoryPanel similarEvents={detail.similar_events} />
+
+                <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+                  <ImpactScorePanel
+                    estimatedImpactScore={prediction?.estimated_impact_score}
+                    impactCategory={prediction?.impact_category}
+                    impactRadiusKm={prediction?.impact_radius_km}
+                    vehicleImpactFactor={prediction?.vehicle_impact_factor}
+                    vehicleImpactNote={prediction?.vehicle_impact_note}
+                    priorityConfidence={prediction?.priority_confidence}
+                    roadClosureProbability={prediction?.road_closure_probability}
+                    scoreReasonCodes={scoreReasonCodes}
+                  />
+                  <div className="grid gap-5">
+                    <CounterfactualImpactCard
+                      baselineRiskScore={prediction?.baseline_risk_score}
+                      eventImpactScore={prediction?.estimated_impact_score}
+                      additionalEventDelta={prediction?.additional_event_delta}
+                      honestyNote={counterfactualNote}
+                    />
+                    <WeatherRiskPanel
+                      weatherRisk={recommendation?.weather_risk ?? prediction?.weather_adjustment_json}
+                    />
+                  </div>
+                </div>
 
                 <article className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel">
                   <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                     <div>
                       <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Recommendation</p>
                       <h2 className="mt-2 text-2xl font-semibold">Generate event plan</h2>
+                      <p className="mt-3 text-sm leading-7 text-muted">
+                        Regenerate the stored plan for this event and immediately rehydrate the dossier panels below.
+                      </p>
                     </div>
                     <form onSubmit={handlePlanSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
                       <label className="text-sm text-muted">
@@ -203,19 +325,23 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                     </form>
                   </div>
                   {recommendation ? (
-                    <div className="mt-5 space-y-4">
-                      <p className="text-sm leading-7 text-muted">{recommendation.recommended_action_summary}</p>
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        <Metric label="Officers" value={String(recommendation.manpower.recommended_total_officers)} />
-                        <Metric label="Barricades" value={String(recommendation.barricades.estimated_units)} />
-                        <Metric label="Diversion" value={recommendation.diversions.strategy} />
-                      </div>
-                    </div>
+                    <p className="mt-5 text-sm leading-7 text-muted">{recommendation.recommended_action_summary}</p>
                   ) : (
                     <p className="mt-5 text-sm leading-7 text-muted">No recommendation is attached yet.</p>
                   )}
-                  {planMutation.isError ? <p className="mt-4 text-sm text-danger">Plan generation needs internal access for this event.</p> : null}
+                  {planMutation.isError ? (
+                    <p className="mt-4 text-sm text-danger">Plan generation needs internal access for this event.</p>
+                  ) : null}
                 </article>
+
+                <div className="grid gap-5 xl:grid-cols-2">
+                  <ManpowerPlanPanel manpower={recommendation?.manpower} />
+                  <BarricadePlanPanel barricades={recommendation?.barricades} />
+                  <DiversionPlanPanel diversions={recommendation?.diversions} />
+                  <EmergencyCorridorPanel emergencyCorridor={recommendation?.emergency_corridor} />
+                  <FlipkartLogisticsImpactPanel logisticsImpact={recommendation?.flipkart_logistics_impact} />
+                  <ActionConfidenceLedger items={recommendation?.action_confidence_ledger ?? []} />
+                </div>
 
                 <form onSubmit={handleLiveUpdate} className="rounded-[24px] border border-line/70 bg-panel/85 p-5 shadow-panel">
                   <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Monitor and adapt</p>
@@ -240,8 +366,12 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                       Accepted with current score {liveUpdateMutation.data.current_impact_score.toFixed(1)}.
                     </p>
                   ) : null}
-                  {liveUpdateMutation.isError ? <p className="mt-4 text-sm text-danger">Live update was not accepted for this session.</p> : null}
+                  {liveUpdateMutation.isError ? (
+                    <p className="mt-4 text-sm text-danger">Live update was not accepted for this session.</p>
+                  ) : null}
                 </form>
+
+                <LiveEscalationTimeline updates={detail.live_updates} />
               </>
             ) : null}
           </div>

@@ -268,6 +268,27 @@ export type EventPredictionResponse = {
   model_version?: string | null;
 };
 
+export type EventCitizenReportRecordResponse = {
+  id: string;
+  report_source: string;
+  report_type: string;
+  latitude: number;
+  longitude: number;
+  severity?: string | null;
+  description?: string | null;
+  source_language?: string | null;
+  translated_description?: string | null;
+  translation_status: string;
+  matched_event_id?: string | null;
+  location_match_confidence?: number | null;
+  report_confidence?: number | null;
+  impact_score_change?: number | null;
+  new_alert_level?: string | null;
+  recommended_action?: string | null;
+  status: string;
+  created_at?: string | null;
+};
+
 export type EventDetailResponse = {
   event: {
     id: string;
@@ -291,7 +312,7 @@ export type EventDetailResponse = {
   prediction?: EventPredictionResponse | null;
   recommendation?: RecommendationPlanResponse | null;
   similar_events: SimilarEventResponse[];
-  citizen_reports: Array<Record<string, unknown>>;
+  citizen_reports: EventCitizenReportRecordResponse[];
   live_updates: LiveEventUpdateRecordResponse[];
   map_overlays: Record<string, unknown>;
 };
@@ -509,6 +530,23 @@ export type MapGeocodeResponse = {
   }>;
   fallbackReason?: string | null;
   honestyNote: string;
+};
+
+export type PostEventReportResponse = {
+  event_id: string;
+  predicted_impact_score?: number | null;
+  simulated_actual_impact_score?: number | null;
+  impact_deviation?: number | null;
+  final_status?: string | null;
+  event_summary: string;
+  prediction_summary: string;
+  recommendation_summary: string;
+  citizen_report_summary?: string | null;
+  live_escalation_summary?: string | null;
+  lessons_learned: string;
+  future_recommendations: string;
+  report_json: Record<string, unknown>;
+  created_at?: string | null;
 };
 
 export type ModelRunResponse = {
@@ -734,4 +772,8 @@ export function getMapRoute(payload: MapRouteRequest, init?: RequestInit): Promi
 
 export function geocodeMapAddress(payload: MapGeocodeRequest, init?: RequestInit): Promise<MapGeocodeResponse> {
   return apiPost<MapGeocodeResponse>("/api/map/geocode", payload, init);
+}
+
+export function generatePostEventReport(eventId: string, init?: RequestInit): Promise<PostEventReportResponse> {
+  return apiPost<PostEventReportResponse>(`/api/events/${encodeURIComponent(eventId)}/post-event-report`, {}, init);
 }

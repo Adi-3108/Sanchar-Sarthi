@@ -1,23 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
+import AuthPanel from "@/components/auth/AuthPanel";
 import ConflictLayer, { type ConflictOverlay } from "@/components/map/ConflictLayer";
 import EventLayer, { type MapEventPoint } from "@/components/map/EventLayer";
 import HotspotLayer from "@/components/map/HotspotLayer";
 import MapCanvas from "@/components/map/MapCanvas";
 import ReportLayer, { type MapReportPoint } from "@/components/map/ReportLayer";
 import RouteLayer, { type RouteOverlay } from "@/components/map/RouteLayer";
+import MultiEventConflictPanel from "@/components/recommendations/MultiEventConflictPanel";
 import {
+  analyzeMultiEvent,
+  geocodeMapAddress,
   getHotspots,
   getMapConfig,
   getMapRoute,
   type HotspotResponseItem,
   type MapConfigResponse,
-  type MapRouteResponse
+  type MapGeocodeResponse,
+  type MapRouteResponse,
+  type MultiEventAnalysisResponse
 } from "@/lib/api";
+import { useFirebaseAuthState } from "@/lib/auth";
 import { projectLngLat, severityFromScore, type LngLat } from "@/lib/map-provider";
 
 const demoRoute = {
@@ -35,6 +42,16 @@ function eventPointsFromHotspots(hotspots: HotspotResponseItem[]): MapEventPoint
   }));
 }
 
+function geocodeEventPoints(result?: MapGeocodeResponse): MapEventPoint[] {
+  return (result?.candidates ?? []).map((candidate, index) => ({
+    id: `geocode-${index}`,
+    coordinate: candidate.coordinate,
+    label: candidate.label,
+    severity: "Medium",
+    detail: candidate.confidence
+  }));
+}
+
 function reportPointsFromHotspots(hotspots: HotspotResponseItem[]): MapReportPoint[] {
   return hotspots.slice(0, 4).map((hotspot, index) => ({
     id: `report-${hotspot.location_cluster_id}`,
@@ -42,29 +59,59 @@ function reportPointsFromHotspots(hotspots: HotspotResponseItem[]): MapReportPoi
       hotspot.centroid_longitude + (index % 2 === 0 ? 0.006 : -0.006),
       hotspot.centroid_latitude + (index % 2 === 0 ? -0.004 : 0.004)
     ],
-    label: hotspot.cluster_top_event_cause ?? "Citizen report",
+    label: hotspot.cluster_top_event_cause ?? "Representative report",
     confidence: Math.min(0.95, 0.55 + hotspot.cluster_risk_score * 0.35),
-    source: index % 2 === 0 ? "citizen" : "field officer"
+    source: "representative demo"
   }));
 }
 
-function conflictOverlaysFromHotspots(hotspots: HotspotResponseItem[]): ConflictOverlay[] {
-  if (hotspots.length < 2) {
-    return [];
-  }
-  return hotspots.slice(0, 2).map((hotspot, index) => {
-    const next = hotspots[index + 1] ?? hotspots[0];
-    return {
-      id: `conflict-${hotspot.location_cluster_id}-${next.location_cluster_id}`,
-      eventIds: [hotspot.location_cluster_id, next.location_cluster_id],
-      coordinates: [
-        [hotspot.centroid_longitude, hotspot.centroid_latitude],
-        [next.centroid_longitude, next.centroid_latitude]
-      ],
-      conflictLevel: hotspot.cluster_risk_score >= 0.75 ? "critical" : "high",
-      conflictScore: Math.round(Math.max(hotspot.cluster_risk_score, next.cluster_risk_score) * 100)
-    };
-  });
+function conflictOverlaysFromAnalysis(analysis?: MultiEventAnalysisResponse): ConflictOverlay[] {
+  const features = Array.isArray((analysis?.map_overlay as { features?: unknown[] } | undefined)?.features)
+    ? ((analysis?.map_overlay as { features: unknown[] }).features)
+    : [];
+
+  return features
+    .map((feature, index) => {
+      if (!feature || typeof feature !== "object") {
+        return null;
+      }
+      const geometry = (feature as { geometry?: unknown }).geometry;
+      const properties = (feature as { properties?: unknown }).properties;
+      if (!geometry || typeof geometry !== "object" || !properties || typeof properties !== "object") {
+        return null;
+      }
+      const coordinates = (geometry as { coordinates?: unknown }).coordinates;
+      if (!Array.isArray(coordinates) || coordinates.length < 2) {
+        return null;
+      }
+      const left = coordinates[0];
+      const right = coordinates[1];
+      if (
+        !Array.isArray(left) ||
+        !Array.isArray(right) ||
+        typeof left[0] !== "number" ||
+        typeof left[1] !== "number" ||
+        typeof right[0] !== "number" ||
+        typeof right[1] !== "number"
+      ) {
+        return null;
+      }
+      const props = properties as Record<string, unknown>;
+      const eventIds = Array.isArray(props.event_ids)
+        ? props.event_ids.filter((value): value is string => typeof value === "string")
+        : [`pair-${index}`];
+      return {
+        id: `conflict-${eventIds.join("-")}-${index}`,
+        eventIds,
+        coordinates: [
+          [left[0], left[1]] as LngLat,
+          [right[0], right[1]] as LngLat
+        ],
+        conflictLevel: typeof props.conflict_level === "string" ? props.conflict_level : "medium",
+        conflictScore: typeof props.conflict_score === "number" ? props.conflict_score : 0
+      } satisfies ConflictOverlay;
+    })
+    .filter((value): value is ConflictOverlay => Boolean(value));
 }
 
 function routeOverlayFromResponse(route?: MapRouteResponse): RouteOverlay[] {
@@ -100,8 +147,39 @@ function providerStatus(config?: MapConfigResponse): string {
   return `OSM fallback: ${config.fallbackReason?.replaceAll("_", " ") ?? "active"}`;
 }
 
+function defaultEventIdsFromHotspots(hotspots: HotspotResponseItem[]): string[] {
+  const uniqueEventIds: string[] = [];
+  for (const hotspot of hotspots) {
+    const members = hotspot.cluster_profile.member_event_ids;
+    if (!Array.isArray(members)) {
+      continue;
+    }
+    for (const member of members) {
+      if (typeof member !== "string" || uniqueEventIds.includes(member)) {
+        continue;
+      }
+      uniqueEventIds.push(member);
+      if (uniqueEventIds.length >= 2) {
+        return uniqueEventIds;
+      }
+    }
+  }
+  return uniqueEventIds;
+}
+
+function parseEventIds(value: string): string[] {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 export default function MapIntelligencePage() {
+  const { user, ready: authReady } = useFirebaseAuthState();
   const [selectedHotspotId, setSelectedHotspotId] = useState<string | null>(null);
+  const [eventIdsInput, setEventIdsInput] = useState("");
+  const [availableOfficers, setAvailableOfficers] = useState("18");
+  const [geocodeQuery, setGeocodeQuery] = useState("MG Road, Bengaluru");
 
   const configQuery = useQuery({
     queryKey: ["map-config"],
@@ -113,6 +191,7 @@ export default function MapIntelligencePage() {
   const hotspotsQuery = useQuery({
     queryKey: ["hotspots", "map-intelligence"],
     queryFn: () => getHotspots({}),
+    enabled: authReady && Boolean(user),
     retry: 1,
     refetchOnWindowFocus: false
   });
@@ -127,12 +206,46 @@ export default function MapIntelligencePage() {
       })
   });
 
+  const multiEventMutation = useMutation({
+    mutationFn: () =>
+      analyzeMultiEvent({
+        event_ids: parseEventIds(eventIdsInput),
+        available_officers: Number(availableOfficers)
+      })
+  });
+
+  const geocodeMutation = useMutation({
+    mutationFn: () =>
+      geocodeMapAddress({
+        query: geocodeQuery,
+        purpose: "map_intelligence_search"
+      })
+  });
+
   const hotspots = hotspotsQuery.data?.hotspots ?? [];
-  const eventPoints = useMemo(() => eventPointsFromHotspots(hotspots), [hotspots]);
+
+  useEffect(() => {
+    if (eventIdsInput.trim()) {
+      return;
+    }
+    const defaults = defaultEventIdsFromHotspots(hotspots);
+    if (defaults.length >= 2) {
+      setEventIdsInput(defaults.join(", "));
+    }
+  }, [eventIdsInput, hotspots]);
+
+  const eventPoints = useMemo(
+    () => [...eventPointsFromHotspots(hotspots), ...geocodeEventPoints(geocodeMutation.data)],
+    [geocodeMutation.data, hotspots]
+  );
   const reportPoints = useMemo(() => reportPointsFromHotspots(hotspots), [hotspots]);
-  const conflictOverlays = useMemo(() => conflictOverlaysFromHotspots(hotspots), [hotspots]);
+  const conflictOverlays = useMemo(
+    () => conflictOverlaysFromAnalysis(multiEventMutation.data),
+    [multiEventMutation.data]
+  );
   const routeOverlays = useMemo(() => routeOverlayFromResponse(routeMutation.data), [routeMutation.data]);
   const config = configQuery.data;
+  const selectedHotspot = hotspots.find((hotspot) => hotspot.location_cluster_id === selectedHotspotId) ?? null;
 
   return (
     <main className="shell-grid min-h-screen px-6 py-8 text-copy md:px-10">
@@ -146,7 +259,7 @@ export default function MapIntelligencePage() {
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-muted">
                 Primary geospatial layer is MapmyIndia / Mappls with INR 1000 credit guardrails.
-                The same overlays remain usable in OSM fallback mode.
+                Conflict overlays now come from the real multi-event analysis API, while representative report markers remain a safe demo overlay until a dedicated map feed is added.
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:items-end">
@@ -159,15 +272,16 @@ export default function MapIntelligencePage() {
               <button
                 type="button"
                 onClick={() => routeMutation.mutate()}
-                className="rounded-full border border-accent/50 bg-accent/15 px-4 py-2 text-sm text-copy transition hover:border-accent hover:bg-accent/25"
+                disabled={!user || routeMutation.isPending}
+                className="rounded-full border border-accent/50 bg-accent/15 px-4 py-2 text-sm text-copy transition hover:border-accent hover:bg-accent/25 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Refresh demo route
+                {routeMutation.isPending ? "Refreshing route" : "Refresh demo route"}
               </button>
             </div>
           </div>
         </section>
 
-        <section className="grid gap-5 lg:grid-cols-[1fr_0.35fr]">
+        <section className="grid gap-5 lg:grid-cols-[1fr_0.38fr]">
           <div>
             {configQuery.isLoading ? (
               <div className="min-h-[560px] rounded-[28px] border border-line/80 bg-panel/70 p-8 text-sm text-muted shadow-panel">
@@ -192,6 +306,12 @@ export default function MapIntelligencePage() {
           </div>
 
           <aside className="space-y-5">
+            <AuthPanel
+              preferredRole="control_room"
+              title="Map access sign-in"
+              note="Hotspots, routing, geocode, and multi-event coordination are protected internal tools even though the map shell itself can still load."
+            />
+
             <article className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel">
               <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Provider</p>
               <h2 className="mt-2 text-2xl font-semibold">{providerStatus(config)}</h2>
@@ -199,28 +319,48 @@ export default function MapIntelligencePage() {
                 <p>Map key available: {config?.mapKeyAvailable ? "yes" : "no"}</p>
                 <p>Budget guard: {config?.budgetGuardEnabled ? "enabled" : "disabled"}</p>
                 <p>Credit budget: INR {config?.creditsBudgetInr ?? 1000}</p>
+                <p>Routing status: {routeMutation.data?.provider ?? "demo overlay"}</p>
               </div>
             </article>
 
             <article className="rounded-[24px] border border-line/70 bg-panel/85 p-5 shadow-panel">
-              <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Route status</p>
-              <h2 className="mt-2 text-2xl font-semibold">
-                {routeMutation.isPending
-                  ? "Refreshing"
-                  : routeMutation.data
-                    ? routeMutation.data.provider
-                    : "Local demo route"}
-              </h2>
+              <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Geocode search</p>
+              <label className="mt-4 block text-sm text-muted">
+                <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-accentSoft">Address query</span>
+                <input
+                  value={geocodeQuery}
+                  onChange={(event) => setGeocodeQuery(event.target.value)}
+                  className="w-full rounded-2xl border border-line bg-bg/80 px-4 py-3 text-copy outline-none transition focus:border-accent"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => geocodeMutation.mutate()}
+                disabled={!user || geocodeMutation.isPending || geocodeQuery.trim().length < 3}
+                className="mt-4 rounded-2xl border border-accent/50 bg-accent px-4 py-3 text-sm font-semibold text-bg transition hover:bg-accentSoft disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {geocodeMutation.isPending ? "Searching" : "Search address"}
+              </button>
               <p className="mt-3 text-sm leading-7 text-muted">
-                {routeMutation.isError
-                  ? "Protected route generation needs an internal Firebase session. The map keeps the local demo overlay visible."
-                  : routeMutation.data?.honestyNote ??
-                    "Route refresh uses the protected backend adapter; local overlay remains available without provider calls."}
+                {geocodeMutation.data?.honestyNote ??
+                  "Search results will appear as map markers when provider geocoding is available."}
               </p>
+              {geocodeMutation.data?.candidates.length ? (
+                <div className="mt-4 grid gap-3">
+                  {geocodeMutation.data.candidates.map((candidate) => (
+                    <div key={`${candidate.label}-${candidate.coordinate.join(",")}`} className="rounded-2xl border border-line/70 bg-bg/60 p-4 text-sm text-copy">
+                      <p className="font-semibold">{candidate.label}</p>
+                      <p className="mt-1 text-muted">
+                        {candidate.coordinate[1].toFixed(5)}, {candidate.coordinate[0].toFixed(5)} · {candidate.confidence}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </article>
 
             <article className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel">
-              <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Overlays</p>
+              <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Overlay counts</p>
               <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
                 <div className="rounded-2xl border border-line/60 bg-bg/60 p-3">
                   <dt className="text-muted">Hotspots</dt>
@@ -231,8 +371,8 @@ export default function MapIntelligencePage() {
                   <dd className="mt-1 text-xl font-semibold">{reportPoints.length}</dd>
                 </div>
                 <div className="rounded-2xl border border-line/60 bg-bg/60 p-3">
-                  <dt className="text-muted">Events</dt>
-                  <dd className="mt-1 text-xl font-semibold">{eventPoints.length}</dd>
+                  <dt className="text-muted">Search markers</dt>
+                  <dd className="mt-1 text-xl font-semibold">{geocodeMutation.data?.candidates.length ?? 0}</dd>
                 </div>
                 <div className="rounded-2xl border border-line/60 bg-bg/60 p-3">
                   <dt className="text-muted">Conflicts</dt>
@@ -241,22 +381,70 @@ export default function MapIntelligencePage() {
               </dl>
             </article>
 
-            {hotspotsQuery.isError ? (
+            {selectedHotspot ? (
+              <article className="rounded-[24px] border border-line/70 bg-panel/85 p-5 shadow-panel">
+                <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Selected hotspot</p>
+                <h2 className="mt-2 text-2xl font-semibold">{selectedHotspot.location_cluster_id}</h2>
+                <p className="mt-3 text-sm leading-7 text-muted">
+                  {selectedHotspot.cluster_top_event_cause ?? "Unknown cause"} with {selectedHotspot.cluster_event_count} historical events and {Math.round(selectedHotspot.cluster_risk_score * 100)} risk score.
+                </p>
+              </article>
+            ) : null}
+
+            {authReady && !user ? (
               <article className="rounded-[24px] border border-warn/30 bg-warn/10 p-5 text-sm leading-7 text-warn shadow-panel">
-                Hotspot overlays require internal analytics access. Sign in with Firebase to load dataset-backed hotspots.
+                Sign in with Firebase to load protected hotspot analytics, geocode lookups, and multi-event coordination.
               </article>
             ) : null}
           </aside>
+        </section>
+
+        <section className="grid gap-5 lg:grid-cols-[0.42fr_0.58fr]">
+          <article className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel">
+            <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Multi-event analysis</p>
+            <label className="mt-4 block text-sm text-muted">
+              <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-accentSoft">Event IDs</span>
+              <input
+                value={eventIdsInput}
+                onChange={(event) => setEventIdsInput(event.target.value)}
+                placeholder="FKID000001, FKID000002"
+                className="w-full rounded-2xl border border-line bg-bg/80 px-4 py-3 text-copy outline-none transition focus:border-accent"
+              />
+            </label>
+            <label className="mt-4 block text-sm text-muted">
+              <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-accentSoft">Available officers</span>
+              <input
+                value={availableOfficers}
+                onChange={(event) => setAvailableOfficers(event.target.value)}
+                className="w-full rounded-2xl border border-line bg-bg/80 px-4 py-3 text-copy outline-none transition focus:border-accent"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => multiEventMutation.mutate()}
+              disabled={!user || multiEventMutation.isPending || parseEventIds(eventIdsInput).length < 2}
+              className="mt-4 rounded-2xl border border-accent/50 bg-accent px-4 py-3 text-sm font-semibold text-bg transition hover:bg-accentSoft disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {multiEventMutation.isPending ? "Analyzing" : "Run analysis"}
+            </button>
+            <p className="mt-3 text-sm leading-7 text-muted">
+              This feeds the conflict layer from the real Phase 13 backend analysis instead of a synthetic overlay.
+            </p>
+          </article>
+
+          <MultiEventConflictPanel analysis={multiEventMutation.data} />
         </section>
 
         <HotspotLayer
           hotspots={hotspots}
           selectedHotspotId={selectedHotspotId}
           onSelectHotspot={(hotspot) => setSelectedHotspotId(hotspot.location_cluster_id)}
-          project={(hotspot) => {
-            return projectLngLat([hotspot.centroid_longitude, hotspot.centroid_latitude]);
-          }}
-          emptyState="No hotspot overlays are available yet."
+          project={(hotspot) => projectLngLat([hotspot.centroid_longitude, hotspot.centroid_latitude])}
+          emptyState={
+            authReady && user
+              ? "No hotspot overlays are available yet."
+              : "Sign in to load protected hotspot overlays."
+          }
         />
       </div>
     </main>

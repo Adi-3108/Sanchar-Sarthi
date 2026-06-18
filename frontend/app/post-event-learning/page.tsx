@@ -1,0 +1,117 @@
+"use client";
+
+import Link from "next/link";
+import { type FormEvent, useEffect, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+
+import AuthPanel from "@/components/auth/AuthPanel";
+import PostEventReportView from "@/components/reports/PostEventReportView";
+import { ApiError, generatePostEventReport, type PostEventReportResponse } from "@/lib/api";
+import { useFirebaseAuthState } from "@/lib/auth";
+import { useCommandStore } from "@/lib/stores/useCommandStore";
+
+function errorText(error: unknown): string {
+  if (error instanceof ApiError) {
+    return error.body;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "Post-event report generation failed.";
+}
+
+export default function PostEventLearningPage() {
+  const { selectedEventId } = useCommandStore();
+  const { user, ready: authReady } = useFirebaseAuthState();
+  const [eventId, setEventId] = useState("");
+
+  useEffect(() => {
+    if (!eventId && selectedEventId) {
+      setEventId(selectedEventId);
+    }
+  }, [eventId, selectedEventId]);
+
+  const reportMutation = useMutation<PostEventReportResponse, unknown, string>({
+    mutationFn: (targetEventId) => generatePostEventReport(targetEventId)
+  });
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!user || !eventId.trim()) {
+      return;
+    }
+    reportMutation.mutate(eventId.trim());
+  }
+
+  return (
+    <main className="shell-grid min-h-screen px-6 py-8 text-copy md:px-10">
+      <div className="mx-auto flex max-w-7xl flex-col gap-8">
+        <section className="rounded-[28px] border border-line/80 bg-panel/90 p-8 shadow-panel">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-sm uppercase tracking-[0.32em] text-accentSoft">Post-event learning</p>
+              <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
+                Turn event outcomes into the next playbook.
+              </h1>
+              <p className="mt-4 max-w-2xl text-base leading-7 text-muted">
+                Generate an after-action learning report from the stored event, prediction, recommendation,
+                citizen report, and live escalation timeline.
+              </p>
+            </div>
+            <nav className="flex flex-wrap gap-3">
+              <Link
+                href="/command-center"
+                className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
+              >
+                Command center
+              </Link>
+              <Link
+                href="/explorer"
+                className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
+              >
+                Explorer
+              </Link>
+            </nav>
+          </div>
+        </section>
+
+        <section className="grid gap-5 lg:grid-cols-[0.34fr_0.66fr]">
+          <div className="space-y-5">
+            <AuthPanel
+              preferredRole="control_room"
+              title="Learning review sign-in"
+              note="Post-event learning is an internal workflow. Backend event assignment and Firebase role checks still decide access."
+            />
+
+            <form onSubmit={handleSubmit} className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel">
+              <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Generate report</p>
+              <label className="mt-4 block text-sm text-muted">
+                <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-accentSoft">Event ID</span>
+                <input
+                  value={eventId}
+                  onChange={(event) => setEventId(event.target.value)}
+                  placeholder="FKID000001"
+                  className="w-full rounded-2xl border border-line bg-bg/80 px-4 py-3 text-copy outline-none transition focus:border-accent"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={!user || reportMutation.isPending || !eventId.trim()}
+                className="mt-4 rounded-2xl border border-accent/50 bg-accent px-5 py-3 text-sm font-semibold text-bg transition hover:bg-accentSoft disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {reportMutation.isPending ? "Generating" : "Generate post-event report"}
+              </button>
+              {!authReady ? <p className="mt-4 text-sm text-muted">Restoring internal session...</p> : null}
+              {authReady && !user ? <p className="mt-4 text-sm text-muted">Sign in to run protected learning reviews.</p> : null}
+              {reportMutation.isError ? (
+                <p className="mt-4 text-sm leading-7 text-danger">{errorText(reportMutation.error)}</p>
+              ) : null}
+            </form>
+          </div>
+
+          <PostEventReportView report={reportMutation.data} />
+        </section>
+      </div>
+    </main>
+  );
+}

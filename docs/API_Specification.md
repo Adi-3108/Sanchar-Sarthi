@@ -561,11 +561,17 @@ Response:
 ## 14. POST /api/events/{event_id}/post-event-report
 
 **Authentication:** Level 1 Admin / Control Room, or assigned Level 2 Registered Police Officer when enabled.
+**Behavior note:** Generates and persists an after-action learning snapshot using the stored event, prediction, recommendation, citizen-report, and live-escalation context currently available for the event.
 
 Response:
 
 ```json
 {
+  "event_id": "FKID000001",
+  "predicted_impact_score": 78,
+  "simulated_actual_impact_score": 94,
+  "impact_deviation": 16,
+  "final_status": "resolved",
   "event_summary": "...",
   "prediction_summary": "...",
   "recommendation_summary": "...",
@@ -573,7 +579,8 @@ Response:
   "live_escalation_summary": "...",
   "lessons_learned": "...",
   "future_recommendations": "...",
-  "report_json": {}
+  "report_json": {},
+  "created_at": "2026-06-18T12:34:56Z"
 }
 ```
 

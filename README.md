@@ -66,6 +66,42 @@ Phase 10 adds:
 - optional Open-Meteo-backed weather resolution with safe neutral fallback behavior
 - rain, waterlogging, and low-visibility modifiers for barricade and diversion recommendations
 
+Phase 11 adds:
+
+- citizen, field-officer, and control-room report intake with confidence scoring
+- multilingual public report UI with static English, Kannada, and Hindi labels
+- persisted report matching, audit logging, and public rate limiting
+
+Phase 12 adds:
+
+- protected live escalation updates for assigned officers and control-room operators
+- adaptive alert-level guidance that compares expected and current impact
+- persisted live update timelines reused by event dossiers
+
+Phase 13 adds:
+
+- multi-event conflict analysis across time overlap, impact radius, diversion conflict, and manpower gap
+- protected `POST /api/events/multi-event-analysis` coordination workflow
+- conflict overlays and structured coordination summaries
+
+Phase 14 adds:
+
+- MapmyIndia / Mappls provider adapter with OSM fallback and budget guardrails
+- protected route and geocode APIs plus map usage logging
+- operational map layers for events, hotspots, reports, routes, and conflicts
+
+Phase 15 adds:
+
+- role-aware admin, officer, explorer, simulation, map, report, and event-dossier pages
+- Firebase-backed frontend auth helpers and shared API contracts
+- mounted recommendation, Event DNA, weather, escalation, and conflict UI panels
+
+Phase 16 adds:
+
+- persisted post-event learning reports and after-action summaries
+- protected `POST /api/events/{event_id}/post-event-report` generation workflow
+- a `/post-event-learning` screen for generating future-playbook reviews
+
 ## Repository Layout
 
 ```text
@@ -168,6 +204,18 @@ future/
 
   ```bash
   pytest backend/tests/test_weather_service.py
+  ```
+
+- Reports, escalation, coordination, and map workflow smoke checks:
+
+  ```bash
+  pytest backend/tests/test_citizen_reports.py backend/tests/test_live_escalation.py backend/tests/test_multi_event_service.py backend/tests/test_map_routes.py
+  ```
+
+- Post-event learning smoke check:
+
+  ```bash
+  pytest backend/tests/test_post_event_report.py
   ```
 
 The base MVP remains free-tier and dataset-honest. Optional Google Translate support stays disabled by default.

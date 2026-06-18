@@ -22,6 +22,7 @@ from app.orm.event_feature import EventFeature
 from app.orm.event_prediction import EventPrediction
 from app.orm.event_recommendation import EventRecommendation
 from app.orm.hotspot_cluster import HotspotCluster
+from app.orm.live_event_update import LiveEventUpdate
 from app.orm.system_audit_log import SystemAuditLog
 from app.services.data_cleaning_service import clean_event_cause
 from app.services.event_dna_service import (
@@ -44,6 +45,7 @@ from app.services.recommendation_orchestrator import (
     serialize_recommendation_plan,
 )
 from app.services.citizen_report_service import serialize_citizen_report
+from app.services.live_escalation_service import serialize_live_update
 from app.services.similar_event_service import find_similar_events, serialize_similar_event_match
 from app.services.text_normalization_service import normalize_description
 from app.services.weather_service import resolve_weather_adjustment
@@ -431,6 +433,15 @@ def _list_event_reports(db: Session, event_id: str) -> list[CitizenReport]:
     ).all()
 
 
+def _list_live_updates(db: Session, event_id: str) -> list[LiveEventUpdate]:
+    return db.scalars(
+        select(LiveEventUpdate)
+        .where(LiveEventUpdate.event_id == event_id)
+        .order_by(LiveEventUpdate.created_at.desc(), LiveEventUpdate.id.desc())
+        .limit(25)
+    ).all()
+
+
 def _build_recommendation_payload(
     event: Event,
     prediction: EventPrediction | None,
@@ -551,6 +562,7 @@ def get_event_detail(
             recommendation_record=recommendation_record,
         )
         citizen_reports = _list_event_reports(db, event_id)
+        live_updates = _list_live_updates(db, event_id)
     except SQLAlchemyError:
         db.rollback()
         return error_response(503, "DATABASE_UNAVAILABLE", "Database is unavailable for event detail.")
@@ -572,7 +584,7 @@ def get_event_detail(
         ),
         similar_events=[SimilarEventResponse.model_validate(serialize_similar_event_match(row)) for row in similar_events],
         citizen_reports=[serialize_citizen_report(row) for row in citizen_reports],
-        live_updates=[],
+        live_updates=[serialize_live_update(row) for row in live_updates],
         map_overlays={"hotspot": hotspot_overlay.model_dump() if hotspot_overlay else None},
     )
 

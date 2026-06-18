@@ -275,7 +275,7 @@ export type EventDetailResponse = {
   recommendation?: RecommendationPlanResponse | null;
   similar_events: SimilarEventResponse[];
   citizen_reports: Array<Record<string, unknown>>;
-  live_updates: Array<Record<string, unknown>>;
+  live_updates: LiveEventUpdateRecordResponse[];
   map_overlays: Record<string, unknown>;
 };
 
@@ -375,6 +375,39 @@ export type CitizenReportResponse = {
   impact_score_change: number;
   new_alert_level: string;
   recommended_action: string;
+};
+
+export type LiveEventUpdateRecordResponse = {
+  id: string;
+  event_id: string;
+  update_source: string;
+  current_congestion_level: string;
+  field_update?: string | null;
+  road_closure_active: boolean;
+  officer_shortage: boolean;
+  crowd_increase: boolean;
+  rain_waterlogging: boolean;
+  new_nearby_incident: boolean;
+  expected_impact_score: number;
+  current_impact_score: number;
+  impact_deviation: number;
+  alert_level?: string | null;
+  adaptive_action?: string | null;
+  created_at?: string | null;
+};
+
+export type LiveUpdateRequest = {
+  current_congestion_level: "Info" | "Watch" | "Stable" | "Warning" | "Critical";
+  field_update?: string;
+  road_closure_active?: boolean;
+  officer_shortage?: boolean;
+  crowd_increase?: boolean;
+  rain_waterlogging?: boolean;
+  new_nearby_incident?: boolean;
+};
+
+export type LiveUpdateResponse = LiveEventUpdateRecordResponse & {
+  honesty_note: string;
 };
 
 export type ModelRunResponse = {
@@ -523,4 +556,12 @@ export function submitCongestionReport(
   init?: RequestInit
 ): Promise<CitizenReportResponse> {
   return apiPost<CitizenReportResponse>("/api/reports/congestion", payload, init);
+}
+
+export function submitLiveUpdate(
+  eventId: string,
+  payload: LiveUpdateRequest,
+  init?: RequestInit
+): Promise<LiveUpdateResponse> {
+  return apiPost<LiveUpdateResponse>(`/api/events/${encodeURIComponent(eventId)}/live-update`, payload, init);
 }

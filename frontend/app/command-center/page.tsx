@@ -15,8 +15,8 @@ const commandCards = [
     description: "Command-center workflows now include weather-aware manpower, barricade, diversion, emergency corridor, and logistics recommendation planning."
   },
   {
-    title: "Learn",
-    description: "Post-event feedback loops remain planned for later phases without breaking the current operational core."
+    title: "Adapt",
+    description: "Citizen reporting and live escalation updates now push the prototype toward a real monitor-and-adapt operational loop."
   }
 ];
 
@@ -41,11 +41,12 @@ export default function CommandCenterPage() {
                 Predictive traffic command twin for event-driven congestion.
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-muted md:text-lg">
-                Phases 1 through 10 now cover the backend shell, typed health contract,
+                Phases 1 through 12 now cover the backend shell, typed health contract,
                 database connectivity, ASTraM ingestion, derived feature engineering,
                 dataset-backed hotspot analytics, Event DNA, prediction services, and
                 estimated impact scoring plus recommendation orchestration with weather-aware
-                planning for the full Predict - Plan - Monitor - Adapt - Learn workflow.
+                planning, multilingual citizen reporting, and live operational escalation
+                for the full Predict - Plan - Monitor - Adapt - Learn workflow.
               </p>
               <div className="mt-5 flex flex-wrap gap-3">
                 <Link
@@ -136,6 +137,8 @@ export default function CommandCenterPage() {
               <li>Phase 8: counterfactual impact scoring and simulation-ready impact fields.</li>
               <li>Phase 9: operational recommendation planning across manpower, barricades, diversions, and logistics impact.</li>
               <li>Phase 10: weather-aware impact, barricade, and diversion adjustment for simulation and event-plan workflows.</li>
+              <li>Phase 11: citizen and field reporting with multilingual normalization and confidence scoring.</li>
+              <li>Phase 12: live escalation updates that compare expected vs current impact and suggest adaptive actions.</li>
             </ul>
           </article>
         </section>

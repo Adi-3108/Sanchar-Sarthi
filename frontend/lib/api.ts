@@ -1,4 +1,4 @@
-import { firebaseAuth } from "@/lib/firebase";
+import { authHeaders } from "@/lib/authHeaders";
 
 export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000").replace(
   /\/$/,
@@ -28,6 +28,23 @@ export type AnalyticsBreakdownItem = {
   label: string;
   count: number;
   share: number;
+};
+
+export type DatasetLoadResponse = {
+  status: string;
+  rows_loaded: number;
+  columns_detected: number;
+  invalid_rows: number;
+  message?: string | null;
+};
+
+export type FeatureGenerationResponse = {
+  status: string;
+  events_processed: number;
+  features_created: number;
+  features_updated: number;
+  duration_unavailable: number;
+  message?: string | null;
 };
 
 export type AnalyticsSummaryResponse = {
@@ -513,6 +530,56 @@ export type ModelRunListResponse = {
   model_runs: ModelRunResponse[];
 };
 
+export type CreateOfficerRequest = {
+  email: string;
+  firebase_uid: string;
+  officer_id: string;
+  display_name: string;
+  rank?: string | null;
+  police_station: string;
+  assigned_corridors: string[];
+  assigned_zones: string[];
+};
+
+export type CreateOfficerResponse = {
+  status: string;
+  officer_id: string;
+  role: string;
+  active: boolean;
+};
+
+export type OfficerAssignedEventResponse = {
+  id: string;
+  event_cause_clean?: string | null;
+  priority?: string | null;
+  status?: string | null;
+  corridor?: string | null;
+  police_station?: string | null;
+  zone?: string | null;
+  junction?: string | null;
+  start_datetime: string;
+};
+
+export type OfficerPendingReportResponse = {
+  id: string;
+  report_type: string;
+  severity?: string | null;
+  matched_event_id?: string | null;
+  created_at?: string | null;
+  new_alert_level?: string | null;
+  report_confidence?: number | null;
+};
+
+export type OfficerAssignmentsResponse = {
+  officer_id: string;
+  police_station: string;
+  assigned_events: OfficerAssignedEventResponse[];
+  assigned_corridors: string[];
+  assigned_zones: string[];
+  pending_report_confirmations: OfficerPendingReportResponse[];
+  map_overlays: Record<string, unknown>;
+};
+
 export type HotspotQuery = {
   eventCause?: string;
   priority?: string;
@@ -536,17 +603,13 @@ async function readResponseBody(response: Response): Promise<string> {
 }
 
 async function buildRequestHeaders(initHeaders?: HeadersInit): Promise<Headers> {
-  const headers = new Headers(initHeaders);
+  const headers = new Headers(await authHeaders());
+  if (initHeaders) {
+    const incoming = new Headers(initHeaders);
+    incoming.forEach((value, key) => headers.set(key, value));
+  }
   if (!headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
-  }
-  if (!headers.has("Authorization") && firebaseAuth?.currentUser) {
-    try {
-      const token = await firebaseAuth.currentUser.getIdToken();
-      headers.set("Authorization", `Bearer ${token}`);
-    } catch {
-      // Leave the request unauthenticated so protected endpoints return a clear backend error.
-    }
   }
   return headers;
 }
@@ -595,8 +658,20 @@ export async function apiPost<T>(path: string, body: unknown, init?: RequestInit
   return (await response.json()) as T;
 }
 
+export function postEmpty<T>(path: string, init?: RequestInit): Promise<T> {
+  return apiPost<T>(path, {}, init);
+}
+
 export function getHealth(): Promise<HealthResponse> {
   return apiGet<HealthResponse>("/api/health");
+}
+
+export function loadDemoDataset(init?: RequestInit): Promise<DatasetLoadResponse> {
+  return postEmpty<DatasetLoadResponse>("/api/datasets/load-demo", init);
+}
+
+export function generateEventFeatures(init?: RequestInit): Promise<FeatureGenerationResponse> {
+  return postEmpty<FeatureGenerationResponse>("/api/datasets/generate-features", init);
 }
 
 export function getSummary(init?: RequestInit): Promise<AnalyticsSummaryResponse> {
@@ -621,56 +696,42 @@ export function getModelRuns(init?: RequestInit): Promise<ModelRunListResponse> 
   return apiGet<ModelRunListResponse>("/api/analytics/model-runs", init);
 }
 
+export function createOfficer(payload: CreateOfficerRequest, init?: RequestInit): Promise<CreateOfficerResponse> {
+  return apiPost<CreateOfficerResponse>("/api/admin/officers", payload, init);
+}
+
+export function getOfficerAssignments(init?: RequestInit): Promise<OfficerAssignmentsResponse> {
+  return apiGet<OfficerAssignmentsResponse>("/api/officer/assignments", init);
+}
+
 export function getMapConfig(init?: RequestInit): Promise<MapConfigResponse> {
   return apiGet<MapConfigResponse>("/api/map/config", init);
 }
 
-export function simulateEvent(
-  payload: EventSimulationRequest,
-  init?: RequestInit
-): Promise<EventSimulationResponse> {
+export function simulateEvent(payload: EventSimulationRequest, init?: RequestInit): Promise<EventSimulationResponse> {
   return apiPost<EventSimulationResponse>("/api/events/simulate", payload, init);
 }
 
-export function generateEventPlan(
-  payload: EventPlanRequest,
-  init?: RequestInit
-): Promise<RecommendationPlanResponse> {
+export function generateEventPlan(payload: EventPlanRequest, init?: RequestInit): Promise<RecommendationPlanResponse> {
   return apiPost<RecommendationPlanResponse>("/api/recommendations/event-plan", payload, init);
 }
 
-export function submitCongestionReport(
-  payload: CitizenReportCreateRequest,
-  init?: RequestInit
-): Promise<CitizenReportResponse> {
+export function submitCongestionReport(payload: CitizenReportCreateRequest, init?: RequestInit): Promise<CitizenReportResponse> {
   return apiPost<CitizenReportResponse>("/api/reports/congestion", payload, init);
 }
 
-export function submitLiveUpdate(
-  eventId: string,
-  payload: LiveUpdateRequest,
-  init?: RequestInit
-): Promise<LiveUpdateResponse> {
+export function submitLiveUpdate(eventId: string, payload: LiveUpdateRequest, init?: RequestInit): Promise<LiveUpdateResponse> {
   return apiPost<LiveUpdateResponse>(`/api/events/${encodeURIComponent(eventId)}/live-update`, payload, init);
 }
 
-export function analyzeMultiEvent(
-  payload: MultiEventAnalysisRequest,
-  init?: RequestInit
-): Promise<MultiEventAnalysisResponse> {
+export function analyzeMultiEvent(payload: MultiEventAnalysisRequest, init?: RequestInit): Promise<MultiEventAnalysisResponse> {
   return apiPost<MultiEventAnalysisResponse>("/api/events/multi-event-analysis", payload, init);
 }
 
-export function getMapRoute(
-  payload: MapRouteRequest,
-  init?: RequestInit
-): Promise<MapRouteResponse> {
+export function getMapRoute(payload: MapRouteRequest, init?: RequestInit): Promise<MapRouteResponse> {
   return apiPost<MapRouteResponse>("/api/map/route", payload, init);
 }
 
-export function geocodeMapAddress(
-  payload: MapGeocodeRequest,
-  init?: RequestInit
-): Promise<MapGeocodeResponse> {
+export function geocodeMapAddress(payload: MapGeocodeRequest, init?: RequestInit): Promise<MapGeocodeResponse> {
   return apiPost<MapGeocodeResponse>("/api/map/geocode", payload, init);
 }

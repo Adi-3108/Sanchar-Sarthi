@@ -1,13 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 
 import AuthPanel from "@/components/auth/AuthPanel";
+import ActionConfidenceLedger from "@/components/recommendations/ActionConfidenceLedger";
+import BarricadePlanPanel from "@/components/recommendations/BarricadePlanPanel";
+import CounterfactualImpactCard from "@/components/recommendations/CounterfactualImpactCard";
+import DiversionPlanPanel from "@/components/recommendations/DiversionPlanPanel";
+import EmergencyCorridorPanel from "@/components/recommendations/EmergencyCorridorPanel";
+import EventDNACard from "@/components/recommendations/EventDNACard";
+import FlipkartLogisticsImpactPanel from "@/components/recommendations/FlipkartLogisticsImpactPanel";
+import ImpactScorePanel from "@/components/recommendations/ImpactScorePanel";
+import ManpowerPlanPanel from "@/components/recommendations/ManpowerPlanPanel";
+import WeatherRiskPanel from "@/components/recommendations/WeatherRiskPanel";
 import {
   ApiError,
   simulateEvent,
+  type EventPredictionResponse,
   type EventSimulationRequest,
   type EventSimulationResponse
 } from "@/lib/api";
@@ -30,6 +41,50 @@ function errorText(error: unknown): string {
     return error.message;
   }
   return "Simulation failed.";
+}
+
+function predictionScoreReasonCodes(result?: EventSimulationResponse): string[] {
+  const impactRoot = result?.prediction_explanation_json?.impact;
+  if (!impactRoot || typeof impactRoot !== "object") {
+    return [];
+  }
+  const impactRecord = impactRoot as Record<string, unknown>;
+  const nestedImpact =
+    "impact" in impactRecord && impactRecord.impact && typeof impactRecord.impact === "object"
+      ? (impactRecord.impact as Record<string, unknown>)
+      : impactRecord;
+  const reasonCodes = nestedImpact.score_reason_codes;
+  return Array.isArray(reasonCodes) ? reasonCodes.filter((value): value is string => typeof value === "string") : [];
+}
+
+function asPrediction(result?: EventSimulationResponse): EventPredictionResponse | null {
+  if (!result) {
+    return null;
+  }
+  return {
+    event_id: "simulation",
+    predicted_priority: result.predicted_priority,
+    priority_confidence: result.priority_confidence,
+    road_closure_probability: result.road_closure_probability,
+    predicted_road_closure: result.predicted_road_closure,
+    estimated_clearance_minutes: result.estimated_clearance_minutes,
+    clearance_prediction_method: result.clearance_prediction_method,
+    clearance_confidence: result.clearance_confidence,
+    clearance_confidence_note: result.clearance_confidence_note,
+    historical_clearance_range_min: result.historical_clearance_range_min,
+    historical_clearance_range_max: result.historical_clearance_range_max,
+    estimated_impact_score: result.estimated_impact_score,
+    impact_category: result.impact_category,
+    impact_radius_km: result.impact_radius_km,
+    vehicle_impact_factor: result.vehicle_impact_factor,
+    vehicle_impact_note: result.vehicle_impact_note,
+    baseline_risk_score: result.counterfactual.baseline_risk_score,
+    additional_event_delta: result.counterfactual.additional_event_delta,
+    weather_adjustment_json: result.weather_adjustment,
+    multi_event_conflict_json: null,
+    prediction_explanation_json: result.prediction_explanation_json,
+    model_version: null
+  };
 }
 
 export default function SimulationPage() {
@@ -77,6 +132,8 @@ export default function SimulationPage() {
   }
 
   const result = simulationMutation.data;
+  const prediction = useMemo(() => asPrediction(result), [result]);
+  const scoreReasonCodes = useMemo(() => predictionScoreReasonCodes(result), [result]);
 
   return (
     <main className="shell-grid min-h-screen px-6 py-8 text-copy md:px-10">
@@ -94,17 +151,23 @@ export default function SimulationPage() {
               </p>
             </div>
             <nav className="flex flex-wrap gap-3">
-              <Link href="/command-center" className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy">
+              <Link
+                href="/command-center"
+                className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
+              >
                 Command center
               </Link>
-              <Link href="/map-intelligence" className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy">
+              <Link
+                href="/map-intelligence"
+                className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
+              >
                 Map intelligence
               </Link>
             </nav>
           </div>
         </section>
 
-        <section className="grid gap-5 lg:grid-cols-[0.44fr_0.56fr]">
+        <section className="grid gap-5 lg:grid-cols-[0.4fr_0.6fr]">
           <div className="space-y-5">
             <AuthPanel
               preferredRole="control_room"
@@ -166,35 +229,64 @@ export default function SimulationPage() {
             </form>
           </div>
 
-          <section className="rounded-[24px] border border-line/70 bg-panel/85 p-5 shadow-panel">
-            <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Simulation output</p>
+          <div className="space-y-5">
             {!result ? (
-              <p className="mt-5 text-sm leading-7 text-muted">
-                Run a simulation to see predicted priority, estimated clearance, weather adjustment, and recommended field actions.
-              </p>
+              <section className="rounded-[24px] border border-line/70 bg-panel/85 p-5 shadow-panel">
+                <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Simulation output</p>
+                <p className="mt-5 text-sm leading-7 text-muted">
+                  Run a simulation to see Event DNA, predicted impact, weather posture, and operational planning panels.
+                </p>
+              </section>
             ) : (
-              <div className="mt-5 space-y-5">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Metric label="Predicted priority" value={result.predicted_priority ?? "n/a"} />
-                  <Metric label="Impact" value={result.impact_category ?? "n/a"} />
-                  <Metric label="Score" value={result.estimated_impact_score?.toFixed(1) ?? "n/a"} />
-                  <Metric label="Clearance" value={result.estimated_clearance_minutes ? `${Math.round(result.estimated_clearance_minutes)} min` : "n/a"} />
-                </div>
-                <article className="rounded-2xl border border-line/70 bg-bg/60 p-4">
-                  <h2 className="text-lg font-semibold">Event DNA</h2>
-                  <p className="mt-3 text-sm leading-7 text-muted">{result.event_dna.dna_summary}</p>
-                </article>
-                <article className="rounded-2xl border border-line/70 bg-bg/60 p-4">
-                  <h2 className="text-lg font-semibold">Recommended action</h2>
-                  <p className="mt-3 text-sm leading-7 text-muted">{result.recommendations.recommended_action_summary}</p>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <Metric label="Officers" value={String(result.recommendations.manpower.recommended_total_officers)} />
-                    <Metric label="Barricades" value={String(result.recommendations.barricades.estimated_units)} />
+              <>
+                <article className="rounded-[24px] border border-line/70 bg-panel/85 p-5 shadow-panel">
+                  <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Simulation summary</p>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <Metric label="Predicted priority" value={result.predicted_priority ?? "n/a"} />
+                    <Metric label="Impact category" value={result.impact_category ?? "n/a"} />
+                    <Metric
+                      label="Clearance"
+                      value={result.estimated_clearance_minutes ? `${Math.round(result.estimated_clearance_minutes)} min` : "n/a"}
+                    />
+                    <Metric label="Top similar event" value={result.similar_event_summary.top_match_event_id ?? "n/a"} />
                   </div>
                 </article>
-              </div>
+
+                <EventDNACard eventDna={result.event_dna} />
+
+                <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+                  <ImpactScorePanel
+                    estimatedImpactScore={result.estimated_impact_score}
+                    impactCategory={result.impact_category}
+                    impactRadiusKm={result.impact_radius_km}
+                    vehicleImpactFactor={result.vehicle_impact_factor}
+                    vehicleImpactNote={result.vehicle_impact_note}
+                    priorityConfidence={result.priority_confidence}
+                    roadClosureProbability={result.road_closure_probability}
+                    scoreReasonCodes={scoreReasonCodes}
+                  />
+                  <div className="grid gap-5">
+                    <CounterfactualImpactCard
+                      baselineRiskScore={result.counterfactual.baseline_risk_score}
+                      eventImpactScore={result.counterfactual.event_impact_score}
+                      additionalEventDelta={result.counterfactual.additional_event_delta}
+                      honestyNote={result.counterfactual.honesty_note}
+                    />
+                    <WeatherRiskPanel weatherRisk={result.weather_adjustment} />
+                  </div>
+                </div>
+
+                <div className="grid gap-5 xl:grid-cols-2">
+                  <ManpowerPlanPanel manpower={result.recommendations.manpower} />
+                  <BarricadePlanPanel barricades={result.recommendations.barricades} />
+                  <DiversionPlanPanel diversions={result.recommendations.diversions} />
+                  <EmergencyCorridorPanel emergencyCorridor={result.recommendations.emergency_corridor} />
+                  <FlipkartLogisticsImpactPanel logisticsImpact={result.recommendations.flipkart_logistics_impact} />
+                  <ActionConfidenceLedger items={result.recommendations.action_confidence_ledger} />
+                </div>
+              </>
             )}
-          </section>
+          </div>
         </section>
       </div>
     </main>

@@ -11,6 +11,7 @@ from app.api.routes_health import router as health_router
 from app.api.routes_live_updates import router as live_updates_router
 from app.api.routes_map import router as map_router
 from app.api.routes_officer import router as officer_router
+from app.api.routes_post_event import router as post_event_router
 from app.api.routes_recommendations import router as recommendations_router
 from app.api.routes_reports import router as reports_router
 from app.core.config import get_settings
@@ -49,5 +50,6 @@ app.include_router(events_router)
 app.include_router(live_updates_router)
 app.include_router(map_router)
 app.include_router(officer_router)
+app.include_router(post_event_router)
 app.include_router(recommendations_router)
 app.include_router(reports_router)

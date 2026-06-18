@@ -41,13 +41,14 @@ export default function CommandCenterPage() {
                 Predictive traffic command twin for event-driven congestion.
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-muted md:text-lg">
-                Phases 1 through 14 now cover the backend shell, typed health contract,
+                Phases 1 through 16 now cover the backend shell, typed health contract,
                 database connectivity, ASTraM ingestion, derived feature engineering,
                 dataset-backed hotspot analytics, Event DNA, prediction services, and
                 estimated impact scoring plus recommendation orchestration with weather-aware
                 planning, multilingual citizen reporting, live operational escalation,
-                multi-event coordination, and MapmyIndia-first operational map intelligence
-                for the full Predict - Plan - Monitor - Adapt - Learn workflow.
+                multi-event coordination, MapmyIndia-first operational map intelligence,
+                and post-event learning reports for the full Predict - Plan - Monitor -
+                Adapt - Learn workflow.
               </p>
               <div className="mt-5 flex flex-wrap gap-3">
                 <Link
@@ -67,6 +68,12 @@ export default function CommandCenterPage() {
                   className="rounded-full border border-amber-300/40 bg-amber-300/10 px-4 py-2 text-sm text-copy transition hover:border-amber-200 hover:bg-amber-300/20"
                 >
                   Open map intelligence
+                </Link>
+                <Link
+                  href="/post-event-learning"
+                  className="rounded-full border border-emerald-300/40 bg-emerald-300/10 px-4 py-2 text-sm text-copy transition hover:border-emerald-200 hover:bg-emerald-300/20"
+                >
+                  Open post-event learning
                 </Link>
               </div>
             </div>
@@ -127,7 +134,7 @@ export default function CommandCenterPage() {
                   <p>Road closure model: {data.models.road_closure}</p>
                   <p>Resolution time model: {data.models.resolution_time}</p>
                   <p>Firebase: {data.auth.firebase}</p>
-                  <p>Phase 10: weather-aware planning modifiers wired</p>
+                  <p>Phase 16: post-event learning loop ready</p>
                 </div>
               )}
             </div>
@@ -148,6 +155,8 @@ export default function CommandCenterPage() {
               <li>Phase 12: live escalation updates that compare expected vs current impact and suggest adaptive actions.</li>
               <li>Phase 13: simultaneous event conflict detection across time, space, diversions, and manpower.</li>
               <li>Phase 14: MapmyIndia-first map intelligence with route/geocode adapters, budget guardrails, and OSM fallback.</li>
+              <li>Phase 15: role-aware dashboards, Firebase-protected portals, and connected event workflow pages.</li>
+              <li>Phase 16: post-event learning reports and future-playbook generation for the closing loop.</li>
             </ul>
           </article>
         </section>

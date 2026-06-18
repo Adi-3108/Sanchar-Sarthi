@@ -181,7 +181,7 @@ export default function ModelInsightsPage() {
             <div className="max-w-3xl">
               <p className="text-sm uppercase tracking-[0.32em] text-accentSoft">Model insights</p>
               <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
-                Dataset-honest prediction diagnostics for Phase 7.
+                Dataset-honest prediction diagnostics.
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-muted md:text-lg">
                 This view tracks which prediction artifacts exist, what the latest recorded training run says,
@@ -236,7 +236,7 @@ export default function ModelInsightsPage() {
               <li>`Artifact not loaded` means no saved model file exists yet, so rules remain active.</li>
               <li>`Artifact present, dependencies missing` means a model file exists but local ML packages are not installed.</li>
               <li>Road-closure likelihood stays rule-history first even when optional ML support is available.</li>
-              <li>Resolution-time metrics only use rows that pass the reliable timestamp filter from Phase 7.</li>
+              <li>Resolution-time metrics only use rows that pass the reliable timestamp filter.</li>
               <li>Priority and road-closure metrics still rely on dataset-wide historical aggregates, so read them as prototype diagnostics, not leakage-free production validation.</li>
             </ul>
           </article>

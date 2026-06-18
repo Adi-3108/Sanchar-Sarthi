@@ -746,3 +746,75 @@ Fallback statuses:
 - budget_blocked
 - failed
 - source_already_target
+
+## 22. GET /api/demo/status
+
+**Description:** Return Phase 17 demo-readiness status for the deterministic judge walkthrough.  
+**Authentication:** none in MVP because the response is public-safe and operationally summarized.
+
+Response:
+
+```json
+{
+  "status": "ready",
+  "generated_at": "2026-06-18T15:00:00Z",
+  "summary": {
+    "demo_scenarios": 4,
+    "demo_events": 6,
+    "demo_officers": 2,
+    "demo_predictions": 6,
+    "demo_recommendations": 6,
+    "demo_reports": 3,
+    "demo_live_updates": 2,
+    "demo_post_event_reports": 1
+  },
+  "checks": [
+    {
+      "key": "planning_stack",
+      "label": "Predict and plan stack",
+      "ready": true,
+      "detail": "Features, DNA, predictions, and recommendations are ready."
+    }
+  ],
+  "scenario_cards": [
+    {
+      "scenario_name": "Judge Walkthrough: Predict And Plan",
+      "scenario_type": "simulation",
+      "route": "/simulation",
+      "event_ids": ["DEMO_EVENT_RALLY_ORR"]
+    }
+  ],
+  "demo_event_ids": ["DEMO_EVENT_RALLY_ORR"]
+}
+```
+
+## 23. POST /api/demo/seed
+
+**Description:** Refresh the fixed Phase 17 demo events, scenarios, officer mappings, reports, live updates, and learning data.  
+**Authentication:** Level 1 Admin / Control Room Firebase user required.  
+**Behavior note:** The seed refresh only updates fixed `DEMO_` records and leaves non-demo data untouched.
+
+Response:
+
+```json
+{
+  "status": "success",
+  "message": "Deterministic demo scenarios refreshed.",
+  "generated_at": "2026-06-18T15:02:00Z",
+  "summary": {
+    "demo_scenarios": 4,
+    "demo_events": 6,
+    "demo_reports": 3,
+    "demo_live_updates": 2,
+    "demo_post_event_reports": 1
+  },
+  "scenario_names": [
+    "Judge Walkthrough: Predict And Plan",
+    "Judge Walkthrough: Live Escalation"
+  ],
+  "demo_event_ids": [
+    "DEMO_EVENT_RALLY_ORR",
+    "DEMO_EVENT_WATERLOGGING_HSR"
+  ]
+}
+```

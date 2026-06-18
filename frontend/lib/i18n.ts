@@ -1,7 +1,19 @@
 export type AppLanguage = "en" | "kn" | "hi";
 
-export const reportLabels: Record<AppLanguage, Record<string, string>> = {
+export const languageOptions: Array<{ value: AppLanguage; label: string }> = [
+  { value: "en", label: "English" },
+  { value: "kn", label: "\u0c95\u0ca8\u0ccd\u0ca8\u0ca1" },
+  { value: "hi", label: "\u0939\u093f\u0902\u0926\u0940" }
+];
+
+export const labels: Record<AppLanguage, Record<string, string>> = {
   en: {
+    commandCenter: "Command Center",
+    adminPortal: "Admin Portal",
+    officerPortal: "Officer Portal",
+    explorer: "Explorer",
+    simulation: "Simulation",
+    modelInsights: "Model Insights",
     reportIssue: "Report traffic issue",
     issueType: "Issue type",
     severity: "Severity",
@@ -18,49 +30,62 @@ export const reportLabels: Record<AppLanguage, Record<string, string>> = {
     recommendedAction: "Recommended action",
     matchedEvent: "Matched event",
     notMatched: "No event matched yet",
-    publicNote: "Public reports are accepted as signals and verified before official action.",
+    publicNote: "Public reports are accepted as signals and verified before official action."
   },
   kn: {
-    reportIssue: "ಸಂಚಾರ ಸಮಸ್ಯೆಯನ್ನು ವರದಿ ಮಾಡಿ",
-    issueType: "ಸಮಸ್ಯೆಯ ಪ್ರಕಾರ",
-    severity: "ತೀವ್ರತೆ",
-    description: "ವಿವರಣೆ",
-    language: "ಭಾಷೆ",
-    latitude: "ಅಕ್ಷಾಂಶ",
-    longitude: "ರೇಖಾಂಶ",
-    useLocation: "ನನ್ನ ಸ್ಥಳ ಬಳಸಿ",
-    submit: "ವರದಿ ಸಲ್ಲಿಸಿ",
-    submitting: "ಸಲ್ಲಿಸಲಾಗುತ್ತಿದೆ",
-    accepted: "ವರದಿ ಸ್ವೀಕರಿಸಲಾಗಿದೆ",
-    confidence: "ವರದಿ ವಿಶ್ವಾಸ",
-    alertLevel: "ಎಚ್ಚರಿಕೆ ಮಟ್ಟ",
-    recommendedAction: "ಶಿಫಾರಸು ಕ್ರಮ",
-    matchedEvent: "ಹೊಂದಿದ ಘಟನೆ",
-    notMatched: "ಇನ್ನೂ ಘಟನೆ ಹೊಂದಿಲ್ಲ",
-    publicNote: "ಸಾರ್ವಜನಿಕ ವರದಿಗಳನ್ನು ಸಂಕೇತಗಳಾಗಿ ಸ್ವೀಕರಿಸಿ ಪರಿಶೀಲನೆಯ ನಂತರ ಕ್ರಮ ಕೈಗೊಳ್ಳಲಾಗುತ್ತದೆ.",
+    commandCenter: "\u0c95\u0cae\u0cbe\u0c82\u0ca1\u0ccd \u0cb8\u0cc6\u0c82\u0c9f\u0cb0\u0ccd",
+    adminPortal: "\u0ca8\u0cbf\u0cb0\u0ccd\u0cb5\u0cbe\u0cb9\u0c95 \u0caa\u0ccb\u0cb0\u0ccd\u0c9f\u0cb2\u0ccd",
+    officerPortal: "\u0c85\u0ca7\u0cbf\u0c95\u0cbe\u0cb0\u0cbf \u0caa\u0ccb\u0cb0\u0ccd\u0c9f\u0cb2\u0ccd",
+    explorer: "\u0c85\u0ca8\u0ccd\u0cb5\u0cc7\u0cb7\u0ca3\u0cc6",
+    simulation: "\u0c85\u0ca8\u0cc1\u0c95\u0cb0\u0ca3",
+    modelInsights: "\u0cae\u0cbe\u0ca6\u0cb0\u0cbf \u0c92\u0cb3\u0ca8\u0ccb\u0c9f\u0c97\u0cb3\u0cc1",
+    reportIssue: "\u0cb8\u0c82\u0c9a\u0cbe\u0cb0 \u0cb8\u0cae\u0cb8\u0ccd\u0caf\u0cc6\u0caf\u0ca8\u0ccd\u0ca8\u0cc1 \u0cb5\u0cb0\u0ca6\u0cbf \u0cae\u0cbe\u0ca1\u0cbf",
+    issueType: "\u0cb8\u0cae\u0cb8\u0ccd\u0caf\u0cc6\u0caf \u0caa\u0ccd\u0cb0\u0c95\u0cbe\u0cb0",
+    severity: "\u0ca4\u0cc0\u0cb5\u0ccd\u0cb0\u0ca4\u0cc6",
+    description: "\u0cb5\u0cbf\u0cb5\u0cb0\u0ca3\u0cc6",
+    language: "\u0cad\u0cbe\u0cb7\u0cc6",
+    latitude: "\u0c85\u0c95\u0ccd\u0cb7\u0cbe\u0c82\u0cb6",
+    longitude: "\u0cb0\u0cc7\u0c96\u0cbe\u0c82\u0cb6",
+    useLocation: "\u0ca8\u0ca8\u0ccd\u0ca8 \u0cb8\u0ccd\u0ca5\u0cb3 \u0cac\u0cb3\u0cb8\u0cbf",
+    submit: "\u0cb5\u0cb0\u0ca6\u0cbf \u0cb8\u0cb2\u0ccd\u0cb2\u0cbf\u0cb8\u0cbf",
+    submitting: "\u0cb8\u0cb2\u0ccd\u0cb2\u0cbf\u0cb8\u0cb2\u0cbe\u0c97\u0cc1\u0ca4\u0ccd\u0ca4\u0cbf\u0ca6\u0cc6",
+    accepted: "\u0cb5\u0cb0\u0ca6\u0cbf \u0cb8\u0ccd\u0cb5\u0cc0\u0c95\u0cb0\u0cbf\u0cb8\u0cb2\u0cbe\u0c97\u0cbf\u0ca6\u0cc6",
+    confidence: "\u0cb5\u0cb0\u0ca6\u0cbf \u0cb5\u0cbf\u0cb6\u0ccd\u0cb5\u0cbe\u0cb8",
+    alertLevel: "\u0c8e\u0c9a\u0ccd\u0c9a\u0cb0\u0cbf\u0c95\u0cc6 \u0cae\u0c9f\u0ccd\u0c9f",
+    recommendedAction: "\u0cb6\u0cbf\u0cab\u0cbe\u0cb0\u0cb8\u0cc1 \u0c95\u0ccd\u0cb0\u0cae",
+    matchedEvent: "\u0cb9\u0cca\u0c82\u0ca6\u0cbf\u0ca6 \u0c98\u0c9f\u0ca8\u0cc6",
+    notMatched: "\u0c87\u0ca8\u0ccd\u0ca8\u0cc2 \u0caf\u0cbe\u0cb5\u0cc1\u0ca6\u0cc7 \u0c98\u0c9f\u0ca8\u0cc6 \u0cb9\u0cca\u0c82\u0ca6\u0cbf\u0cb2\u0ccd\u0cb2",
+    publicNote: "\u0cb8\u0cbe\u0cb0\u0ccd\u0cb5\u0c9c\u0ca8\u0cbf\u0c95 \u0cb5\u0cb0\u0ca6\u0cbf\u0c97\u0cb3\u0ca8\u0ccd\u0ca8\u0cc1 \u0cb8\u0cc2\u0c9a\u0ca8\u0cc6\u0c97\u0cb3\u0cbe\u0c97\u0cbf \u0cb8\u0ccd\u0cb5\u0cc0\u0c95\u0cb0\u0cbf\u0cb8\u0cbf \u0c85\u0ca7\u0cbf\u0c95\u0cc3\u0ca4 \u0c95\u0ccd\u0cb0\u0cae\u0c95\u0ccd\u0c95\u0cc2 \u0cae\u0cca\u0ca6\u0cb2\u0cc1 \u0caa\u0cb0\u0cbf\u0cb6\u0cc0\u0cb2\u0cbf\u0cb8\u0cb2\u0cbe\u0c97\u0cc1\u0ca4\u0ccd\u0ca4\u0ca6\u0cc6."
   },
   hi: {
-    reportIssue: "ट्रैफिक समस्या रिपोर्ट करें",
-    issueType: "समस्या का प्रकार",
-    severity: "गंभीरता",
-    description: "विवरण",
-    language: "भाषा",
-    latitude: "अक्षांश",
-    longitude: "देशांतर",
-    useLocation: "मेरी लोकेशन इस्तेमाल करें",
-    submit: "रिपोर्ट सबमिट करें",
-    submitting: "सबमिट हो रहा है",
-    accepted: "रिपोर्ट स्वीकार की गई",
-    confidence: "रिपोर्ट भरोसा",
-    alertLevel: "अलर्ट स्तर",
-    recommendedAction: "अनुशंसित कार्रवाई",
-    matchedEvent: "मिला हुआ इवेंट",
-    notMatched: "अभी कोई इवेंट मैच नहीं हुआ",
-    publicNote: "पब्लिक रिपोर्ट संकेत के रूप में स्वीकार होती है और आधिकारिक कार्रवाई से पहले सत्यापित होती है.",
-  },
+    commandCenter: "\u0915\u092e\u093e\u0902\u0921 \u0938\u0947\u0902\u091f\u0930",
+    adminPortal: "\u090f\u0921\u092e\u093f\u0928 \u092a\u094b\u0930\u094d\u091f\u0932",
+    officerPortal: "\u0905\u0927\u093f\u0915\u093e\u0930\u0940 \u092a\u094b\u0930\u094d\u091f\u0932",
+    explorer: "\u090f\u0915\u094d\u0938\u092a\u094d\u0932\u094b\u0930\u0930",
+    simulation: "\u0938\u093f\u092e\u094d\u092f\u0941\u0932\u0947\u0936\u0928",
+    modelInsights: "\u092e\u0949\u0921\u0932 \u0907\u0928\u0938\u093e\u0907\u091f\u094d\u0938",
+    reportIssue: "\u091f\u094d\u0930\u0948\u092b\u093f\u0915 \u0938\u092e\u0938\u094d\u092f\u093e \u0930\u093f\u092a\u094b\u0930\u094d\u091f \u0915\u0930\u0947\u0902",
+    issueType: "\u0938\u092e\u0938\u094d\u092f\u093e \u0915\u093e \u092a\u094d\u0930\u0915\u093e\u0930",
+    severity: "\u0917\u0902\u092d\u0940\u0930\u0924\u093e",
+    description: "\u0935\u093f\u0935\u0930\u0923",
+    language: "\u092d\u093e\u0937\u093e",
+    latitude: "\u0905\u0915\u094d\u0937\u093e\u0902\u0936",
+    longitude: "\u0926\u0947\u0936\u093e\u0902\u0924\u0930",
+    useLocation: "\u092e\u0947\u0930\u0940 \u0932\u094b\u0915\u0947\u0936\u0928 \u0907\u0938\u094d\u0924\u0947\u092e\u093e\u0932 \u0915\u0930\u0947\u0902",
+    submit: "\u0930\u093f\u092a\u094b\u0930\u094d\u091f \u0938\u092c\u092e\u093f\u091f \u0915\u0930\u0947\u0902",
+    submitting: "\u0938\u092c\u092e\u093f\u091f \u0939\u094b \u0930\u0939\u093e \u0939\u0948",
+    accepted: "\u0930\u093f\u092a\u094b\u0930\u094d\u091f \u0938\u094d\u0935\u0940\u0915\u093e\u0930 \u0915\u0940 \u0917\u0908",
+    confidence: "\u0930\u093f\u092a\u094b\u0930\u094d\u091f \u092d\u0930\u094b\u0938\u093e",
+    alertLevel: "\u0905\u0932\u0930\u094d\u091f \u0938\u094d\u0924\u0930",
+    recommendedAction: "\u0905\u0928\u0941\u0936\u0902\u0938\u093f\u0924 \u0915\u093e\u0930\u094d\u0930\u0935\u093e\u0908",
+    matchedEvent: "\u092e\u093f\u0932\u093e \u0939\u0941\u0906 \u0907\u0935\u0947\u0902\u091f",
+    notMatched: "\u0905\u092d\u0940 \u0915\u094b\u0908 \u0907\u0935\u0947\u0902\u091f \u092e\u0948\u091a \u0928\u0939\u0940\u0902 \u0939\u0941\u0906",
+    publicNote: "\u092a\u092c\u094d\u0932\u093f\u0915 \u0930\u093f\u092a\u094b\u0930\u094d\u091f \u0938\u0902\u0915\u0947\u0924 \u0915\u0947 \u0930\u0942\u092a \u092e\u0947\u0902 \u0938\u094d\u0935\u0940\u0915\u093e\u0930 \u0939\u094b\u0924\u0940 \u0939\u0948 \u0914\u0930 \u0906\u0927\u093f\u0915\u093e\u0930\u093f\u0915 \u0915\u093e\u0930\u094d\u0930\u0935\u093e\u0908 \u0938\u0947 \u092a\u0939\u0932\u0947 \u0938\u0924\u094d\u092f\u093e\u092a\u093f\u0924 \u0939\u094b\u0924\u0940 \u0939\u0948."
+  }
 };
 
-export function t(language: AppLanguage, key: string): string {
-  return reportLabels[language]?.[key] ?? reportLabels.en[key] ?? key;
-}
+export const reportLabels = labels;
 
+export function t(language: AppLanguage, key: string): string {
+  return labels[language]?.[key] ?? labels.en[key] ?? key;
+}

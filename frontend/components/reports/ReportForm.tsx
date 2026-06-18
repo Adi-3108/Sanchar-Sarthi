@@ -8,28 +8,24 @@ import {
   submitCongestionReport,
   type CitizenReportCreateRequest,
   type CitizenReportResponse,
-  type CitizenReportSource,
+  type CitizenReportSource
 } from "@/lib/api";
-import { type AppLanguage, t } from "@/lib/i18n";
+import { languageOptions, type AppLanguage, t } from "@/lib/i18n";
+import { useCommandStore } from "@/lib/stores/useCommandStore";
 
 const reportTypes = [
   { value: "road_blockage", label: "Road blockage" },
   { value: "congestion", label: "Heavy congestion" },
   { value: "accident", label: "Accident" },
   { value: "illegal_parking", label: "Illegal parking" },
-  { value: "waterlogging", label: "Waterlogging" },
+  { value: "waterlogging", label: "Waterlogging" }
 ];
 
 const severities = ["Low", "Medium", "High", "Critical"];
-const languages: Array<{ value: AppLanguage; label: string }> = [
-  { value: "en", label: "English" },
-  { value: "kn", label: "ಕನ್ನಡ" },
-  { value: "hi", label: "हिन्दी" },
-];
 const reportSources: Array<{ value: CitizenReportSource; label: string }> = [
   { value: "citizen", label: "Citizen" },
   { value: "field_officer", label: "Field officer" },
-  { value: "control_room", label: "Control room" },
+  { value: "control_room", label: "Control room" }
 ];
 
 function confidencePercent(value: number | null | undefined): string {
@@ -50,7 +46,7 @@ function errorText(error: unknown): string {
 }
 
 export function ReportForm() {
-  const [language, setLanguage] = useState<AppLanguage>("en");
+  const { language, setLanguage } = useCommandStore();
   const [reportSource, setReportSource] = useState<CitizenReportSource>("citizen");
   const [reportType, setReportType] = useState("road_blockage");
   const [severity, setSeverity] = useState("High");
@@ -61,7 +57,7 @@ export function ReportForm() {
 
   const labels = useMemo(() => reportLabelsFor(language), [language]);
   const mutation = useMutation<CitizenReportResponse, unknown, CitizenReportCreateRequest>({
-    mutationFn: (payload) => submitCongestionReport(payload),
+    mutationFn: (payload) => submitCongestionReport(payload)
   });
 
   function useBrowserLocation() {
@@ -69,6 +65,7 @@ export function ReportForm() {
       setLocationMessage("Location is not available in this browser.");
       return;
     }
+
     setLocationMessage("Fetching location...");
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -85,10 +82,12 @@ export function ReportForm() {
     event.preventDefault();
     const lat = Number(latitude);
     const lng = Number(longitude);
+
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       setLocationMessage("Enter valid Bengaluru coordinates.");
       return;
     }
+
     mutation.mutate({
       report_source: reportSource,
       report_type: reportType,
@@ -96,7 +95,7 @@ export function ReportForm() {
       longitude: lng,
       severity,
       description,
-      language,
+      language
     });
   }
 
@@ -121,7 +120,7 @@ export function ReportForm() {
               onChange={(event) => setLanguage(event.target.value as AppLanguage)}
               className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 outline-none transition focus:border-cyan-300"
             >
-              {languages.map((item) => (
+              {languageOptions.map((item) => (
                 <option key={item.value} value={item.value}>
                   {item.label}
                 </option>
@@ -254,7 +253,7 @@ export function ReportForm() {
 
 function ReportResultPanel({
   labels,
-  result,
+  result
 }: {
   labels: Record<string, string>;
   result: CitizenReportResponse | undefined;
@@ -314,10 +313,10 @@ function reportLabelsFor(language: AppLanguage): Record<string, string> {
     "recommendedAction",
     "matchedEvent",
     "notMatched",
-    "publicNote",
+    "publicNote"
   ];
+
   return Object.fromEntries(keys.map((key) => [key, t(language, key)]));
 }
 
 export default ReportForm;
-

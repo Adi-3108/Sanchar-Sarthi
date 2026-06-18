@@ -549,6 +549,60 @@ export type PostEventReportResponse = {
   created_at?: string | null;
 };
 
+export type DemoSummaryResponse = {
+  demo_scenarios: number;
+  demo_events: number;
+  demo_users: number;
+  demo_officers: number;
+  officer_assignments: number;
+  demo_features: number;
+  demo_dna_records: number;
+  demo_predictions: number;
+  demo_recommendations: number;
+  demo_hotspot_clusters: number;
+  demo_reports: number;
+  demo_live_updates: number;
+  demo_post_event_reports: number;
+};
+
+export type DemoCheckResponse = {
+  key: string;
+  label: string;
+  ready: boolean;
+  detail: string;
+};
+
+export type DemoScenarioCardResponse = {
+  scenario_name: string;
+  scenario_type: string;
+  description: string;
+  route: string;
+  primary_event_id?: string | null;
+  event_ids: string[];
+  walkthrough_steps: string[];
+  expected_highlights: string[];
+};
+
+export type DemoStatusResponse = {
+  status: string;
+  generated_at: string;
+  summary: DemoSummaryResponse;
+  checks: DemoCheckResponse[];
+  scenario_cards: DemoScenarioCardResponse[];
+  demo_event_ids: string[];
+  sample_event_ids: Record<string, unknown>;
+  notes: string[];
+};
+
+export type DemoSeedResponse = {
+  status: string;
+  message: string;
+  generated_at: string;
+  summary: DemoSummaryResponse;
+  scenario_names: string[];
+  demo_event_ids: string[];
+};
+
 export type ModelRunResponse = {
   id: string;
   model_name: string;
@@ -706,6 +760,14 @@ export function getHealth(): Promise<HealthResponse> {
 
 export function loadDemoDataset(init?: RequestInit): Promise<DatasetLoadResponse> {
   return postEmpty<DatasetLoadResponse>("/api/datasets/load-demo", init);
+}
+
+export function getDemoStatus(init?: RequestInit): Promise<DemoStatusResponse> {
+  return apiGet<DemoStatusResponse>("/api/demo/status", init);
+}
+
+export function seedDemoScenarios(init?: RequestInit): Promise<DemoSeedResponse> {
+  return postEmpty<DemoSeedResponse>("/api/demo/seed", init);
 }
 
 export function generateEventFeatures(init?: RequestInit): Promise<FeatureGenerationResponse> {

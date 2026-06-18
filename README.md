@@ -102,6 +102,12 @@ Phase 16 adds:
 - protected `POST /api/events/{event_id}/post-event-report` generation workflow
 - a `/post-event-learning` screen for generating future-playbook reviews
 
+Phase 17 adds:
+
+- deterministic demo events, officer mappings, assignments, reports, live updates, and walkthrough scenarios
+- public `GET /api/demo/status` plus protected `POST /api/demo/seed` demo readiness workflows
+- a `/settings` readiness page for Phase 17 judge-demo verification and reseeding
+
 ## Repository Layout
 
 ```text
@@ -216,6 +222,13 @@ future/
 
   ```bash
   pytest backend/tests/test_post_event_report.py
+  ```
+
+- Demo readiness smoke check:
+
+  ```bash
+  python backend/scripts/create_demo_scenarios.py
+  pytest backend/tests/test_demo_scenarios.py
   ```
 
 The base MVP remains free-tier and dataset-honest. Optional Google Translate support stays disabled by default.

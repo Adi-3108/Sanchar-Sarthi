@@ -428,7 +428,7 @@ export default function MapIntelligencePage() {
               {multiEventMutation.isPending ? "Analyzing" : "Run analysis"}
             </button>
             <p className="mt-3 text-sm leading-7 text-muted">
-              This feeds the conflict layer from the real Phase 13 backend analysis instead of a synthetic overlay.
+              This feeds the conflict layer from the real multi-event backend analysis instead of a synthetic overlay.
             </p>
           </article>
 

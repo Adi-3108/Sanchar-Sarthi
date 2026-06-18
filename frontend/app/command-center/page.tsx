@@ -41,14 +41,9 @@ export default function CommandCenterPage() {
                 Predictive traffic command twin for event-driven congestion.
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-muted md:text-lg">
-                Phases 1 through 16 now cover the backend shell, typed health contract,
-                database connectivity, ASTraM ingestion, derived feature engineering,
-                dataset-backed hotspot analytics, Event DNA, prediction services, and
-                estimated impact scoring plus recommendation orchestration with weather-aware
-                planning, multilingual citizen reporting, live operational escalation,
-                multi-event coordination, MapmyIndia-first operational map intelligence,
-                and post-event learning reports for the full Predict - Plan - Monitor -
-                Adapt - Learn workflow.
+                Explore historical congestion patterns, simulate new events, generate
+                operational response plans, monitor escalation signals, study conflict zones,
+                and review after-action learning in one connected traffic command workspace.
               </p>
               <div className="mt-5 flex flex-wrap gap-3">
                 <Link
@@ -74,6 +69,12 @@ export default function CommandCenterPage() {
                   className="rounded-full border border-emerald-300/40 bg-emerald-300/10 px-4 py-2 text-sm text-copy transition hover:border-emerald-200 hover:bg-emerald-300/20"
                 >
                   Open post-event learning
+                </Link>
+                <Link
+                  href="/settings"
+                  className="rounded-full border border-sky-300/40 bg-sky-300/10 px-4 py-2 text-sm text-copy transition hover:border-sky-200 hover:bg-sky-300/20"
+                >
+                  Open demo readiness
                 </Link>
               </div>
             </div>
@@ -110,9 +111,6 @@ export default function CommandCenterPage() {
                 </p>
                 <h2 className="mt-2 text-2xl font-semibold">Typed `/api/health` contract</h2>
               </div>
-              <span className="rounded-full border border-line px-3 py-1 text-xs uppercase tracking-[0.18em] text-muted">
-                Phase 2
-              </span>
             </div>
 
             <div className="mt-6 rounded-3xl border border-line/70 bg-bg/60 p-5 font-mono text-sm leading-7 text-copy">
@@ -134,29 +132,24 @@ export default function CommandCenterPage() {
                   <p>Road closure model: {data.models.road_closure}</p>
                   <p>Resolution time model: {data.models.resolution_time}</p>
                   <p>Firebase: {data.auth.firebase}</p>
-                  <p>Phase 16: post-event learning loop ready</p>
+                  <p>Demo readiness tools available</p>
                 </div>
               )}
             </div>
           </article>
 
           <article className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-6 shadow-panel">
-            <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Phase map</p>
-            <h2 className="mt-2 text-2xl font-semibold">What this unlocks next</h2>
+            <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Capabilities</p>
+            <h2 className="mt-2 text-2xl font-semibold">What you can do here</h2>
             <ul className="mt-5 space-y-3 text-sm leading-7 text-muted">
-              <li>Phase 4: derived time, duration, and historical risk features.</li>
-              <li>Phase 5: dataset-backed hotspot clustering and analytics endpoints.</li>
-              <li>Phase 6: Event DNA summaries and similar-event retrieval.</li>
-              <li>Phase 7: prediction diagnostics, road-closure scoring, and resolution-time estimates.</li>
-              <li>Phase 8: counterfactual impact scoring and simulation-ready impact fields.</li>
-              <li>Phase 9: operational recommendation planning across manpower, barricades, diversions, and logistics impact.</li>
-              <li>Phase 10: weather-aware impact, barricade, and diversion adjustment for simulation and event-plan workflows.</li>
-              <li>Phase 11: citizen and field reporting with multilingual normalization and confidence scoring.</li>
-              <li>Phase 12: live escalation updates that compare expected vs current impact and suggest adaptive actions.</li>
-              <li>Phase 13: simultaneous event conflict detection across time, space, diversions, and manpower.</li>
-              <li>Phase 14: MapmyIndia-first map intelligence with route/geocode adapters, budget guardrails, and OSM fallback.</li>
-              <li>Phase 15: role-aware dashboards, Firebase-protected portals, and connected event workflow pages.</li>
-              <li>Phase 16: post-event learning reports and future-playbook generation for the closing loop.</li>
+              <li>Understand high-risk corridors, hotspots, and recurring event patterns.</li>
+              <li>Inspect event intelligence with context, similarity evidence, and impact estimates.</li>
+              <li>Generate manpower, barricade, diversion, emergency-corridor, and logistics guidance.</li>
+              <li>Adjust plans when rain, low visibility, or waterlogging changes field conditions.</li>
+              <li>Track citizen and officer signals as escalation inputs instead of blind truth.</li>
+              <li>Analyze overlapping events that compete for corridors, diversions, and manpower.</li>
+              <li>Review post-event learnings and reuse them for future planning.</li>
+              <li>Prepare a stable end-to-end demo flow from the readiness page.</li>
             </ul>
           </article>
         </section>

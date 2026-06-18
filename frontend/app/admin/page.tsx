@@ -170,6 +170,12 @@ export default function AdminPage() {
               >
                 Simulation
               </Link>
+              <Link
+                href="/settings"
+                className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
+              >
+                Settings
+              </Link>
             </nav>
           </div>
         </section>

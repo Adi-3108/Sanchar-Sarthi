@@ -37,6 +37,16 @@ def _normalize_text(value: str | None) -> str | None:
     return normalized or None
 
 
+def _clean_floats(d: Any) -> Any:
+    if isinstance(d, dict):
+        return {k: _clean_floats(v) for k, v in d.items()}
+    elif isinstance(d, list):
+        return [_clean_floats(v) for v in d]
+    elif type(d).__name__ in ("float32", "float64", "float16", "int64", "int32"):
+        return float(d) if "float" in type(d).__name__ else int(d)
+    return d
+
+
 def _fallback_urgency(event: Event, feature: EventFeature | None = None) -> float:
     score = 0.25
     priority = _normalize_text(event.priority)
@@ -227,9 +237,9 @@ def predict_event(
     record.vehicle_impact_note = str(impact["vehicle_impact_note"])
     record.baseline_risk_score = float(counterfactual["baseline_risk_score"])
     record.additional_event_delta = float(counterfactual["additional_event_delta"])
-    record.weather_adjustment_json = weather_adjustment
-    record.multi_event_conflict_json = multi_event_conflict
-    record.prediction_explanation_json = {
+    record.weather_adjustment_json = _clean_floats(weather_adjustment)
+    record.multi_event_conflict_json = _clean_floats(multi_event_conflict)
+    record.prediction_explanation_json = _clean_floats({
         "priority": {
             "method": priority_method,
             "dataset_honesty": dataset_honesty,
@@ -256,7 +266,7 @@ def predict_event(
             "model_run_id": str(priority_model_run.id) if priority_model_run is not None else None,
             "counterfactual": counterfactual,
         },
-    }
+    })
     record.model_version = (
         str(priority_bundle.get("model_version"))
         if priority_bundle is not None and priority_bundle.get("model_version")

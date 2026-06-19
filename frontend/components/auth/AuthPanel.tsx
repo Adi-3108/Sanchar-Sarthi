@@ -1,10 +1,11 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
+import { getCurrentFirebaseToken, loginWithFirebase, logoutFirebase, registerWithFirebase, useFirebaseAuthState } from "@/lib/auth";
+import { getCurrentAccess } from "@/lib/api";
 import { isFirebaseConfigured } from "@/lib/firebase";
-import { loginWithFirebase, logoutFirebase, registerWithFirebase, useFirebaseAuthState } from "@/lib/auth";
 import { type AccessLevel, useSessionStore } from "@/lib/stores/useSessionStore";
 
 const roleLabels: Record<AccessLevel, string> = {
@@ -28,16 +29,63 @@ function errorText(error: unknown): string {
   return "Firebase sign-in failed.";
 }
 
+function normalizeBackendRole(role: string): Exclude<AccessLevel, "public_citizen"> {
+  if (role === "admin") return "admin";
+  if (role === "control_room" || role === "control_room_officer") return "control_room";
+  if (role === "police_officer") return "police_officer";
+  return "citizen";
+}
+
 export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
   const queryClient = useQueryClient();
   const session = useSessionStore();
   const { user, ready } = useFirebaseAuthState();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<Exclude<AccessLevel, "public_citizen">>(preferredRole);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+
+  useEffect(() => {
+    if (!ready) {
+      return;
+    }
+
+    if (!user) {
+      if (session.accessLevel !== "public_citizen" || session.firebaseUid || session.email || session.firebaseIdToken) {
+        session.clearSession();
+      }
+      return;
+    }
+
+    if (
+      session.firebaseUid === user.uid &&
+      session.email === user.email &&
+      session.firebaseIdToken &&
+      session.accessLevel !== "public_citizen"
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      const idToken = (await getCurrentFirebaseToken()) ?? (await user.getIdToken());
+      if (cancelled) {
+        return;
+      }
+      const access = await getCurrentAccess(idToken);
+      session.setFirebaseSession({
+        accessLevel: normalizeBackendRole(access.role),
+        firebaseIdToken: idToken,
+        firebaseUid: user.uid,
+        email: user.email
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, session, user]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -54,8 +102,9 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
       }
 
       const result = await loginWithFirebase(email, password);
+      const access = await getCurrentAccess(result.idToken);
       session.setFirebaseSession({
-        accessLevel: role,
+        accessLevel: normalizeBackendRole(access.role),
         firebaseIdToken: result.idToken,
         firebaseUid: result.uid,
         email: result.email
@@ -73,6 +122,8 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
     session.clearSession();
     await queryClient.invalidateQueries();
   }
+
+  const visibleRole = session.accessLevel;
 
   return (
     <section className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel">
@@ -92,7 +143,7 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
         <div className="mt-5 space-y-3">
           <div className="rounded-2xl border border-line/70 bg-bg/60 p-4 text-sm leading-7 text-copy">
             <p>Signed in: {user.email ?? user.uid}</p>
-            <p>Selected UI role: {roleLabels[session.accessLevel]}</p>
+            <p>Selected UI role: {roleLabels[visibleRole]}</p>
           </div>
           <button
             type="button"
@@ -123,19 +174,6 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
               required
               className="w-full rounded-2xl border border-line bg-bg/80 px-4 py-3 text-copy outline-none transition focus:border-accent"
             />
-          </label>
-          <label className="text-sm text-muted">
-            <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-accentSoft">UI role hint</span>
-            <select
-              value={role}
-              onChange={(event) => setRole(event.target.value as Exclude<AccessLevel, "public_citizen">)}
-              className="w-full rounded-2xl border border-line bg-bg/80 px-4 py-3 text-copy outline-none transition focus:border-accent"
-            >
-              <option value="admin">Admin</option>
-              <option value="control_room">Control room</option>
-              <option value="police_officer">Police officer</option>
-              <option value="citizen">Citizen</option>
-            </select>
           </label>
           <button
             type="submit"

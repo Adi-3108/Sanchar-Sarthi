@@ -910,8 +910,8 @@ def seed_demo_scenarios(db: Session, *, commit: bool = True) -> DemoSeedReport:
         officers_by_id=officers_by_id,
     )
 
-    rebuild_hotspots(db, commit=False)
-    rebuild_event_dna_records(db, refresh_supporting_data=False, commit=False)
+    # rebuild_hotspots(db, commit=False)
+    # rebuild_event_dna_records(db, refresh_supporting_data=False, commit=False)
     prediction_by_event_id, _recommendation_by_event_id = _seed_predictions_and_recommendations(db, events_by_id)
     report_count = _seed_demo_reports(db)
     live_update_count = _seed_demo_live_updates(db, prediction_by_event_id)

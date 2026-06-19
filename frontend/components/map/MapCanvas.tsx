@@ -82,12 +82,16 @@ export function MapCanvas({ config, children, className }: MapCanvasProps) {
     >
       <div className="absolute inset-0 bg-[linear-gradient(135deg,#102234_0%,#0b1724_45%,#07111c_100%)]" />
       <div
-        id={`mappls-container-${mapId}`}
-        ref={mapContainerRef}
         className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${
           activeProvider === "mapmyindia" ? "opacity-100" : "opacity-0"
         }`}
-      />
+      >
+        <div
+          id={`mappls-container-${mapId}`}
+          ref={mapContainerRef}
+          style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}
+        />
+      </div>
       <div className={`absolute inset-0 pointer-events-none transition-opacity duration-500 ${activeProvider === "mapmyindia" ? "opacity-0" : "opacity-80"}`}>
         <div className="absolute inset-0 bg-[linear-gradient(transparent_0,transparent_calc(100%-1px),rgba(148,163,184,0.12)_100%),linear-gradient(90deg,transparent_0,transparent_calc(100%-1px),rgba(148,163,184,0.12)_100%)] bg-[length:52px_52px]" />
         <div className="absolute left-[8%] top-[20%] h-[2px] w-[78%] rotate-[-10deg] rounded-full bg-cyan-300/20" />
@@ -99,9 +103,6 @@ export function MapCanvas({ config, children, className }: MapCanvasProps) {
       <div className="absolute left-5 top-5 z-20 flex max-w-[calc(100%-2.5rem)] flex-wrap gap-2">
         <span className="rounded-full border border-slate-700/80 bg-slate-950/85 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-slate-200">
           {providerBadge(config, sdkState)}
-        </span>
-        <span className="rounded-full border border-slate-700/80 bg-slate-950/85 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-slate-300">
-          Budget: INR {config.creditsBudgetInr}
         </span>
         <span className="rounded-full border border-slate-700/80 bg-slate-950/85 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-slate-300">
           {activeProvider === "mapmyindia" ? "Primary base map" : "Local overlay mode"}

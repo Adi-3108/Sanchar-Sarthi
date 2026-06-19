@@ -1,5 +1,5 @@
 import { FoundationShell } from "@/components/foundation/FoundationShell";
 
-export default function HomePage() {
+export default function UserPage() {
   return <FoundationShell mode="user" />;
 }

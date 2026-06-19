@@ -6,7 +6,7 @@ import { AppProviders } from "@/components/app-providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "EventFlow AI",
+  title: "Sanchar Sarthi",
   description: "Predictive traffic command twin for Bengaluru event-driven congestion."
 };
 

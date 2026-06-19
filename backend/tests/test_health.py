@@ -11,7 +11,7 @@ def test_health_endpoint_reports_database_status():
     assert response.status_code == 200
     payload = response.json()
     assert payload["status"] == "ok"
-    assert payload["service"] == "eventflow-ai-backend"
+    assert payload["service"] == "sanchar-sarthi-backend"
     assert payload["database"] in {"connected", "unavailable"}
     assert "database_detail" in payload
     assert payload["models"]["priority"] in {"not_loaded", "dependency_missing", "loaded"}

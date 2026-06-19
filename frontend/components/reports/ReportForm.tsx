@@ -107,7 +107,7 @@ export function ReportForm() {
       >
         <div className="flex flex-col gap-4 border-b border-slate-800/80 pb-5 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-300/80">EventFlow AI</p>
+            <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-300/80">Sanchar Sarthi</p>
             <h1 className="mt-2 text-3xl font-semibold text-slate-100">{labels.reportIssue}</h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">{labels.publicNote}</p>
           </div>

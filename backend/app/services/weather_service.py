@@ -96,11 +96,11 @@ def build_weather_adjustment(
         elif source.startswith("manual_"):
             note = "Weather modifier uses a manual scenario override for MVP planning and remains an operational estimate."
         elif provider_status == "failed_fallback":
-            note = "Live weather lookup failed, so EventFlow AI used a neutral weather fallback."
+            note = "Live weather lookup failed, so Sanchar Sarthi used a neutral weather fallback."
         elif provider_status == "disabled":
-            note = "Live weather lookup is disabled, so EventFlow AI used a neutral weather fallback."
+            note = "Live weather lookup is disabled, so Sanchar Sarthi used a neutral weather fallback."
         else:
-            note = "No explicit weather risk was provided, so EventFlow AI used a neutral weather modifier."
+            note = "No explicit weather risk was provided, so Sanchar Sarthi used a neutral weather modifier."
 
     return {
         "weather_condition": active_condition,

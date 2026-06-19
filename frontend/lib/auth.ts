@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import {
   browserLocalPersistence,
+  createUserWithEmailAndPassword,
   onAuthStateChanged,
   setPersistence,
   signInWithEmailAndPassword,
   signOut,
+  sendEmailVerification,
   type User
 } from "firebase/auth";
 
@@ -31,12 +33,31 @@ export async function loginWithFirebase(email: string, password: string): Promis
   await setPersistence(firebaseAuth, browserLocalPersistence);
   const credential = await signInWithEmailAndPassword(firebaseAuth, email, password);
 
+  if (!credential.user.emailVerified) {
+    await sendEmailVerification(credential.user);
+    await signOut(firebaseAuth);
+    throw new Error("Please verify your email address before logging in. A new verification link has been sent to your inbox.");
+  }
+
   return {
     uid: credential.user.uid,
     email: credential.user.email,
     idToken: await credential.user.getIdToken()
   };
 }
+
+export async function registerWithFirebase(email: string, password: string): Promise<void> {
+  if (!firebaseAuth) {
+    throw new Error("Firebase web authentication is not configured.");
+  }
+
+  await setPersistence(firebaseAuth, browserLocalPersistence);
+  const credential = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+
+  await sendEmailVerification(credential.user);
+  await signOut(firebaseAuth);
+}
+
 
 export async function getCurrentFirebaseToken(forceRefresh = false): Promise<string | undefined> {
   const user = firebaseAuth?.currentUser;

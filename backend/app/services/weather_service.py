@@ -157,6 +157,12 @@ def fetch_open_meteo_adjustment(
         "current": "weather_code,rain,showers,visibility",
         "timezone": "Asia/Kolkata",
     }
+    
+    # NOTE ON SYNC I/O: This uses a synchronous httpx.Client which blocks the thread.
+    # However, since the FastAPI route handlers calling this service are defined as
+    # synchronous functions (`def` instead of `async def`), FastAPI automatically
+    # runs them in a separate threadpool. This ensures the main async event loop
+    # is NEVER blocked by these external network calls.
     with httpx.Client(timeout=timeout_seconds) as client:
         response = client.get(OPEN_METEO_URL, params=params)
         response.raise_for_status()

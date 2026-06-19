@@ -671,6 +671,8 @@ export type FoundationIncident = {
   false_vote_count: number;
   confidence_score: number;
   assigned_station_name?: string | null;
+  assigned_station_code?: string | null;
+  station_contact_number?: string | null;
   police_force_required?: number | null;
   barricades_required?: number | null;
   route_impact_summary?: string | null;
@@ -682,18 +684,48 @@ export type FoundationIncident = {
 };
 
 export type FoundationStation = {
+  id: string;
   station_code: string;
   name: string;
   locality: string;
   latitude: number;
   longitude: number;
   contact_number?: string | null;
+  active: boolean;
+};
+
+export type FoundationHotspot = {
+  hotspot_id: string;
+  label: string;
+  incident_count: number;
+  severity: string;
+  latitude: number;
+  longitude: number;
+  active_incident_ids: string[];
 };
 
 export type FoundationBrowseResponse = {
   incidents: FoundationIncident[];
   stations: FoundationStation[];
+  hotspots: FoundationHotspot[];
   statuses: string[];
+};
+
+export type FoundationIncidentCreateRequest = {
+  incident_type: string;
+  title: string;
+  description: string;
+  severity: "low" | "medium" | "high" | "critical";
+  location_name: string;
+  latitude: number;
+  longitude: number;
+  locality?: string | null;
+  ward?: string | null;
+};
+
+export type FoundationStatusTransitionRequest = {
+  status: "reported" | "pending_verification" | "active" | "escalated" | "resolved" | "rejected" | "archived";
+  resolution_notes?: string | null;
 };
 
 export type FoundationSeedResponse = {
@@ -815,6 +847,39 @@ export async function apiPost<T>(path: string, body: unknown, init?: RequestInit
   return (await response.json()) as T;
 }
 
+export async function apiPatch<T>(path: string, body: unknown, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    method: "PATCH",
+    cache: "no-store",
+    headers: await buildRequestHeaders(init?.headers),
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const bodyText = await readResponseBody(response);
+    throw new ApiError(`API request failed with status ${response.status}`, response.status, bodyText);
+  }
+
+  return (await response.json()) as T;
+}
+
+export async function apiDelete<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    method: "DELETE",
+    cache: "no-store",
+    headers: await buildRequestHeaders(init?.headers)
+  });
+
+  if (!response.ok) {
+    const bodyText = await readResponseBody(response);
+    throw new ApiError(`API request failed with status ${response.status}`, response.status, bodyText);
+  }
+
+  return (await response.json()) as T;
+}
+
 export function postEmpty<T>(path: string, init?: RequestInit): Promise<T> {
   return apiPost<T>(path, {}, init);
 }
@@ -913,6 +978,28 @@ export function getFoundationControlRoom(init?: RequestInit): Promise<Foundation
   return apiGet<FoundationBrowseResponse>("/api/foundation/control-room", init);
 }
 
+export function createFoundationReport(
+  payload: FoundationIncidentCreateRequest,
+  init?: RequestInit
+): Promise<FoundationIncident> {
+  return apiPost<FoundationIncident>("/api/foundation/incidents/report", payload, init);
+}
+
+export function createFoundationOfficialIncident(
+  payload: FoundationIncidentCreateRequest,
+  init?: RequestInit
+): Promise<FoundationIncident> {
+  return apiPost<FoundationIncident>("/api/foundation/control-room/incidents", payload, init);
+}
+
+export function transitionFoundationIncidentStatus(
+  incidentId: string,
+  payload: FoundationStatusTransitionRequest,
+  init?: RequestInit
+): Promise<FoundationIncident> {
+  return apiPatch<FoundationIncident>(`/api/foundation/control-room/incidents/${encodeURIComponent(incidentId)}/status`, payload, init);
+}
+
 export function voteFoundationIncident(
   incidentId: string,
   voteValue: "true" | "false",
@@ -923,4 +1010,133 @@ export function voteFoundationIncident(
 
 export function seedFoundationData(init?: RequestInit): Promise<FoundationSeedResponse> {
   return apiPost<FoundationSeedResponse>("/api/foundation/admin/seed", {}, init);
+}
+
+export type FoundationAdminSummary = {
+  incident_count: number;
+  station_count: number;
+  vote_count: number;
+  prediction_count: number;
+  user_count: number;
+  audit_log_count: number;
+  status_counts: Record<string, number>;
+};
+
+export type FoundationAdminUser = {
+  id: string;
+  display_name?: string | null;
+  role: string;
+  auth_provider_uid: string;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type FoundationVote = {
+  id: string;
+  incident_id: string;
+  voter_user_id: string;
+  vote_value: string;
+  created_at: string;
+};
+
+export type FoundationAuditLog = {
+  id: string;
+  actor_role: string;
+  action: string;
+  resource_type: string;
+  resource_id?: string | null;
+  metadata_json: Record<string, unknown>;
+  created_at: string;
+};
+
+export type FoundationAdminOverviewResponse = {
+  summary: FoundationAdminSummary;
+  incidents: FoundationIncident[];
+  stations: FoundationStation[];
+  users: FoundationAdminUser[];
+  votes: FoundationVote[];
+  logs: FoundationAuditLog[];
+  hotspots: FoundationHotspot[];
+  statuses: string[];
+};
+
+export type FoundationIncidentAdminUpdateRequest = {
+  title?: string;
+  description?: string;
+  status?: FoundationStatusTransitionRequest["status"];
+  severity?: FoundationIncidentCreateRequest["severity"];
+  location_name?: string;
+  locality?: string | null;
+  ward?: string | null;
+  police_force_required?: number | null;
+  barricades_required?: number | null;
+  route_impact_summary?: string | null;
+  resolution_notes?: string | null;
+  visible_to_public?: boolean;
+  station_alerted?: boolean;
+};
+
+export type FoundationStationAdminUpdateRequest = {
+  name?: string;
+  locality?: string;
+  contact_number?: string | null;
+  active?: boolean;
+};
+
+export type FoundationUserAdminUpdateRequest = {
+  display_name?: string;
+  role?: string;
+  is_active?: boolean;
+};
+
+export function getFoundationAdminOverview(init?: RequestInit): Promise<FoundationAdminOverviewResponse> {
+  return apiGet<FoundationAdminOverviewResponse>("/api/foundation/admin/overview", init);
+}
+
+export function updateFoundationAdminIncident(
+  incidentId: string,
+  payload: FoundationIncidentAdminUpdateRequest,
+  init?: RequestInit
+): Promise<FoundationIncident> {
+  return apiPatch<FoundationIncident>(`/api/foundation/admin/incidents/${encodeURIComponent(incidentId)}`, payload, init);
+}
+
+export function deleteFoundationAdminIncident(incidentId: string, init?: RequestInit): Promise<{ status: string; incident_id: string }> {
+  return apiDelete<{ status: string; incident_id: string }>(`/api/foundation/admin/incidents/${encodeURIComponent(incidentId)}`, init);
+}
+
+export function updateFoundationAdminStation(
+  stationId: string,
+  payload: FoundationStationAdminUpdateRequest,
+  init?: RequestInit
+): Promise<FoundationStation> {
+  return apiPatch<FoundationStation>(`/api/foundation/admin/stations/${encodeURIComponent(stationId)}`, payload, init);
+}
+
+export function updateFoundationAdminUser(
+  userId: string,
+  payload: FoundationUserAdminUpdateRequest,
+  init?: RequestInit
+): Promise<FoundationAdminUser> {
+  return apiPatch<FoundationAdminUser>(`/api/foundation/admin/users/${encodeURIComponent(userId)}`, payload, init);
+}
+
+export function deleteFoundationAdminVote(voteId: string, init?: RequestInit): Promise<{ status: string; vote_id: string }> {
+  return apiDelete<{ status: string; vote_id: string }>(`/api/foundation/admin/votes/${encodeURIComponent(voteId)}`, init);
+}
+
+export type CommandCenterSummary = {
+  activeEvents: number;
+  criticalEvents: number;
+  hotspotCount: number;
+  latestRecommendationCount: number;
+  pendingReports: number;
+  resolvedToday: number;
+  totalEvents: number;
+  totalIncidents: number;
+  activeIncidents: number;
+};
+
+export function getCommandCenterSummary(init?: RequestInit): Promise<CommandCenterSummary> {
+  return apiGet<CommandCenterSummary>("/api/command-center/summary", init);
 }

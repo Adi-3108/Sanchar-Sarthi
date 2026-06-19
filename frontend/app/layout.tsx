@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { Metadata } from "next";
 
 import { AppProviders } from "@/components/app-providers";
+import { LanguageProvider } from "@/components/LanguageContext";
 
 import "./globals.css";
 
@@ -18,8 +19,11 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
       <body>
-        <AppProviders>{children}</AppProviders>
+        <LanguageProvider>
+          <AppProviders>{children}</AppProviders>
+        </LanguageProvider>
       </body>
     </html>
   );
 }
+

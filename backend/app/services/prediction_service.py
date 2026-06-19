@@ -9,9 +9,9 @@ from sqlalchemy.orm import Session
 from app.ml.feature_pipeline import (
     PRIORITY_MODEL_NAME,
     PRIORITY_MODEL_PATH,
+    LABEL_ENCODER_PATH,
     ROAD_CLOSURE_MODEL_NAME,
     RESOLUTION_TIME_MODEL_NAME,
-    build_priority_feature_row,
     latest_model_run,
 )
 from app.orm.event import Event
@@ -57,7 +57,7 @@ def _predict_priority_probability(
     event: Event,
     feature: EventFeature | None = None,
 ) -> tuple[float | None, dict[str, Any] | None, str | None]:
-    if not PRIORITY_MODEL_PATH.exists():
+    if not PRIORITY_MODEL_PATH.exists() or not LABEL_ENCODER_PATH.exists():
         return None, None, None
 
     try:
@@ -67,12 +67,55 @@ def _predict_priority_probability(
         return None, None, "priority_ml_dependency_missing"
 
     try:
-        bundle: dict[str, Any] = joblib.load(PRIORITY_MODEL_PATH)
-        frame = pd.DataFrame([build_priority_feature_row(event, feature)])
-        probability = float(bundle["pipeline"].predict_proba(frame)[0][1])
+        clf = joblib.load(PRIORITY_MODEL_PATH)
+        le = joblib.load(LABEL_ENCODER_PATH)
+
+        row = {
+            "event_cause": event.event_cause_clean or "unknown",
+            "corridor": event.corridor or "unknown",
+            "police_station": event.police_station or "unknown",
+            "latitude": event.latitude,
+            "longitude": event.longitude,
+            "is_weekend": feature.is_weekend if feature else False,
+            "is_peak_hour": feature.is_peak_hour if feature else False,
+            "is_night_event": feature.is_night_event if feature else False,
+            "historical_corridor_risk": float(feature.historical_corridor_risk) if feature and feature.historical_corridor_risk else 0.0,
+            "historical_police_station_risk": float(feature.historical_police_station_risk) if feature and feature.historical_police_station_risk else 0.0,
+            "historical_cluster_risk": float(feature.historical_cluster_risk) if feature and feature.historical_cluster_risk else 0.0,
+            "historical_cause_closure_rate": float(feature.historical_cause_closure_rate) if feature and feature.historical_cause_closure_rate else 0.0,
+            "historical_corridor_closure_rate": float(feature.historical_corridor_closure_rate) if feature and feature.historical_corridor_closure_rate else 0.0,
+        }
+        
+        frame = pd.DataFrame([row])
+        
+        categorical_cols = ["event_cause", "corridor", "police_station"]
+        frame = pd.get_dummies(frame, columns=categorical_cols)
+        
+        for col in clf.feature_names_in_:
+            if col not in frame.columns:
+                frame[col] = False if col.startswith(tuple(categorical_cols)) else 0.0
+                
+        frame = frame[clf.feature_names_in_]
+        probabilities = clf.predict_proba(frame)[0]
+        
+        high_idx, critical_idx = -1, -1
+        for idx, cls_name in enumerate(le.classes_):
+            if cls_name.lower() == "high":
+                high_idx = idx
+            elif cls_name.lower() == "critical":
+                critical_idx = idx
+                
+        high_prob = probabilities[high_idx] if high_idx >= 0 else 0.0
+        crit_prob = probabilities[critical_idx] if critical_idx >= 0 else 0.0
+        probability = float(high_prob + crit_prob)
+        
+        bundle = {
+            "model_version": "xgboost_kaggle_v1",
+            "metrics": {"high_probability": high_prob, "critical_probability": crit_prob}
+        }
         return probability, bundle, None
-    except Exception:
-        return None, None, "priority_ml_unavailable"
+    except Exception as exc:
+        return None, None, f"priority_ml_unavailable: {exc}"
 
 
 def _get_or_create_prediction_record(db: Session, event_id: str) -> tuple[EventPrediction, bool]:

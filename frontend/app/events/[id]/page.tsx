@@ -22,6 +22,7 @@ import {
   getEventDetail,
   submitLiveUpdate,
   type EventCitizenReportRecordResponse,
+  type EventDetailResponse,
   type EventPlanRequest,
   type EventPredictionResponse,
   type LiveUpdateRequest,
@@ -118,7 +119,15 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
   });
   const planMutation = useMutation<RecommendationPlanResponse, unknown, EventPlanRequest>({
     mutationFn: (payload) => generateEventPlan(payload),
-    onSuccess: async () => {
+    onSuccess: async (plan) => {
+      queryClient.setQueryData<EventDetailResponse | undefined>(["event-detail", eventId], (current) =>
+        current
+          ? {
+              ...current,
+              recommendation: plan
+            }
+          : current
+      );
       await queryClient.invalidateQueries({ queryKey: ["event-detail", eventId] });
     }
   });
@@ -153,7 +162,7 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
   }
 
   const detail = detailQuery.data;
-  const recommendation = planMutation.data ?? detail?.recommendation;
+  const recommendation = detail?.recommendation;
   const prediction = detail?.prediction;
   const scoreReasonCodes = useMemo(() => predictionScoreReasonCodes(prediction), [prediction]);
   const counterfactualNote = useMemo(() => counterfactualHonestyNote(prediction), [prediction]);
@@ -389,3 +398,5 @@ function Metric({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+

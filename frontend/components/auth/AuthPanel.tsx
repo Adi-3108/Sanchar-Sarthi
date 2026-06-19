@@ -1,10 +1,10 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
+import { getCurrentFirebaseToken, loginWithFirebase, logoutFirebase, useFirebaseAuthState } from "@/lib/auth";
 import { isFirebaseConfigured } from "@/lib/firebase";
-import { loginWithFirebase, logoutFirebase, useFirebaseAuthState } from "@/lib/auth";
 import { type AccessLevel, useSessionStore } from "@/lib/stores/useSessionStore";
 
 const roleLabels: Record<AccessLevel, string> = {
@@ -27,15 +27,66 @@ function errorText(error: unknown): string {
   return "Firebase sign-in failed.";
 }
 
+function resolveInteractiveRole(
+  accessLevel: AccessLevel,
+  preferredRole: Exclude<AccessLevel, "public_citizen">
+): Exclude<AccessLevel, "public_citizen"> {
+  return accessLevel === "public_citizen" ? preferredRole : accessLevel;
+}
+
 export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
   const queryClient = useQueryClient();
   const session = useSessionStore();
   const { user, ready } = useFirebaseAuthState();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<Exclude<AccessLevel, "public_citizen">>(preferredRole);
+  const [role, setRole] = useState<Exclude<AccessLevel, "public_citizen">>(
+    resolveInteractiveRole(session.accessLevel, preferredRole)
+  );
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    const resolvedRole = resolveInteractiveRole(session.accessLevel, preferredRole);
+    if (role !== resolvedRole) {
+      setRole(resolvedRole);
+    }
+  }, [preferredRole, role, session.accessLevel]);
+
+  useEffect(() => {
+    if (!ready) {
+      return;
+    }
+
+    if (!user) {
+      if (session.accessLevel !== "public_citizen" || session.firebaseUid || session.email || session.firebaseIdToken) {
+        session.clearSession();
+      }
+      return;
+    }
+
+    if (session.firebaseUid === user.uid && session.email === user.email && session.firebaseIdToken) {
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      const idToken = (await getCurrentFirebaseToken()) ?? (await user.getIdToken());
+      if (cancelled) {
+        return;
+      }
+      session.setFirebaseSession({
+        accessLevel: resolveInteractiveRole(session.accessLevel, role),
+        firebaseIdToken: idToken,
+        firebaseUid: user.uid,
+        email: user.email
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, role, session, user]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -61,8 +112,11 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
   async function handleLogout() {
     await logoutFirebase();
     session.clearSession();
+    setRole(preferredRole);
     await queryClient.invalidateQueries();
   }
+
+  const visibleRole = session.accessLevel === "public_citizen" && user ? role : session.accessLevel;
 
   return (
     <section className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel">
@@ -82,7 +136,7 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
         <div className="mt-5 space-y-3">
           <div className="rounded-2xl border border-line/70 bg-bg/60 p-4 text-sm leading-7 text-copy">
             <p>Signed in: {user.email ?? user.uid}</p>
-            <p>Selected UI role: {roleLabels[session.accessLevel]}</p>
+            <p>Selected UI role: {roleLabels[visibleRole]}</p>
           </div>
           <button
             type="button"

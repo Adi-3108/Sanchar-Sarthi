@@ -5,19 +5,22 @@ import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "re
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import AuthPanel from "@/components/auth/AuthPanel";
+import MapCanvas from "@/components/map/MapCanvas";
 import {
   ApiError,
   createFoundationOfficialIncident,
   createFoundationReport,
   getFoundationControlRoom,
   getFoundationIncidents,
+  getMapConfig,
   seedFoundationData,
   transitionFoundationIncidentStatus,
   voteFoundationIncident,
   type FoundationBrowseResponse,
   type FoundationIncident,
   type FoundationIncidentCreateRequest,
-  type FoundationStatusTransitionRequest
+  type FoundationStatusTransitionRequest,
+  type MapConfigResponse
 } from "@/lib/api";
 import { useFirebaseAuthState } from "@/lib/auth";
 import { type AppLanguage, languageOptions } from "@/lib/i18n";
@@ -321,6 +324,13 @@ export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mod
     refetchOnWindowFocus: false
   });
 
+  const configQuery = useQuery({
+    queryKey: ["map-config"],
+    queryFn: getMapConfig,
+    retry: 1,
+    refetchOnWindowFocus: false
+  });
+
   async function syncData() {
     await queryClient.invalidateQueries({ queryKey: ["foundation-public"] });
     await queryClient.invalidateQueries({ queryKey: ["foundation-control"] });
@@ -497,7 +507,7 @@ export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mod
             <IncidentList title={labels.reports} incidents={reportedIncidents} labels={labels} canVote={Boolean(user)} canManage={canManage} selectedIncidentId={selectedIncident?.id ?? null} onSelect={setSelectedIncidentId} onVote={(incidentId, voteValue) => voteMutation.mutate({ incidentId, voteValue })} onStatusChange={(incidentId, payload) => statusMutation.mutate({ incidentId, payload })} compact />
           </div>
 
-          <MapPanel data={data} bounds={bounds} labels={labels} selectedIncidentId={selectedIncident?.id ?? null} onSelectIncident={setSelectedIncidentId} />
+          <MapPanel data={data} bounds={bounds} labels={labels} selectedIncidentId={selectedIncident?.id ?? null} onSelectIncident={setSelectedIncidentId} config={configQuery.data} />
         </section>
 
         <aside className="grid gap-5">
@@ -558,27 +568,56 @@ function MiniAction({ label, onClick }: { label: string; onClick: () => void }) 
   return <button className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm" onClick={onClick} type="button">{label}</button>;
 }
 
-function MapPanel({ data, bounds, labels, selectedIncidentId, onSelectIncident }: { data?: FoundationBrowseResponse; bounds: Bounds; labels: Labels; selectedIncidentId: string | null; onSelectIncident: (incidentId: string) => void }) {
+function MapPanel({ data, bounds, labels, selectedIncidentId, onSelectIncident, config }: { data?: FoundationBrowseResponse; bounds: Bounds; labels: Labels; selectedIncidentId: string | null; onSelectIncident: (incidentId: string) => void; config?: MapConfigResponse }) {
   const active = (data?.incidents ?? []).filter((incident) => ["active", "escalated", "resolved"].includes(incident.status));
   const pending = (data?.incidents ?? []).filter((incident) => ["reported", "pending_verification", "rejected"].includes(incident.status));
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
       <h2 className="text-xl font-bold">{labels.map}</h2>
       <div className="mt-4 rounded-3xl border border-slate-200 bg-[linear-gradient(180deg,#f8fbff,#e0f2fe)] p-4">
-        <div className="relative min-h-[360px] overflow-hidden rounded-[28px] border border-blue-100 bg-[linear-gradient(135deg,#f8fafc,#dbeafe)]">
-          <div className="absolute left-5 top-5 rounded-2xl bg-white/90 px-4 py-3 text-xs leading-6 text-slate-600 shadow-sm">
-            <p>{labels.active}</p>
-            <p>{labels.reports}</p>
-            <p>{labels.hotspot}</p>
+        {config ? (
+          <MapCanvas config={config} className="relative min-h-[360px] overflow-hidden rounded-[28px] border border-blue-100 bg-slate-100 shadow-none">
+            {(project) => (
+              <>
+                <div className="absolute left-5 top-5 rounded-2xl bg-white/90 px-4 py-3 text-xs leading-6 text-slate-600 shadow-sm z-10 pointer-events-none">
+                  <p>{labels.active}</p>
+                  <p>{labels.reports}</p>
+                  <p>{labels.hotspot}</p>
+                </div>
+                {active.map((incident) => {
+                  const pt = project([incident.longitude, incident.latitude]);
+                  if (!pt) return null;
+                  return <button key={incident.id} className={`absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 ${selectedIncidentId === incident.id ? "border-blue-900 bg-blue-700 z-30" : "border-blue-200 bg-blue-600 z-20"}`} style={{ left: `${pt.x}%`, top: `${pt.y}%` }} onClick={() => onSelectIncident(incident.id)} type="button" title={incident.title} />;
+                })}
+                {pending.map((incident) => {
+                  const pt = project([incident.longitude, incident.latitude]);
+                  if (!pt) return null;
+                  return <button key={incident.id} className="absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-amber-200 bg-amber-500 z-20" style={{ left: `${pt.x}%`, top: `${pt.y}%` }} onClick={() => onSelectIncident(incident.id)} type="button" title={incident.title} />;
+                })}
+                {(data?.hotspots ?? []).map((hotspot) => {
+                  const pt = project([hotspot.longitude, hotspot.latitude]);
+                  if (!pt) return null;
+                  return <div key={hotspot.hotspot_id} className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border border-rose-200 bg-rose-500/20 px-3 py-1 text-[11px] font-semibold text-rose-800 z-10 pointer-events-none" style={{ left: `${pt.x}%`, top: `${pt.y}%` }}>{hotspot.incident_count}</div>;
+                })}
+              </>
+            )}
+          </MapCanvas>
+        ) : (
+          <div className="relative min-h-[360px] overflow-hidden rounded-[28px] border border-blue-100 bg-[linear-gradient(135deg,#f8fafc,#dbeafe)]">
+            <div className="absolute left-5 top-5 rounded-2xl bg-white/90 px-4 py-3 text-xs leading-6 text-slate-600 shadow-sm z-10">
+              <p>{labels.active}</p>
+              <p>{labels.reports}</p>
+              <p>{labels.hotspot}</p>
+            </div>
+            {active.map((incident) => (
+              <button key={incident.id} className={`absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 ${selectedIncidentId === incident.id ? "border-blue-900 bg-blue-700 z-30" : "border-blue-200 bg-blue-600 z-20"}`} style={pointStyle(bounds, incident.latitude, incident.longitude)} onClick={() => onSelectIncident(incident.id)} type="button" title={incident.title} />
+            ))}
+            {pending.map((incident) => (
+              <button key={incident.id} className="absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-amber-200 bg-amber-500 z-20" style={pointStyle(bounds, incident.latitude, incident.longitude)} onClick={() => onSelectIncident(incident.id)} type="button" title={incident.title} />
+            ))}
+            {(data?.hotspots ?? []).map((hotspot) => <div key={hotspot.hotspot_id} className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border border-rose-200 bg-rose-500/20 px-3 py-1 text-[11px] font-semibold text-rose-800 z-10 pointer-events-none" style={pointStyle(bounds, hotspot.latitude, hotspot.longitude)}>{hotspot.incident_count}</div>)}
           </div>
-          {active.map((incident) => (
-            <button key={incident.id} className={`absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 ${selectedIncidentId === incident.id ? "border-blue-900 bg-blue-700" : "border-blue-200 bg-blue-600"}`} style={pointStyle(bounds, incident.latitude, incident.longitude)} onClick={() => onSelectIncident(incident.id)} type="button" title={incident.title} />
-          ))}
-          {pending.map((incident) => (
-            <button key={incident.id} className="absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-amber-200 bg-amber-500" style={pointStyle(bounds, incident.latitude, incident.longitude)} onClick={() => onSelectIncident(incident.id)} type="button" title={incident.title} />
-          ))}
-          {(data?.hotspots ?? []).map((hotspot) => <div key={hotspot.hotspot_id} className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border border-rose-200 bg-rose-500/20 px-3 py-1 text-[11px] font-semibold text-rose-800" style={pointStyle(bounds, hotspot.latitude, hotspot.longitude)}>{hotspot.incident_count}</div>)}
-        </div>
+        )}
       </div>
       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {(data?.hotspots ?? []).map((hotspot) => <div key={hotspot.hotspot_id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm"><p className="font-semibold text-slate-900">{hotspot.label}</p><p className="mt-1 text-slate-600">{hotspot.incident_count} linked incidents</p><p className="mt-1 text-slate-500">{pretty(hotspot.severity)}</p></div>)}

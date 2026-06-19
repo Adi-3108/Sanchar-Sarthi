@@ -35,7 +35,19 @@ const publicState: SessionState = {
   accessLevel: "public_citizen"
 };
 
-let state: SessionState = publicState;
+const STORAGE_KEY = "gridlock_session";
+
+function loadState(): SessionState {
+  if (typeof window !== "undefined") {
+    try {
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+      if (stored) return JSON.parse(stored);
+    } catch (err) {}
+  }
+  return publicState;
+}
+
+let state: SessionState = loadState();
 let currentSnapshot: SessionStore;
 const listeners = new Set<() => void>();
 
@@ -45,6 +57,15 @@ function emit() {
 
 function setState(next: SessionState) {
   state = next;
+  if (typeof window !== "undefined") {
+    try {
+      if (next.accessLevel === "public_citizen") {
+        window.localStorage.removeItem(STORAGE_KEY);
+      } else {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      }
+    } catch (err) {}
+  }
   currentSnapshot = buildSnapshot();
   emit();
 }

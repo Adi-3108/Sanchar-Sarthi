@@ -140,7 +140,7 @@ def map_config():
         defaultCenter=(77.5946, 12.9716),
         defaultZoom=11,
         fallbackNote=(
-            "Primary: MapmyIndia / Mappls using available 1000 INR credits. "
+            "Primary: MapmyIndia / Mappls. "
             "Fallback: OSM safety mode with local demo route overlays."
         ),
     )

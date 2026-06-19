@@ -66,6 +66,7 @@ function normalizePersistedState(value: unknown): PersistedSessionState | null {
     accessLevel !== "admin" &&
     accessLevel !== "control_room" &&
     accessLevel !== "police_officer" &&
+    accessLevel !== "citizen" &&
     accessLevel !== "public_citizen"
   ) {
     return null;

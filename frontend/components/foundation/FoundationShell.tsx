@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -23,6 +24,7 @@ import {
   type MapConfigResponse
 } from "@/lib/api";
 import { useFirebaseAuthState } from "@/lib/auth";
+import { useSessionStore } from "@/lib/stores/useSessionStore";
 import { type AppLanguage, languageOptions } from "@/lib/i18n";
 
 type Mode = "user" | "control" | "admin";
@@ -304,7 +306,9 @@ function altRoutes(incident: FoundationIncident): string[] {
 
 export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mode; initialPanel?: Panel }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const { user, ready } = useFirebaseAuthState();
+  const session = useSessionStore();
   const [language, setLanguage] = useState<AppLanguage>("en");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [panel, setPanel] = useState<Panel>(initialPanel);
@@ -315,6 +319,14 @@ export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mod
   const labels = labelsByLanguage[language];
   const protectedMode = mode !== "user";
   const canManage = mode !== "user";
+  const canAccessControl = session.accessLevel === "admin" || session.accessLevel === "control_room";
+  const canAccessAdmin = session.accessLevel === "admin";
+
+  useEffect(() => {
+    if (ready && mode === "control" && (!user || !canAccessControl)) {
+      router.replace("/user");
+    }
+  }, [canAccessControl, mode, ready, router, user]);
 
   const query = useQuery({
     queryKey: [mode === "user" ? "foundation-public" : "foundation-control"],
@@ -418,8 +430,8 @@ export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mod
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link className="rounded-2xl border border-slate-200 px-3 py-2 text-sm" href="/user">{labels.user}</Link>
-            <Link className="rounded-2xl border border-slate-200 px-3 py-2 text-sm" href="/control-room">{labels.control}</Link>
-            <Link className="rounded-2xl border border-slate-200 px-3 py-2 text-sm" href="/admin">{labels.admin}</Link>
+            {canAccessControl ? <Link className="rounded-2xl border border-slate-200 px-3 py-2 text-sm" href="/control-room">{labels.control}</Link> : null}
+            {canAccessAdmin ? <Link className="rounded-2xl border border-slate-200 px-3 py-2 text-sm" href="/admin">{labels.admin}</Link> : null}
             <select className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm" value={language} onChange={(event) => setLanguage(event.target.value as AppLanguage)}>
               {languageOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
@@ -432,8 +444,8 @@ export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mod
           <aside className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="grid gap-2 text-sm font-medium text-slate-700">
               <Link className="rounded-2xl px-3 py-2 hover:bg-slate-100" href="/user">{labels.user}</Link>
-              <Link className="rounded-2xl px-3 py-2 hover:bg-slate-100" href="/control-room">{labels.control}</Link>
-              <Link className="rounded-2xl px-3 py-2 hover:bg-slate-100" href="/admin">{labels.admin}</Link>
+              {canAccessControl ? <Link className="rounded-2xl px-3 py-2 hover:bg-slate-100" href="/control-room">{labels.control}</Link> : null}
+              {canAccessAdmin ? <Link className="rounded-2xl px-3 py-2 hover:bg-slate-100" href="/admin">{labels.admin}</Link> : null}
               <Link className="rounded-2xl px-3 py-2 hover:bg-slate-100" href="/reports">{labels.report}</Link>
             </div>
             <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm leading-6 text-slate-700">{labels.loginNote}</div>

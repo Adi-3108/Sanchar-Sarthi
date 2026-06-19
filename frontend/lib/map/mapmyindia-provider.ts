@@ -39,7 +39,7 @@ export function loadMapmyIndiaScript(mapKey: string): Promise<void> {
   sdkLoadPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
     script.dataset.mapmyindiaSdk = "true";
-    script.src = `https://apis.mappls.com/advancedmaps/api/${mapKey}/map_sdk?layer=vector&v=3.0`;
+    script.src = `https://sdk.mappls.com/map/sdk/web?v=3.0&layer=vector&access_token=${mapKey}`;
     script.async = true;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("MapmyIndia SDK failed to load"));

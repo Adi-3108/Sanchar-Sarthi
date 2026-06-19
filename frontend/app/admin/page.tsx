@@ -8,16 +8,26 @@ import AuthPanel from "@/components/auth/AuthPanel";
 import {
   ApiError,
   createOfficer,
+  deleteFoundationAdminIncident,
+  deleteFoundationAdminVote,
   generateEventFeatures,
+  getFoundationAdminOverview,
   getHealth,
   getMapConfig,
   getModelRuns,
-  getSummary,
   loadDemoDataset,
+  updateFoundationAdminIncident,
+  updateFoundationAdminStation,
+  updateFoundationAdminUser,
   type CreateOfficerRequest,
   type CreateOfficerResponse,
   type DatasetLoadResponse,
-  type FeatureGenerationResponse
+  type FeatureGenerationResponse,
+  type FoundationAdminUser,
+  type FoundationAuditLog,
+  type FoundationIncident,
+  type FoundationStation,
+  type FoundationVote
 } from "@/lib/api";
 import { useFirebaseAuthState } from "@/lib/auth";
 
@@ -39,10 +49,21 @@ function errorText(error: unknown): string {
 }
 
 function splitScope(value: string): string[] {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
+  return value.split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+function pretty(value: string): string {
+  return value.split(/[_-]+/).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
+}
+
+function formatTime(value?: string | null): string {
+  if (!value) {
+    return "-";
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
 export default function AdminPage() {
@@ -59,54 +80,30 @@ export default function AdminPage() {
     assigned_zones: ["East"]
   });
 
-  const healthQuery = useQuery({
-    queryKey: ["admin-health"],
-    queryFn: getHealth,
-    retry: 1,
-    refetchOnWindowFocus: false
-  });
-  const summaryQuery = useQuery({
-    queryKey: ["admin-summary"],
-    queryFn: getSummary,
-    enabled: authReady && Boolean(user),
-    retry: 1,
-    refetchOnWindowFocus: false
-  });
-  const modelRunsQuery = useQuery({
-    queryKey: ["admin-model-runs"],
-    queryFn: getModelRuns,
-    enabled: authReady && Boolean(user),
-    retry: 1,
-    refetchOnWindowFocus: false
-  });
-  const mapQuery = useQuery({
-    queryKey: ["admin-map-config"],
-    queryFn: getMapConfig,
-    retry: 1,
-    refetchOnWindowFocus: false
-  });
+  const canRunProtectedActions = authReady && Boolean(user);
 
-  const loadDemoMutation = useMutation<DatasetLoadResponse, unknown>({
-    mutationFn: () => loadDemoDataset(),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["admin-summary"] }),
-        queryClient.invalidateQueries({ queryKey: ["admin-model-runs"] })
-      ]);
-    }
-  });
-  const generateFeaturesMutation = useMutation<FeatureGenerationResponse, unknown>({
-    mutationFn: () => generateEventFeatures(),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["admin-summary"] });
-    }
-  });
-  const createOfficerMutation = useMutation<CreateOfficerResponse, unknown, CreateOfficerRequest>({
-    mutationFn: (payload) => createOfficer(payload)
-  });
+  const healthQuery = useQuery({ queryKey: ["admin-health"], queryFn: getHealth, retry: 1, refetchOnWindowFocus: false });
+  const modelRunsQuery = useQuery({ queryKey: ["admin-model-runs"], queryFn: getModelRuns, enabled: canRunProtectedActions, retry: 1, refetchOnWindowFocus: false });
+  const mapQuery = useQuery({ queryKey: ["admin-map-config"], queryFn: getMapConfig, retry: 1, refetchOnWindowFocus: false });
+  const foundationQuery = useQuery({ queryKey: ["foundation-admin-overview"], queryFn: getFoundationAdminOverview, enabled: canRunProtectedActions, retry: 1, refetchOnWindowFocus: false });
+
+  async function refreshAdminData() {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["admin-model-runs"] }),
+      queryClient.invalidateQueries({ queryKey: ["foundation-admin-overview"] })
+    ]);
+  }
+
+  const loadDemoMutation = useMutation<DatasetLoadResponse, unknown>({ mutationFn: () => loadDemoDataset(), onSuccess: refreshAdminData });
+  const generateFeaturesMutation = useMutation<FeatureGenerationResponse, unknown>({ mutationFn: () => generateEventFeatures(), onSuccess: refreshAdminData });
+  const createOfficerMutation = useMutation<CreateOfficerResponse, unknown, CreateOfficerRequest>({ mutationFn: (payload) => createOfficer(payload) });
+  const incidentMutation = useMutation({ mutationFn: ({ incidentId, payload }: { incidentId: string; payload: Parameters<typeof updateFoundationAdminIncident>[1] }) => updateFoundationAdminIncident(incidentId, payload), onSuccess: refreshAdminData });
+  const deleteIncidentMutation = useMutation({ mutationFn: (incidentId: string) => deleteFoundationAdminIncident(incidentId), onSuccess: refreshAdminData });
+  const stationMutation = useMutation({ mutationFn: ({ stationId, active }: { stationId: string; active: boolean }) => updateFoundationAdminStation(stationId, { active }), onSuccess: refreshAdminData });
+  const userMutation = useMutation({ mutationFn: ({ userId, is_active }: { userId: string; is_active: boolean }) => updateFoundationAdminUser(userId, { is_active }), onSuccess: refreshAdminData });
+  const voteMutation = useMutation({ mutationFn: (voteId: string) => deleteFoundationAdminVote(voteId), onSuccess: refreshAdminData });
 
   const latestRun = modelRunsQuery.data?.model_runs[0];
-  const canRunProtectedActions = authReady && Boolean(user);
   const latestAction = useMemo(() => {
     if (createOfficerMutation.data) {
       return `Officer ${createOfficerMutation.data.officer_id} created for Level 2 access.`;
@@ -120,29 +117,7 @@ export default function AdminPage() {
     return null;
   }, [createOfficerMutation.data, generateFeaturesMutation.data, loadDemoMutation.data]);
 
-  if (!authReady || !user) {
-    return (
-      <main className="min-h-screen bg-bg px-6 py-8 text-copy md:px-10">
-        <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-[1fr_380px]">
-          <section className="rounded-lg border border-line bg-panel p-8 shadow-panel">
-            <p className="text-sm uppercase tracking-[0.24em] text-accent">Sanchar Sarthi</p>
-            <h1 className="mt-3 text-4xl font-semibold">{authReady ? "Admin access is protected." : "Checking admin session."}</h1>
-            <p className="mt-4 text-muted">Sign in with an admin Firebase account to access seed/reset, role, audit, model, and system controls.</p>
-          </section>
-          <AuthPanel
-            preferredRole="admin"
-            title="Admin Firebase sign-in"
-            note="Admin mode is not available to public users."
-          />
-        </div>
-      </main>
-    );
-  }
-
-  function updateOfficerField<Key extends keyof CreateOfficerRequest>(
-    key: Key,
-    value: CreateOfficerRequest[Key]
-  ) {
+  function updateOfficerField<Key extends keyof CreateOfficerRequest>(key: Key, value: CreateOfficerRequest[Key]) {
     setOfficerForm((current) => ({ ...current, [key]: value }));
   }
 
@@ -155,184 +130,260 @@ export default function AdminPage() {
     });
   }
 
+  if (!authReady || !user) {
+    return (
+      <main className="min-h-screen bg-slate-100 px-6 py-8 text-slate-900 md:px-10">
+        <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-[1fr_380px]">
+          <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-blue-700">Sanchar Sarthi</p>
+            <h1 className="mt-3 text-4xl font-bold">{authReady ? "Admin access is protected." : "Checking admin session."}</h1>
+            <p className="mt-4 text-slate-600">Sign in with an admin Firebase account to access incident management, audit logs, model visibility, and system controls.</p>
+          </section>
+          <AuthPanel preferredRole="admin" title="Admin Firebase sign-in" note="Admin mode is not available to public users." />
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <main className="shell-grid min-h-screen px-6 py-8 text-copy md:px-10">
+    <main className="min-h-screen bg-slate-100 px-6 py-8 text-slate-900 md:px-10">
       <div className="mx-auto flex max-w-7xl flex-col gap-8">
-        <section className="rounded-[28px] border border-line/80 bg-panel/90 p-8 shadow-panel">
+        <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
-              <p className="text-sm uppercase tracking-[0.32em] text-accentSoft">Level 1</p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
-                Sanchar Sarthi admin and control-room operations portal.
-              </h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-muted">
-                This surface connects health, dataset analytics, model status, provider status,
-                demo dataset actions, feature regeneration, and registered officer creation.
-              </p>
+              <p className="text-sm font-semibold uppercase tracking-[0.32em] text-blue-700">Level 1</p>
+              <h1 className="mt-3 text-4xl font-bold tracking-tight md:text-5xl">Sanchar Sarthi admin and operations console</h1>
+              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">This admin surface now covers Phase 3 management for incidents, users, stations, votes, predictions, and audit logs, while keeping the earlier system-health and officer-bootstrap tools available.</p>
             </div>
             <nav className="flex flex-wrap gap-3">
-              <Link
-                href="/command-center"
-                className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
-              >
-                Command center
-              </Link>
-              <Link
-                href="/explorer"
-                className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
-              >
-                Explorer
-              </Link>
-              <Link
-                href="/simulation"
-                className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
-              >
-                Simulation
-              </Link>
-              <Link
-                href="/settings"
-                className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
-              >
-                Settings
-              </Link>
+              <Link href="/user" className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:border-blue-300 hover:text-blue-700">User mode</Link>
+              <Link href="/control-room" className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:border-blue-300 hover:text-blue-700">Control room</Link>
+              <Link href="/reports" className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:border-blue-300 hover:text-blue-700">Reports</Link>
+              <Link href="/model-insights" className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:border-blue-300 hover:text-blue-700">Model insights</Link>
             </nav>
           </div>
         </section>
 
-        <section className="grid gap-5 lg:grid-cols-[0.36fr_0.64fr]">
-          <AuthPanel
-            preferredRole="admin"
-            title="Admin Firebase sign-in"
-            note="Use a registered Level 1 account for protected analytics, model metadata, dataset operations, and officer management."
-          />
+        <section className="grid gap-5 lg:grid-cols-4">
+          <MetricCard label="Backend" value={healthQuery.isLoading ? "Checking" : healthQuery.isError ? "Needs attention" : "Operational"} note={`Database: ${healthQuery.data?.database ?? "n/a"}`} />
+          <MetricCard label="Firebase" value={healthQuery.data?.auth.firebase ?? "n/a"} note={`Priority model: ${healthQuery.data?.models.priority ?? "n/a"}`} />
+          <MetricCard label="Map provider" value={mapQuery.data?.activeProvider ?? "Checking"} note={`Fallback: ${mapQuery.data?.fallbackProvider ?? "osm"}`} />
+          <MetricCard label="Latest model run" value={latestRun?.model_name ?? "No run yet"} note={`Version: ${latestRun?.model_version ?? "n/a"}`} />
+        </section>
 
-          <div className="grid gap-5 md:grid-cols-2">
-            <article className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel">
-              <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Backend</p>
-              <h2 className="mt-2 text-2xl font-semibold">
-                {healthQuery.isLoading ? "Checking" : healthQuery.isError ? "Needs attention" : "Operational"}
-              </h2>
-              <div className="mt-4 space-y-2 text-sm leading-7 text-muted">
-                <p>Database: {healthQuery.data?.database ?? "n/a"}</p>
-                <p>Firebase: {healthQuery.data?.auth.firebase ?? "n/a"}</p>
-                <p>Priority model: {healthQuery.data?.models.priority ?? "n/a"}</p>
-                <p>Resolution model: {healthQuery.data?.models.resolution_time ?? "n/a"}</p>
+        <section className="grid gap-5 lg:grid-cols-3">
+          <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Foundation summary</p>
+                <h2 className="mt-2 text-2xl font-bold">Admin-wide operational snapshot</h2>
               </div>
-            </article>
-
-            <article className="rounded-[24px] border border-line/70 bg-panel/85 p-5 shadow-panel">
-              <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Map provider</p>
-              <h2 className="mt-2 text-2xl font-semibold">{mapQuery.data?.activeProvider ?? "Checking"}</h2>
-              <div className="mt-4 space-y-2 text-sm leading-7 text-muted">
-                <p>Primary: MapmyIndia / Mappls</p>
-                <p>Fallback: {mapQuery.data?.fallbackProvider ?? "osm"}</p>
-                <p>Budget: INR {mapQuery.data?.creditsBudgetInr ?? 1000}</p>
-                <p>Key available: {mapQuery.data?.mapKeyAvailable ? "yes" : "no"}</p>
+              <div className="flex flex-wrap gap-3">
+                <button type="button" onClick={() => loadDemoMutation.mutate()} disabled={!canRunProtectedActions || loadDemoMutation.isPending} className="rounded-2xl bg-blue-700 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60">{loadDemoMutation.isPending ? "Loading demo dataset" : "Load demo dataset"}</button>
+                <button type="button" onClick={() => generateFeaturesMutation.mutate()} disabled={!canRunProtectedActions || generateFeaturesMutation.isPending} className="rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 disabled:opacity-60">{generateFeaturesMutation.isPending ? "Generating features" : "Generate features"}</button>
               </div>
-            </article>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <Metric value={metric(foundationQuery.data?.summary.incident_count)} label="Incidents" />
+              <Metric value={metric(foundationQuery.data?.summary.station_count)} label="Stations" />
+              <Metric value={metric(foundationQuery.data?.summary.user_count)} label="Users" />
+              <Metric value={metric(foundationQuery.data?.summary.vote_count)} label="Votes" />
+              <Metric value={metric(foundationQuery.data?.summary.prediction_count)} label="Predictions" />
+              <Metric value={metric(foundationQuery.data?.summary.audit_log_count)} label="Audit logs" />
+            </div>
+            {latestAction ? <p className="mt-4 text-sm leading-7 text-emerald-700">{latestAction}</p> : null}
+            {foundationQuery.isError ? <p className="mt-3 text-sm text-rose-700">{errorText(foundationQuery.error)}</p> : null}
+          </article>
 
-            <article className="rounded-[24px] border border-line/70 bg-panel/85 p-5 shadow-panel md:col-span-2">
-              <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Dataset snapshot</p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <Metric label="Total events" value={metric(summaryQuery.data?.total_events)} />
-                <Metric label="High priority" value={metric(summaryQuery.data?.high_priority_events)} />
-                <Metric label="Road closures" value={metric(summaryQuery.data?.road_closure_required)} />
-                <Metric label="Hotspots" value={metric(summaryQuery.data?.hotspot_count)} />
+          <form onSubmit={handleCreateOfficer} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Officer access</p>
+            <h2 className="mt-2 text-2xl font-bold">Create registered police officer</h2>
+            <div className="mt-5 grid gap-4">
+              <Field label="Officer email" value={officerForm.email} onChange={(value) => updateOfficerField("email", value)} />
+              <Field label="Firebase UID" value={officerForm.firebase_uid} onChange={(value) => updateOfficerField("firebase_uid", value)} />
+              <Field label="Officer ID" value={officerForm.officer_id} onChange={(value) => updateOfficerField("officer_id", value)} />
+              <Field label="Display name" value={officerForm.display_name} onChange={(value) => updateOfficerField("display_name", value)} />
+              <Field label="Rank" value={officerForm.rank ?? ""} onChange={(value) => updateOfficerField("rank", value)} />
+              <Field label="Police station" value={officerForm.police_station} onChange={(value) => updateOfficerField("police_station", value)} />
+              <Field label="Assigned corridors" value={officerForm.assigned_corridors.join(", ")} onChange={(value) => updateOfficerField("assigned_corridors", splitScope(value))} />
+              <Field label="Assigned zones" value={officerForm.assigned_zones.join(", ")} onChange={(value) => updateOfficerField("assigned_zones", splitScope(value))} />
+            </div>
+            <button type="submit" disabled={!canRunProtectedActions || createOfficerMutation.isPending} className="mt-5 rounded-2xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60">{createOfficerMutation.isPending ? "Creating officer" : "Create officer"}</button>
+            {createOfficerMutation.isError ? <p className="mt-3 text-sm text-rose-700">{errorText(createOfficerMutation.error)}</p> : null}
+          </form>
+        </section>
+
+        <section className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
+          <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Incident management</p>
+                <h2 className="mt-2 text-2xl font-bold">Admin incident controls</h2>
               </div>
-            </article>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{foundationQuery.data?.incidents.length ?? 0}</span>
+            </div>
+            <div className="mt-4 grid gap-3">
+              {(foundationQuery.data?.incidents ?? []).slice(0, 8).map((incident) => (
+                <IncidentCard
+                  key={incident.id}
+                  incident={incident}
+                  onActivate={() => incidentMutation.mutate({ incidentId: incident.id, payload: { status: "active" } })}
+                  onResolve={() => incidentMutation.mutate({ incidentId: incident.id, payload: { status: "resolved", resolution_notes: "Resolved from admin console." } })}
+                  onArchive={() => incidentMutation.mutate({ incidentId: incident.id, payload: { status: "archived", visible_to_public: false } })}
+                  onDelete={() => deleteIncidentMutation.mutate(incident.id)}
+                />
+              ))}
+            </div>
+          </article>
 
-            <article className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel md:col-span-2">
-              <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Latest model run</p>
-              <h2 className="mt-2 text-2xl font-semibold">{latestRun?.model_name ?? "No run metadata yet"}</h2>
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                <Metric label="Version" value={latestRun?.model_version ?? "n/a"} />
-                <Metric label="Training rows" value={metric(latestRun?.training_rows)} />
-                <Metric label="Artifact" value={latestRun?.artifact_status ?? "n/a"} />
-              </div>
-            </article>
-
-            <article className="rounded-[24px] border border-line/70 bg-panel/85 p-5 shadow-panel md:col-span-2">
-              <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Operational controls</p>
-                  <h2 className="mt-2 text-2xl font-semibold">Dataset and feature actions</h2>
+          <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Status distribution</p>
+            <h2 className="mt-2 text-2xl font-bold">Lifecycle mix</h2>
+            <div className="mt-4 grid gap-3">
+              {Object.entries((foundationQuery.data?.summary.status_counts ?? {}) as Record<string, number>).map(([status, count]) => (
+                <div key={status} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                  <span className="font-medium text-slate-700">{pretty(status)}</span>
+                  <span className="font-semibold text-slate-900">{count}</span>
                 </div>
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={() => loadDemoMutation.mutate()}
-                    disabled={!canRunProtectedActions || loadDemoMutation.isPending}
-                    className="rounded-2xl border border-accent/50 bg-accent px-4 py-3 text-sm font-semibold text-bg transition hover:bg-accentSoft disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {loadDemoMutation.isPending ? "Loading demo dataset" : "Load demo dataset"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => generateFeaturesMutation.mutate()}
-                    disabled={!canRunProtectedActions || generateFeaturesMutation.isPending}
-                    className="rounded-2xl border border-line/80 px-4 py-3 text-sm font-semibold text-copy transition hover:border-accent/60 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {generateFeaturesMutation.isPending ? "Generating features" : "Generate features"}
-                  </button>
-                </div>
-              </div>
-              {latestAction ? <p className="mt-4 text-sm leading-7 text-ok">{latestAction}</p> : null}
-              {loadDemoMutation.isError ? <p className="mt-3 text-sm text-danger">{errorText(loadDemoMutation.error)}</p> : null}
-              {generateFeaturesMutation.isError ? <p className="mt-3 text-sm text-danger">{errorText(generateFeaturesMutation.error)}</p> : null}
-              {!canRunProtectedActions ? (
-                <p className="mt-3 text-sm leading-7 text-muted">Sign in with a Level 1 Firebase account before running protected admin actions.</p>
-              ) : null}
-            </article>
+              ))}
+            </div>
+          </article>
+        </section>
 
-            <form onSubmit={handleCreateOfficer} className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel md:col-span-2">
-              <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Officer access</p>
-              <h2 className="mt-2 text-2xl font-semibold">Create registered police officer</h2>
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <Field label="Officer email" value={officerForm.email} onChange={(value) => updateOfficerField("email", value)} />
-                <Field label="Firebase UID" value={officerForm.firebase_uid} onChange={(value) => updateOfficerField("firebase_uid", value)} />
-                <Field label="Officer ID" value={officerForm.officer_id} onChange={(value) => updateOfficerField("officer_id", value)} />
-                <Field label="Display name" value={officerForm.display_name} onChange={(value) => updateOfficerField("display_name", value)} />
-                <Field label="Rank" value={officerForm.rank ?? ""} onChange={(value) => updateOfficerField("rank", value)} />
-                <Field label="Police station" value={officerForm.police_station} onChange={(value) => updateOfficerField("police_station", value)} />
-                <Field label="Assigned corridors (comma separated)" value={officerForm.assigned_corridors.join(", ")} onChange={(value) => updateOfficerField("assigned_corridors", splitScope(value))} />
-                <Field label="Assigned zones (comma separated)" value={officerForm.assigned_zones.join(", ")} onChange={(value) => updateOfficerField("assigned_zones", splitScope(value))} />
-              </div>
-              <button
-                type="submit"
-                disabled={!canRunProtectedActions || createOfficerMutation.isPending}
-                className="mt-5 rounded-2xl border border-accent/50 bg-accent px-5 py-3 text-sm font-semibold text-bg transition hover:bg-accentSoft disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {createOfficerMutation.isPending ? "Creating officer" : "Create officer"}
-              </button>
-              {createOfficerMutation.isError ? (
-                <p className="mt-3 text-sm leading-7 text-danger">{errorText(createOfficerMutation.error)}</p>
-              ) : null}
-            </form>
-          </div>
+        <section className="grid gap-5 xl:grid-cols-2">
+          <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Stations</p>
+            <h2 className="mt-2 text-2xl font-bold">Station controls</h2>
+            <div className="mt-4 grid gap-3">
+              {(foundationQuery.data?.stations ?? []).map((station: FoundationStation) => (
+                <div key={station.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-slate-900">{station.name}</p>
+                      <p className="mt-1 text-sm text-slate-600">{station.locality} · {station.station_code}</p>
+                      <p className="mt-1 text-sm text-slate-600">{station.contact_number ?? "Contact unavailable"}</p>
+                    </div>
+                    <button type="button" onClick={() => stationMutation.mutate({ stationId: station.id, active: !station.active })} className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">{station.active ? "Disable" : "Enable"}</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Users</p>
+            <h2 className="mt-2 text-2xl font-bold">User access</h2>
+            <div className="mt-4 grid gap-3">
+              {(foundationQuery.data?.users ?? []).slice(0, 8).map((account: FoundationAdminUser) => (
+                <div key={account.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-slate-900">{account.display_name ?? account.auth_provider_uid}</p>
+                      <p className="mt-1 text-sm text-slate-600">{pretty(account.role)}</p>
+                      <p className="mt-1 text-sm text-slate-600">Created: {formatTime(account.created_at)}</p>
+                    </div>
+                    <button type="button" onClick={() => userMutation.mutate({ userId: account.id, is_active: !account.is_active })} className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">{account.is_active ? "Disable" : "Enable"}</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
+        </section>
+
+        <section className="grid gap-5 xl:grid-cols-2">
+          <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Votes</p>
+            <h2 className="mt-2 text-2xl font-bold">Vote audit and cleanup</h2>
+            <div className="mt-4 grid gap-3">
+              {(foundationQuery.data?.votes ?? []).slice(0, 10).map((vote: FoundationVote) => (
+                <div key={vote.id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                  <div>
+                    <p className="font-medium text-slate-900">Incident {vote.incident_id}</p>
+                    <p className="text-slate-600">{vote.vote_value.toUpperCase()} · {formatTime(vote.created_at)}</p>
+                  </div>
+                  <button type="button" onClick={() => voteMutation.mutate(vote.id)} className="rounded-2xl border border-rose-200 bg-white px-3 py-2 text-sm text-rose-700">Delete vote</button>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Audit logs</p>
+            <h2 className="mt-2 text-2xl font-bold">Recent administrative actions</h2>
+            <div className="mt-4 grid gap-3">
+              {(foundationQuery.data?.logs ?? []).slice(0, 12).map((log: FoundationAuditLog) => (
+                <div key={log.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-slate-900">{pretty(log.action)}</p>
+                      <p className="mt-1 text-slate-600">{pretty(log.actor_role)} · {formatTime(log.created_at)}</p>
+                    </div>
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">{log.resource_type}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
         </section>
       </div>
     </main>
   );
 }
 
+function IncidentCard({ incident, onActivate, onResolve, onArchive, onDelete }: { incident: FoundationIncident; onActivate: () => void; onResolve: () => void; onArchive: () => void; onDelete: () => void }) {
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="font-semibold text-slate-900">{incident.title}</h3>
+          <p className="mt-1 text-sm text-slate-600">{incident.location_name} · {pretty(incident.status)}</p>
+          <p className="mt-2 text-sm text-slate-600">{incident.route_impact_summary ?? "Route impact under review."}</p>
+        </div>
+        <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">{pretty(incident.severity)}</span>
+      </div>
+      <div className="mt-4 grid gap-2 text-sm md:grid-cols-2">
+        <span className="text-slate-600">Prediction: {incident.latest_prediction?.model_name ?? "n/a"}</span>
+        <span className="text-slate-600">Force: {incident.latest_prediction?.police_force_required ?? incident.police_force_required ?? "-"}</span>
+        <span className="text-slate-600">Barricades: {incident.latest_prediction?.barricades_required ?? incident.barricades_required ?? "-"}</span>
+        <span className="text-slate-600">Confidence: {Math.round(incident.confidence_score * 100)}%</span>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button type="button" onClick={onActivate} className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">Activate</button>
+        <button type="button" onClick={onResolve} className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">Resolve</button>
+        <button type="button" onClick={onArchive} className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">Archive</button>
+        <button type="button" onClick={onDelete} className="rounded-2xl border border-rose-200 bg-white px-3 py-2 text-sm text-rose-700">Delete</button>
+      </div>
+    </article>
+  );
+}
+
 function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return (
-    <label className="text-sm text-muted">
-      <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-accentSoft">{label}</span>
-      <input
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-2xl border border-line bg-bg/80 px-4 py-3 text-copy outline-none transition focus:border-accent"
-      />
+    <label className="text-sm text-slate-600">
+      <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</span>
+      <input value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-blue-400" />
     </label>
   );
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-line/70 bg-bg/60 p-4">
-      <p className="text-[11px] uppercase tracking-[0.22em] text-accentSoft">{label}</p>
-      <p className="mt-2 text-xl font-semibold text-copy">{value}</p>
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">{label}</p>
+      <p className="mt-2 text-xl font-bold text-slate-900">{value}</p>
     </div>
   );
 }
+
+function MetricCard({ label, value, note }: { label: string; value: string; note: string }) {
+  return (
+    <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">{label}</p>
+      <h2 className="mt-2 text-2xl font-bold">{value}</h2>
+      <p className="mt-3 text-sm leading-6 text-slate-600">{note}</p>
+    </article>
+  );
+}
+
+
+

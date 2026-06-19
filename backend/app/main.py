@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes_analytics import router as analytics_router
 from app.api.routes_admin import router as admin_router
+from app.api.routes_command_center import router as command_center_router
 from app.api.routes_datasets import router as datasets_router
 from app.api.routes_demo import router as demo_router
 from app.api.routes_events import router as events_router
@@ -45,6 +46,7 @@ app.add_middleware(
 )
 
 app.include_router(health_router)
+app.include_router(command_center_router)
 app.include_router(foundation_router)
 app.include_router(admin_router)
 app.include_router(datasets_router)

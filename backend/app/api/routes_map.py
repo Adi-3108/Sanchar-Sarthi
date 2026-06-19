@@ -126,6 +126,9 @@ def map_config():
         active_provider = "osm"
         fallback_reason = "missing_key"
 
+    # SECURITY: The actual REST/API key is deliberately omitted from this response.
+    # The frontend only receives mapKeyAvailable (boolean) to know if the map is configured.
+    # This fulfills the Phase 14 security requirement to prevent API key leaks.
     return MapConfigResponse(
         activeProvider=active_provider,
         primaryProvider="mapmyindia",

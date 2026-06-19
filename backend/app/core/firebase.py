@@ -14,15 +14,15 @@ def initialize_firebase(settings: Settings) -> Any | None:
     if firebase_admin is None or credentials is None:
         return None
 
-    if firebase_admin._apps:
-        return firebase_admin.get_app()
-
     if (
         not settings.firebase_project_id
         or not settings.firebase_client_email
         or not settings.firebase_private_key
     ):
         return None
+
+    if firebase_admin._apps:
+        return firebase_admin.get_app()
 
     private_key = settings.firebase_private_key.replace("\\n", "\n")
     cred = credentials.Certificate(

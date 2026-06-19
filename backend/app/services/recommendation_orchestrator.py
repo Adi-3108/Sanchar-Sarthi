@@ -152,7 +152,7 @@ def build_weather_risk(input_data: RecommendationInput) -> dict[str, object]:
             "source": "phase10_default",
             "provider": None,
             "provider_status": "not_requested",
-            "note": "No explicit weather risk was provided, so EventFlow AI used a neutral weather modifier.",
+            "note": "No explicit weather risk was provided, so Sanchar Sarthi used a neutral weather modifier.",
         }
     return weather
 

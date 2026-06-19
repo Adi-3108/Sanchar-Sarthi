@@ -17,7 +17,7 @@ class UserAccount(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "user_accounts"
     __table_args__ = (
         CheckConstraint(
-            "role IN ('admin', 'control_room', 'police_officer', 'public_viewer')",
+            "role IN ('guest', 'citizen', 'control_room_officer', 'admin', 'control_room', 'police_officer', 'public_viewer')",
             name="ck_user_accounts_role",
         ),
         CheckConstraint(

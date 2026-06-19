@@ -8,6 +8,7 @@ from app.api.routes_admin import router as admin_router
 from app.api.routes_datasets import router as datasets_router
 from app.api.routes_demo import router as demo_router
 from app.api.routes_events import router as events_router
+from app.api.routes_foundation import router as foundation_router
 from app.api.routes_health import router as health_router
 from app.api.routes_live_updates import router as live_updates_router
 from app.api.routes_map import router as map_router
@@ -44,6 +45,7 @@ app.add_middleware(
 )
 
 app.include_router(health_router)
+app.include_router(foundation_router)
 app.include_router(admin_router)
 app.include_router(datasets_router)
 app.include_router(demo_router)

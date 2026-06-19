@@ -3,11 +3,8 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
-  background:
-    radial-gradient(circle at top, rgba(255, 143, 63, 0.12), transparent 28%),
-    linear-gradient(180deg, #09111a 0%, #081018 52%, #060d15 100%);
-  background-color: #09111a;
+  color-scheme: light;
+  background: #f5f7fb;
 }
 
 html,
@@ -17,7 +14,7 @@ body {
 
 body {
   margin: 0;
-  color: #e7eef6;
+  color: #172033;
   font-family: "Segoe UI", system-ui, sans-serif;
 }
 
@@ -32,7 +29,7 @@ a {
 
 .shell-grid {
   background-image:
-    linear-gradient(rgba(153, 170, 189, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(153, 170, 189, 0.06) 1px, transparent 1px);
+    linear-gradient(rgba(15, 94, 168, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 94, 168, 0.06) 1px, transparent 1px);
   background-size: 28px 28px;
 }

@@ -4,7 +4,7 @@ import { type FormEvent, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { isFirebaseConfigured } from "@/lib/firebase";
-import { loginWithFirebase, logoutFirebase, useFirebaseAuthState } from "@/lib/auth";
+import { loginWithFirebase, logoutFirebase, registerWithFirebase, useFirebaseAuthState } from "@/lib/auth";
 import { type AccessLevel, useSessionStore } from "@/lib/stores/useSessionStore";
 
 const roleLabels: Record<AccessLevel, string> = {
@@ -37,6 +37,7 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
   const [role, setRole] = useState<Exclude<AccessLevel, "public_citizen">>(preferredRole);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,6 +45,14 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
     setError(null);
 
     try {
+      if (isSignUp) {
+        await registerWithFirebase(email, password);
+        setError("Account created! A verification link has been sent to your email. Please verify before signing in.");
+        setIsSignUp(false);
+        setPending(false);
+        return;
+      }
+
       const result = await loginWithFirebase(email, password);
       session.setFirebaseSession({
         accessLevel: role,
@@ -133,8 +142,22 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
             disabled={pending}
             className="rounded-2xl border border-accent/50 bg-accent px-5 py-3 text-sm font-semibold text-bg transition hover:bg-accentSoft disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {pending ? "Signing in" : "Sign in"}
+            {pending ? (isSignUp ? "Creating account..." : "Signing in...") : (isSignUp ? "Create account" : "Sign in")}
           </button>
+          
+          <div className="text-center mt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setError(null);
+              }}
+              className="text-sm text-accent hover:underline focus:outline-none"
+            >
+              {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
+            </button>
+          </div>
+          
           {error ? <p className="text-sm leading-6 text-danger">{error}</p> : null}
         </form>
       )}

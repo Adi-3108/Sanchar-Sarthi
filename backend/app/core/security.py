@@ -71,7 +71,19 @@ def load_auth_context(db: Session, token_payload: dict[str, Any]) -> AuthContext
         .filter(UserAccount.auth_provider_uid == token_payload["uid"])
         .first()
     )
-    if not account or not account.is_active:
+    if not account:
+        # Auto-create citizen account for new Firebase users
+        account = UserAccount(
+            auth_provider="firebase",
+            auth_provider_uid=token_payload["uid"],
+            role="citizen",
+            is_active=True,
+        )
+        db.add(account)
+        db.commit()
+        db.refresh(account)
+
+    if not account.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={"code": "INACTIVE_ACCOUNT"},

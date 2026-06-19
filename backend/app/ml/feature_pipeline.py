@@ -21,9 +21,12 @@ BACKEND_ROOT = Path(__file__).resolve().parents[2]
 REPO_ROOT = BACKEND_ROOT.parent
 ARTIFACTS_ROOT = BACKEND_ROOT / "artifacts"
 
-PRIORITY_MODEL_NAME = "priority_model"
-PRIORITY_MODEL_VERSION = "priority_rf_v1"
-PRIORITY_MODEL_PATH = ARTIFACTS_ROOT / "priority_model.joblib"
+MODELS_ROOT = BACKEND_ROOT / "app" / "models"
+
+PRIORITY_MODEL_NAME = "xgboost_priority_model"
+PRIORITY_MODEL_VERSION = "xgboost_kaggle_v1"
+PRIORITY_MODEL_PATH = MODELS_ROOT / "xgboost_priority_model.pkl"
+LABEL_ENCODER_PATH = MODELS_ROOT / "label_encoder.pkl"
 
 ROAD_CLOSURE_MODEL_NAME = "road_closure_model"
 ROAD_CLOSURE_MODEL_VERSION = "road_closure_support_v1"

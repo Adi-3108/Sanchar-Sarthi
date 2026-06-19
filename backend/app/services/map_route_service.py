@@ -190,6 +190,12 @@ def _call_mapmyindia_route_api(
     origin = f"{request.origin[0]},{request.origin[1]}"
     destination = f"{request.destination[0]},{request.destination[1]}"
     url = f"https://apis.mappls.com/advancedmaps/v1/{key}/route_adv/{request.mode}/{origin};{destination}"
+    
+    # NOTE ON SYNC I/O: This uses a synchronous httpx.Client which blocks the thread.
+    # However, since the FastAPI route handlers calling this service are defined as
+    # synchronous functions (`def` instead of `async def`), FastAPI automatically
+    # runs them in a separate threadpool. This ensures the main async event loop
+    # is NEVER blocked by these external network calls.
     with httpx.Client(timeout=8.0) as client:
         response = client.get(url)
         response.raise_for_status()
@@ -306,6 +312,11 @@ def _call_mapmyindia_geocode_api(
     if request.proximity:
         params["pod"] = f"{request.proximity[1]},{request.proximity[0]}"
 
+    # NOTE ON SYNC I/O: This uses a synchronous httpx.Client which blocks the thread.
+    # However, since the FastAPI route handlers calling this service are defined as
+    # synchronous functions (`def` instead of `async def`), FastAPI automatically
+    # runs them in a separate threadpool. This ensures the main async event loop
+    # is NEVER blocked by these external network calls.
     with httpx.Client(timeout=8.0) as client:
         response = client.get(url, params=params)
         response.raise_for_status()

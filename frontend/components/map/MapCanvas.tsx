@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { fallbackReasonLabel, projectLngLat, type LngLat, type MapConfig, type ProjectedPoint } from "@/lib/map-provider";
 import { ensureMapmyIndiaSdk, type MapmyIndiaLoadState } from "@/lib/map/mapmyindia-provider";
@@ -25,6 +25,7 @@ function providerBadge(config: MapConfig, sdkState: MapmyIndiaLoadState): string
 }
 
 export function MapCanvas({ config, children, className }: MapCanvasProps) {
+  const mapId = useId().replace(/:/g, "");
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<{ remove?: () => void } | null>(null);
   const [sdkState, setSdkState] = useState<MapmyIndiaLoadState>(
@@ -59,7 +60,7 @@ export function MapCanvas({ config, children, className }: MapCanvasProps) {
     }
 
     mapInstanceRef.current?.remove?.();
-    mapInstanceRef.current = new window.mappls.Map(mapContainerRef.current, {
+    mapInstanceRef.current = new window.mappls.Map(`mappls-container-${mapId}`, {
       center: [config.defaultCenter[1], config.defaultCenter[0]],
       zoom: config.defaultZoom,
       zoomControl: false,
@@ -81,12 +82,13 @@ export function MapCanvas({ config, children, className }: MapCanvasProps) {
     >
       <div className="absolute inset-0 bg-[linear-gradient(135deg,#102234_0%,#0b1724_45%,#07111c_100%)]" />
       <div
+        id={`mappls-container-${mapId}`}
         ref={mapContainerRef}
-        className={`absolute inset-0 transition-opacity duration-500 ${
+        className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${
           activeProvider === "mapmyindia" ? "opacity-100" : "opacity-0"
         }`}
       />
-      <div className="absolute inset-0 opacity-80">
+      <div className={`absolute inset-0 pointer-events-none transition-opacity duration-500 ${activeProvider === "mapmyindia" ? "opacity-0" : "opacity-80"}`}>
         <div className="absolute inset-0 bg-[linear-gradient(transparent_0,transparent_calc(100%-1px),rgba(148,163,184,0.12)_100%),linear-gradient(90deg,transparent_0,transparent_calc(100%-1px),rgba(148,163,184,0.12)_100%)] bg-[length:52px_52px]" />
         <div className="absolute left-[8%] top-[20%] h-[2px] w-[78%] rotate-[-10deg] rounded-full bg-cyan-300/20" />
         <div className="absolute left-[18%] top-[65%] h-[2px] w-[68%] rotate-[7deg] rounded-full bg-amber-300/20" />

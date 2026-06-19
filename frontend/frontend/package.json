@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "eventflow-ai-frontend": "file:.."
+  }
+}

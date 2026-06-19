@@ -332,6 +332,13 @@ def load_event_dna_support_maps(
     )
 
 
+def _apply_event_dna_payload(record: EventDna, payload: dict[str, Any]) -> None:
+    for field_name, value in payload.items():
+        if field_name == "event_id":
+            continue
+        setattr(record, field_name, value)
+
+
 def persist_event_dna(
     db: Session,
     event: Event,
@@ -354,10 +361,7 @@ def persist_event_dna(
         record = EventDna(event_id=event.id)
         created = False
 
-    for field_name, value in payload.items():
-        if field_name == "event_id":
-            continue
-        setattr(record, field_name, value)
+    _apply_event_dna_payload(record, payload)
 
     if persist and commit:
         db.commit()
@@ -391,6 +395,19 @@ def rebuild_event_dna_records(
         if not target_events:
             raise ValueError(f"Event not found: {event_id}")
 
+    target_event_ids = {event.id for event in target_events}
+    existing_records_query = select(EventDna).order_by(EventDna.created_at, EventDna.id)
+    if event_id is not None:
+        existing_records_query = existing_records_query.where(EventDna.event_id == event_id)
+    existing_records: dict[str, EventDna] = {}
+    for record in db.scalars(existing_records_query).all():
+        if record.event_id not in target_event_ids:
+            continue
+        if record.event_id in existing_records:
+            db.delete(record)
+            continue
+        existing_records[record.event_id] = record
+
     from app.services.similar_event_service import build_similarity_index, rank_similar_events_for_event
 
     similarity_index = build_similarity_index(
@@ -405,13 +422,20 @@ def rebuild_event_dna_records(
         feature = feature_by_event_id.get(event.id)
         hotspot = hotspots_by_id.get(feature.location_cluster_id) if feature and feature.location_cluster_id else None
         matches = rank_similar_events_for_event(event, similarity_index, limit=limit_similar)
-        _record, created = persist_event_dna(
-            db,
-            event,
-            feature=feature,
-            hotspot=hotspot,
-            similar_event_ids=[match.event_id for match in matches],
-            commit=False,
+        record = existing_records.get(event.id)
+        created = record is None
+        if record is None:
+            record = EventDna(event_id=event.id)
+            db.add(record)
+            existing_records[event.id] = record
+        _apply_event_dna_payload(
+            record,
+            build_event_dna_payload(
+                event,
+                feature=feature,
+                hotspot=hotspot,
+                similar_event_ids=[match.event_id for match in matches],
+            ),
         )
         if created:
             dna_created += 1

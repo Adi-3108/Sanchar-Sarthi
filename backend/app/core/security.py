@@ -4,6 +4,7 @@ from typing import Any
 from fastapi import Depends, Header, HTTPException, status
 
 from app.db.session import get_db
+from app.core.roles import role_allowed
 from app.orm.police_officer_profile import PoliceOfficerProfile
 from app.orm.user_account import UserAccount
 
@@ -116,7 +117,7 @@ def require_role(*allowed_roles: str):
         db: Session = Depends(get_db),
     ) -> AuthContext:
         auth = load_auth_context(db, token_payload)
-        if auth.role not in allowed_roles:
+        if not role_allowed(auth.role, allowed_roles):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail={"code": "FORBIDDEN_ROLE"},

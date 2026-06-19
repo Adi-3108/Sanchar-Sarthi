@@ -23,7 +23,7 @@ except (ImportError, ModuleNotFoundError):  # pragma: no cover - depends on loca
 
 def ensure_schema() -> None:
     if command is not None and Config is not None:
-        alembic_config = Config(str(REPO_ROOT / "alembic.ini"))
+        alembic_config = Config(str(BACKEND_ROOT / "alembic.ini"))
         command.upgrade(alembic_config, "head")
         return
 
@@ -32,8 +32,6 @@ def ensure_schema() -> None:
 
 
 def main() -> int:
-    ensure_schema()
-
     with SessionLocal() as session:
         report = seed_demo_scenarios(session, commit=True)
 

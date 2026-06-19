@@ -132,7 +132,7 @@ def _seed_post_event_bundle(session) -> None:
             emergency_corridor_json={"priority": "high_protection"},
             logistics_impact_json={"impact_level": "high"},
             action_confidence_ledger_json=[],
-            recommended_action_summary="Seeded recommendation summary",
+            recommended_action_summary="Deploy 10 officers in corridor ring control posture with controlled entry exit barricades and weather buffered hotspot bypass operations.",
         )
     )
     session.add_all(
@@ -264,6 +264,37 @@ def test_generate_post_event_report_builds_learning_record():
         assert record.report_json["critical_live_update_count"] == 2
 
 
+def test_generate_post_event_report_uses_latest_recommendation_snapshot():
+    session_factory = _build_session_factory()
+
+    with session_factory() as session:
+        _seed_post_event_bundle(session)
+        recommendation = session.query(EventRecommendation).filter(EventRecommendation.event_id == "POST-001").one()
+        recommendation.recommended_total_officers = 18
+        recommendation.deployment_plan_json = {
+            "recommended_total_officers": 18,
+            "deployment_style": "incident_command_posture",
+            "officer_gap": 2,
+        }
+        recommendation.barricade_plan_json = {
+            "barricade_level": "extended_buffer_with_slow_speed_channelization"
+        }
+        recommendation.diversion_plan_json = {"strategy": "weather_buffered_hotspot_bypass"}
+        recommendation.recommended_action_summary = (
+            "Deploy 18 officers in incident command posture around Central Spine. "
+            "Use extended buffer with slow speed channelization and weather buffered hotspot bypass operations."
+        )
+        session.commit()
+
+        record = generate_post_event_report(session, "POST-001", commit=False)
+        session.commit()
+        session.refresh(record)
+
+        assert record.recommendation_summary == recommendation.recommended_action_summary
+        assert "18 officers" in record.recommendation_summary
+        assert "incident command posture" in record.recommendation_summary
+
+
 def test_post_event_report_route_persists_report_and_audit_log():
     session_factory = _build_session_factory()
     actor_id = uuid4()
@@ -343,3 +374,5 @@ def test_post_event_report_route_rejects_unassigned_officer():
 
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "OFFICER_ASSIGNMENT_REQUIRED"
+
+

@@ -258,7 +258,7 @@ export default function MapIntelligencePage() {
                 Operational map for hotspots, reports, routes, and conflicts.
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-muted">
-                Primary geospatial layer is MapmyIndia / Mappls with INR 1000 credit guardrails.
+                Primary geospatial layer is MapmyIndia / Mappls.
                 Conflict overlays now come from the real multi-event analysis API, while representative report markers remain a safe demo overlay until a dedicated map feed is added.
               </p>
             </div>
@@ -317,8 +317,7 @@ export default function MapIntelligencePage() {
               <h2 className="mt-2 text-2xl font-semibold">{providerStatus(config)}</h2>
               <div className="mt-4 space-y-2 text-sm leading-7 text-muted">
                 <p>Map key available: {config?.mapKeyAvailable ? "yes" : "no"}</p>
-                <p>Budget guard: {config?.budgetGuardEnabled ? "enabled" : "disabled"}</p>
-                <p>Credit budget: INR {config?.creditsBudgetInr ?? 1000}</p>
+
                 <p>Routing status: {routeMutation.data?.provider ?? "demo overlay"}</p>
               </div>
             </article>

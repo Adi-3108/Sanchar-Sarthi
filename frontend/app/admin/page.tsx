@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import AuthPanel from "@/components/auth/AuthPanel";
@@ -30,6 +31,7 @@ import {
   type FoundationVote
 } from "@/lib/api";
 import { useFirebaseAuthState } from "@/lib/auth";
+import { useSessionStore } from "@/lib/stores/useSessionStore";
 
 function metric(value: number | string | undefined): string {
   if (value === undefined || value === null) {
@@ -68,7 +70,9 @@ function formatTime(value?: string | null): string {
 
 export default function AdminPage() {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const { user, ready: authReady } = useFirebaseAuthState();
+  const session = useSessionStore();
   const [officerForm, setOfficerForm] = useState<CreateOfficerRequest>({
     email: "officer.demo@sancharsarthi.local",
     firebase_uid: "firebase-officer-demo-001",
@@ -80,7 +84,14 @@ export default function AdminPage() {
     assigned_zones: ["East"]
   });
 
-  const canRunProtectedActions = authReady && Boolean(user);
+  const isAdmin = session.accessLevel === "admin";
+  const canRunProtectedActions = authReady && Boolean(user) && isAdmin;
+
+  useEffect(() => {
+    if (authReady && (!user || !isAdmin)) {
+      router.replace("/user");
+    }
+  }, [authReady, isAdmin, router, user]);
 
   const healthQuery = useQuery({ queryKey: ["admin-health"], queryFn: getHealth, retry: 1, refetchOnWindowFocus: false });
   const modelRunsQuery = useQuery({ queryKey: ["admin-model-runs"], queryFn: getModelRuns, enabled: canRunProtectedActions, retry: 1, refetchOnWindowFocus: false });
@@ -130,7 +141,7 @@ export default function AdminPage() {
     });
   }
 
-  if (!authReady || !user) {
+  if (!authReady || !user || !isAdmin) {
     return (
       <main className="min-h-screen bg-slate-100 px-6 py-8 text-slate-900 md:px-10">
         <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-[1fr_380px]">

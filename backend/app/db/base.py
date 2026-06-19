@@ -42,6 +42,9 @@ def import_model_modules() -> None:
         event_prediction,
         event_recommendation,
         hotspot_cluster,
+        incident,
+        incident_prediction,
+        incident_vote,
         live_event_update,
         map_api_usage_log,
         model_run,
@@ -49,5 +52,6 @@ def import_model_modules() -> None:
         police_officer_profile,
         post_event_report,
         system_audit_log,
+        traffic_station,
         user_account,
     )

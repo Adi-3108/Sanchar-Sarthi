@@ -185,7 +185,7 @@ export default function ModelInsightsPage() {
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-muted md:text-lg">
                 This view tracks which prediction artifacts exist, what the latest recorded training run says,
-                and when EventFlow AI is still operating on explainable rule fallbacks.
+                and when Sanchar Sarthi is still operating on explainable rule fallbacks.
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:items-end">

@@ -49,7 +49,7 @@ export default function AdminPage() {
   const queryClient = useQueryClient();
   const { user, ready: authReady } = useFirebaseAuthState();
   const [officerForm, setOfficerForm] = useState<CreateOfficerRequest>({
-    email: "officer.demo@eventflow.local",
+    email: "officer.demo@sancharsarthi.local",
     firebase_uid: "firebase-officer-demo-001",
     officer_id: "BTP-DEMO-001",
     display_name: "Officer Demo",
@@ -120,6 +120,25 @@ export default function AdminPage() {
     return null;
   }, [createOfficerMutation.data, generateFeaturesMutation.data, loadDemoMutation.data]);
 
+  if (!authReady || !user) {
+    return (
+      <main className="min-h-screen bg-bg px-6 py-8 text-copy md:px-10">
+        <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-[1fr_380px]">
+          <section className="rounded-lg border border-line bg-panel p-8 shadow-panel">
+            <p className="text-sm uppercase tracking-[0.24em] text-accent">Sanchar Sarthi</p>
+            <h1 className="mt-3 text-4xl font-semibold">{authReady ? "Admin access is protected." : "Checking admin session."}</h1>
+            <p className="mt-4 text-muted">Sign in with an admin Firebase account to access seed/reset, role, audit, model, and system controls.</p>
+          </section>
+          <AuthPanel
+            preferredRole="admin"
+            title="Admin Firebase sign-in"
+            note="Admin mode is not available to public users."
+          />
+        </div>
+      </main>
+    );
+  }
+
   function updateOfficerField<Key extends keyof CreateOfficerRequest>(
     key: Key,
     value: CreateOfficerRequest[Key]
@@ -144,7 +163,7 @@ export default function AdminPage() {
             <div className="max-w-3xl">
               <p className="text-sm uppercase tracking-[0.32em] text-accentSoft">Level 1</p>
               <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
-                Admin and control-room operations portal.
+                Sanchar Sarthi admin and control-room operations portal.
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-muted">
                 This surface connects health, dataset analytics, model status, provider status,

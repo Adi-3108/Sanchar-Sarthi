@@ -586,6 +586,71 @@ export type CreateOfficerResponse = {
   active: boolean;
 };
 
+export type FoundationPrediction = {
+  model_name: string;
+  model_version: string;
+  predicted_severity?: string | null;
+  police_force_required?: number | null;
+  barricades_required?: number | null;
+  urgency_score?: number | null;
+  route_disruption_score?: number | null;
+  confidence_score?: number | null;
+  station_recommendation?: string | null;
+  hotspot_contribution_score?: number | null;
+  explanation_text?: string | null;
+};
+
+export type FoundationIncident = {
+  id: string;
+  incident_type: string;
+  title: string;
+  description?: string | null;
+  status: string;
+  severity: string;
+  location_name: string;
+  latitude: number;
+  longitude: number;
+  locality?: string | null;
+  ward?: string | null;
+  source_type: string;
+  true_vote_count: number;
+  false_vote_count: number;
+  confidence_score: number;
+  assigned_station_name?: string | null;
+  police_force_required?: number | null;
+  barricades_required?: number | null;
+  route_impact_summary?: string | null;
+  resolution_notes?: string | null;
+  station_alerted: boolean;
+  created_at: string;
+  updated_at: string;
+  latest_prediction?: FoundationPrediction | null;
+};
+
+export type FoundationStation = {
+  station_code: string;
+  name: string;
+  locality: string;
+  latitude: number;
+  longitude: number;
+  contact_number?: string | null;
+};
+
+export type FoundationBrowseResponse = {
+  incidents: FoundationIncident[];
+  stations: FoundationStation[];
+  statuses: string[];
+};
+
+export type FoundationSeedResponse = {
+  status: string;
+  stations: number;
+  users: number;
+  incidents: number;
+  votes: number;
+  predictions: number;
+};
+
 export type OfficerAssignedEventResponse = {
   id: string;
   event_cause_clean?: string | null;
@@ -776,4 +841,24 @@ export function geocodeMapAddress(payload: MapGeocodeRequest, init?: RequestInit
 
 export function generatePostEventReport(eventId: string, init?: RequestInit): Promise<PostEventReportResponse> {
   return apiPost<PostEventReportResponse>(`/api/events/${encodeURIComponent(eventId)}/post-event-report`, {}, init);
+}
+
+export function getFoundationIncidents(init?: RequestInit): Promise<FoundationBrowseResponse> {
+  return apiGet<FoundationBrowseResponse>("/api/foundation/incidents", init);
+}
+
+export function getFoundationControlRoom(init?: RequestInit): Promise<FoundationBrowseResponse> {
+  return apiGet<FoundationBrowseResponse>("/api/foundation/control-room", init);
+}
+
+export function voteFoundationIncident(
+  incidentId: string,
+  voteValue: "true" | "false",
+  init?: RequestInit
+): Promise<FoundationIncident> {
+  return apiPost<FoundationIncident>(`/api/foundation/incidents/${encodeURIComponent(incidentId)}/vote`, { vote_value: voteValue }, init);
+}
+
+export function seedFoundationData(init?: RequestInit): Promise<FoundationSeedResponse> {
+  return apiPost<FoundationSeedResponse>("/api/foundation/admin/seed", {}, init);
 }

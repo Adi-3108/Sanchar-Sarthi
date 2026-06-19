@@ -100,14 +100,27 @@ def _recommendation_summary(recommendation: EventRecommendation | None) -> str:
     if recommendation is None:
         return "No persisted recommendation snapshot was available for this after-action review."
 
+    stored_summary = (recommendation.recommended_action_summary or "").strip()
+    if stored_summary:
+        return stored_summary
+
     manpower = dict(recommendation.deployment_plan_json or {})
     barricades = dict(recommendation.barricade_plan_json or {})
     diversions = dict(recommendation.diversion_plan_json or {})
+
+    def humanize(value: object | None, fallback: str) -> str:
+        raw = str(value or fallback).replace("_", " ").strip()
+        return raw or fallback
+
+    recommended_officers = recommendation.recommended_total_officers
+    if recommended_officers is None:
+        recommended_officers = int(manpower.get("recommended_total_officers") or 0)
+
     return (
-        f"Recommended {int(manpower.get('recommended_total_officers') or 0)} officers"
-        f" using {(manpower.get('deployment_style') or 'operational').__str__().replace('_', ' ')} posture,"
-        f" {(barricades.get('barricade_level') or 'baseline').__str__().replace('_', ' ')} barricading,"
-        f" and {(diversions.get('strategy') or 'standard').__str__().replace('_', ' ')} diversion guidance."
+        f"Stored plan called for {recommended_officers} officers"
+        f" in {humanize(manpower.get('deployment_style'), 'operational')} posture,"
+        f" with {humanize(barricades.get('barricade_level'), 'baseline')} barricade coverage"
+        f" and {humanize(diversions.get('strategy'), 'standard')} diversion guidance."
     )
 
 
@@ -353,3 +366,4 @@ def serialize_post_event_report(record: PostEventReport) -> dict[str, object]:
             else None
         ),
     }
+

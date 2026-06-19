@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import time
 from pathlib import Path
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
@@ -35,9 +36,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Rebuild Event DNA records and similar-event memory.")
     parser.add_argument("--event-id", help="Optional event ID to rebuild a single Event DNA record.")
     parser.add_argument("--limit-similar", type=int, default=5, help="Maximum similar events to persist per event.")
+    parser.add_argument(
+        "--skip-support-refresh",
+        action="store_true",
+        help="Skip hotspot refresh when supporting data was already rebuilt earlier in the setup pipeline.",
+    )
     args = parser.parse_args()
 
     ensure_schema()
+    started_at = time.perf_counter()
 
     with SessionLocal() as session:
         try:
@@ -45,15 +52,17 @@ def main() -> int:
                 session,
                 event_id=args.event_id,
                 limit_similar=args.limit_similar,
-                refresh_supporting_data=True,
+                refresh_supporting_data=not args.skip_support_refresh,
             )
         except ValueError as exc:
             print(f"[rebuild-event-dna] {exc}")
             return 1
 
+    elapsed = time.perf_counter() - started_at
     print(
         f"[rebuild-event-dna] processed={report.events_processed} created={report.dna_created} "
-        f"updated={report.dna_updated} scope='{args.event_id or 'all'}' limit_similar={args.limit_similar}"
+        f"updated={report.dna_updated} scope='{args.event_id or 'all'}' limit_similar={args.limit_similar} "
+        f"refresh_supporting_data={not args.skip_support_refresh} elapsed_seconds={elapsed:.2f}"
     )
     return 0
 

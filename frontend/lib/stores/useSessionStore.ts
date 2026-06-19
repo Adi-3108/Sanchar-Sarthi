@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 
-export type AccessLevel = "admin" | "control_room" | "police_officer" | "public_citizen";
+export type AccessLevel = "admin" | "control_room" | "police_officer" | "citizen" | "public_citizen";
 
 type FirebaseSessionInput = {
   accessLevel: AccessLevel;

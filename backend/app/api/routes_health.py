@@ -51,7 +51,7 @@ def health() -> HealthResponse:
     )
     return HealthResponse(
         status="ok",
-        service="eventflow-ai-backend",
+        service="sanchar-sarthi-backend",
         environment=settings.environment,
         checked_at=datetime.now(timezone.utc),
         database=database_status,

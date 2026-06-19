@@ -17,7 +17,7 @@ class Settings(BaseSettings):
         populate_by_name=True,
     )
 
-    app_name: str = Field(default="EventFlow AI")
+    app_name: str = Field(default="Sanchar Sarthi")
     environment: str = Field(
         default="local",
         pattern="^(local|test|production)$",

@@ -36,8 +36,21 @@ function emit() {
   listeners.forEach((listener) => listener());
 }
 
+function sameLayers(left: CommandLayer[], right: CommandLayer[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
 function setState(next: Partial<CommandState>) {
-  state = { ...state, ...next };
+  const merged = { ...state, ...next };
+  if (
+    state.selectedEventId === merged.selectedEventId &&
+    state.language === merged.language &&
+    sameLayers(state.activeLayers, merged.activeLayers)
+  ) {
+    return;
+  }
+
+  state = merged;
   currentSnapshot = buildSnapshot();
   emit();
 }
@@ -47,17 +60,31 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
+const actions: Pick<CommandStore, "setSelectedEventId" | "toggleLayer" | "setLanguage"> = {
+  setSelectedEventId: (eventId) => {
+    if (state.selectedEventId === eventId) {
+      return;
+    }
+    setState({ selectedEventId: eventId });
+  },
+  toggleLayer: (layer) => {
+    const activeLayers = state.activeLayers.includes(layer)
+      ? state.activeLayers.filter((item) => item !== layer)
+      : [...state.activeLayers, layer];
+    setState({ activeLayers });
+  },
+  setLanguage: (language) => {
+    if (state.language === language) {
+      return;
+    }
+    setState({ language });
+  }
+};
+
 function buildSnapshot(): CommandStore {
   return {
     ...state,
-    setSelectedEventId: (eventId) => setState({ selectedEventId: eventId }),
-    toggleLayer: (layer) =>
-      setState({
-        activeLayers: state.activeLayers.includes(layer)
-          ? state.activeLayers.filter((item) => item !== layer)
-          : [...state.activeLayers, layer]
-      }),
-    setLanguage: (language) => setState({ language })
+    ...actions
   };
 }
 

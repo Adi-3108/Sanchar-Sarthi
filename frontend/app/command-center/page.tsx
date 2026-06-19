@@ -35,7 +35,7 @@ export default function CommandCenterPage() {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <p className="text-sm uppercase tracking-[0.32em] text-accentSoft">
-                EventFlow AI
+                Sanchar Sarthi
               </p>
               <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
                 Predictive traffic command twin for event-driven congestion.

@@ -1,6 +1,6 @@
-# EventFlow AI
+# Sanchar Sarthi
 
-EventFlow AI is a predictive traffic command twin for Bengaluru event-driven congestion. This repository is organized as a monorepo with a FastAPI backend and a Next.js frontend, following the phased build plan in [plan/README.md](/C:/Users/uadit/Desktop/FLipkart/plan/README.md).
+Sanchar Sarthi is a predictive traffic incident and response platform for Bengaluru. This repository is organized as a monorepo with a FastAPI backend and a Next.js frontend.
 
 ## Phase 1 Status
 
@@ -14,7 +14,7 @@ Phase 1 establishes:
 
 Phase 2 adds:
 
-- SQLAlchemy models for the core EventFlow schema
+- SQLAlchemy models for the core Sanchar Sarthi schema
 - Alembic migration support for the initial database
 - backend database sessions and health-aware connectivity checks
 

@@ -11,6 +11,7 @@ const roleLabels: Record<AccessLevel, string> = {
   admin: "Admin",
   control_room: "Control room",
   police_officer: "Police officer",
+  citizen: "Citizen",
   public_citizen: "Public citizen"
 };
 
@@ -124,6 +125,7 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
               <option value="admin">Admin</option>
               <option value="control_room">Control room</option>
               <option value="police_officer">Police officer</option>
+              <option value="citizen">Citizen</option>
             </select>
           </label>
           <button

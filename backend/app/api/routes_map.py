@@ -36,6 +36,8 @@ class MapRouteRequest(BaseModel):
     destination: Coordinate
     mode: Literal["driving"] = "driving"
     purpose: str = Field(default="diversion_plan", min_length=2, max_length=64)
+    incidentId: str | None = None
+    forceReload: bool = False
 
     @field_validator("origin", "destination")
     @classmethod
@@ -153,15 +155,17 @@ def map_route(
     db: Session = Depends(get_db),
 ):
     try:
+        req = RouteRequest(
+            origin=payload.origin,
+            destination=payload.destination,
+            mode=payload.mode,
+            purpose=payload.purpose,
+            incident_id=payload.incidentId,
+        )
         result = get_route(
             db,
-            RouteRequest(
-                origin=payload.origin,
-                destination=payload.destination,
-                mode=payload.mode,
-                purpose=payload.purpose,
-            ),
-            get_settings(),
+            req,
+            force_reload=payload.forceReload,
         )
         db.commit()
     except SQLAlchemyError:
@@ -193,3 +197,48 @@ def map_geocode(
         return error_response(503, "DATABASE_UNAVAILABLE", "Database is unavailable for map geocoding.")
 
     return MapGeocodeResponse.model_validate(result)
+
+class ActiveRoute(BaseModel):
+    incidentId: str
+    polyline: list[Coordinate]
+
+class MapActiveRoutesResponse(BaseModel):
+    routes: list[ActiveRoute]
+
+from app.orm.incident import Incident
+from sqlalchemy import select
+
+from app.services.map_route_service import _ROUTE_CACHE, route_cache_key
+
+@router.get("/active-routes", response_model=MapActiveRoutesResponse)
+def get_active_routes(
+    db: Session = Depends(get_db),
+):
+    incidents = db.scalars(
+        select(Incident).where(Incident.status.in_(["active", "confirmed", "escalated"]))
+    ).all()
+
+    active_routes = []
+    for incident in incidents:
+        if not incident.latitude or not incident.longitude:
+            continue
+        lng, lat = float(incident.longitude), float(incident.latitude)
+        
+        # Match frontend exactly:
+        origin = (lng - 0.015, lat + 0.015)
+        destination = (lng + 0.015, lat - 0.015)
+        
+        req = RouteRequest(
+            origin=origin,
+            destination=destination,
+            incident_id=incident.id
+        )
+        c_key = route_cache_key(req)
+        cached = _ROUTE_CACHE.get(c_key)
+        if cached and "polyline" in cached:
+            active_routes.append({
+                "incidentId": incident.id,
+                "polyline": cached["polyline"]
+            })
+
+    return {"routes": active_routes}

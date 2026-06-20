@@ -71,7 +71,7 @@ export function LiveEscalationTimeline({ updates, className }: LiveEscalationTim
         className ?? ""
       }`}
     >
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex flex-col gap-2">
         <div>
           <p className="text-[11px] uppercase tracking-[0.24em] text-fuchsia-300/80">Live Escalation Timeline</p>
           <h2 className="mt-2 text-2xl font-semibold text-slate-100">Field updates and adaptive actions</h2>
@@ -89,7 +89,7 @@ export function LiveEscalationTimeline({ updates, className }: LiveEscalationTim
               key={update.id}
               className="rounded-3xl border border-slate-800/80 bg-slate-900/75 p-4"
             >
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="flex flex-col gap-4">
                 <div className="max-w-3xl">
                   <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">
                     {update.update_source.replaceAll("_", " ")}
@@ -128,23 +128,23 @@ export function LiveEscalationTimeline({ updates, className }: LiveEscalationTim
                 </div>
               ) : null}
 
-              <dl className="mt-4 grid gap-3 text-xs text-slate-300 sm:grid-cols-2 xl:grid-cols-4">
+              <dl className="mt-4 grid gap-3 text-xs text-slate-300 grid-cols-3">
                 <div className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-3">
-                  <dt className="text-slate-500">Expected impact</dt>
+                  <dt className="text-slate-500">Exp.</dt>
                   <dd className="mt-2 text-sm font-semibold text-slate-100">{update.expected_impact_score}</dd>
                 </div>
                 <div className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-3">
-                  <dt className="text-slate-500">Current impact</dt>
+                  <dt className="text-slate-500">Cur.</dt>
                   <dd className="mt-2 text-sm font-semibold text-slate-100">{update.current_impact_score}</dd>
                 </div>
                 <div className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-3">
-                  <dt className="text-slate-500">Deviation</dt>
+                  <dt className="text-slate-500">Dev.</dt>
                   <dd className="mt-2 text-sm font-semibold text-slate-100">
                     {update.impact_deviation >= 0 ? "+" : ""}
                     {update.impact_deviation}
                   </dd>
                 </div>
-                <div className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-3">
+                <div className="col-span-3 rounded-2xl border border-slate-800/80 bg-slate-950/70 p-3">
                   <dt className="text-slate-500">Recommended action</dt>
                   <dd className="mt-2 text-sm font-semibold text-slate-100">
                     {update.adaptive_action ?? "Monitor situation"}

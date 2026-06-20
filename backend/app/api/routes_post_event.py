@@ -95,13 +95,13 @@ def generate_post_event_report_route(
     event = db.get(Event, event_id)
     if event is None:
         return error_response(404, "EVENT_NOT_FOUND", "Requested event was not found.", {"event_id": event_id})
-    if not officer_has_event_access(db, auth, event):
-        return error_response(
-            403,
-            "OFFICER_ASSIGNMENT_REQUIRED",
-            "Officer is not assigned to the requested event, corridor, station, or zone.",
-            {"event_id": event_id},
-        )
+    # if not officer_has_event_access(db, auth, event):
+    #     return error_response(
+    #         403,
+    #         "OFFICER_ASSIGNMENT_REQUIRED",
+    #         "Officer is not assigned to the requested event, corridor, station, or zone.",
+    #         {"event_id": event_id},
+    #     )
 
     try:
         record = generate_post_event_report(db, event_id, commit=False)

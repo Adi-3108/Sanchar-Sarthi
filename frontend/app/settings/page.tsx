@@ -110,26 +110,6 @@ export default function SettingsPage() {
                 <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Demo state</p>
                 <p className="mt-2 text-2xl font-semibold text-copy">{headline}</p>
               </div>
-              <nav className="flex flex-wrap gap-3">
-                <Link
-                  href="/command-center"
-                  className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
-                >
-                  Command center
-                </Link>
-                <Link
-                  href="/admin"
-                  className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
-                >
-                  Admin portal
-                </Link>
-                <Link
-                  href="/simulation"
-                  className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
-                >
-                  Simulation
-                </Link>
-              </nav>
             </div>
           </div>
         </section>

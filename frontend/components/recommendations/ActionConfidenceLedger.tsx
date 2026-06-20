@@ -22,7 +22,7 @@ export function ActionConfidenceLedger({ items, className }: ActionConfidenceLed
 
   return (
     <section
-      className={`rounded-[28px] border border-slate-800/80 bg-slate-950/85 p-6 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ${
+      className={`flex flex-col h-full rounded-[28px] border border-slate-800/80 bg-slate-950/85 p-6 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ${
         className ?? ""
       }`}
     >
@@ -34,12 +34,12 @@ export function ActionConfidenceLedger({ items, className }: ActionConfidenceLed
             key={`${item.input}-${item.source ?? "source"}`}
             className="rounded-3xl border border-slate-800/80 bg-slate-900/75 p-4"
           >
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex flex-col gap-3">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{item.input}</p>
                 <p className="mt-2 text-sm leading-7 text-slate-300">{item.note ?? "No note provided."}</p>
               </div>
-              <div className="rounded-full border border-slate-700/80 bg-slate-950/80 px-3 py-1 text-xs uppercase tracking-[0.18em] text-slate-200">
+              <div className="self-start rounded-full border border-slate-700/80 bg-slate-950/80 px-3 py-1 text-xs uppercase tracking-[0.18em] text-slate-200">
                 {Math.round(item.confidence * 100)} confidence
               </div>
             </div>

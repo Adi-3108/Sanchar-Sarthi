@@ -24,11 +24,13 @@ type SessionState = {
   policeStation?: string;
   assignedCorridors?: string[];
   assignedZones?: string[];
+  showLoginSuccess?: boolean;
 };
 
 type SessionStore = SessionState & {
   setFirebaseSession: (input: FirebaseSessionInput) => void;
   clearSession: () => void;
+  setLoginSuccess: (show: boolean) => void;
 };
 
 const STORAGE_KEY = "eventflow.firebase-session";
@@ -171,7 +173,7 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
-const actions: Pick<SessionStore, "setFirebaseSession" | "clearSession"> = {
+const actions: Pick<SessionStore, "setFirebaseSession" | "clearSession" | "setLoginSuccess"> = {
   setFirebaseSession: (input) => {
     const sameUser = state.firebaseUid === input.firebaseUid;
     setState({
@@ -189,7 +191,8 @@ const actions: Pick<SessionStore, "setFirebaseSession" | "clearSession"> = {
         input.assignedZones ?? (sameUser && input.accessLevel === "police_officer" ? state.assignedZones : undefined)
     });
   },
-  clearSession: () => setState(publicState)
+  clearSession: () => setState(publicState),
+  setLoginSuccess: (show) => setState({ ...state, showLoginSuccess: show })
 };
 
 function buildSnapshot(): SessionStore {

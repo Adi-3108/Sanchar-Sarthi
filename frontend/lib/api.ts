@@ -637,7 +637,7 @@ export type ModelRunListResponse = {
 
 export type CreateOfficerRequest = {
   email: string;
-  firebase_uid: string;
+  password: string;
   officer_id: string;
   display_name: string;
   rank?: string | null;
@@ -653,6 +653,18 @@ export type CreateOfficerResponse = {
   active: boolean;
 };
 
+export type CreateControlRoomRequest = {
+  email: string;
+  password: string;
+  display_name: string;
+};
+
+export type CreateControlRoomResponse = {
+  status: string;
+  firebase_uid: string;
+  role: string;
+  active: boolean;
+};
 export type FoundationPrediction = {
   model_name: string;
   model_version: string;
@@ -734,6 +746,7 @@ export type FoundationIncidentCreateRequest = {
   longitude: number;
   locality?: string | null;
   ward?: string | null;
+  language?: string;
 };
 
 export type FoundationStatusTransitionRequest = {
@@ -979,10 +992,7 @@ export type MapActiveRoutesResponse = {
 };
 
 export function getMapActiveRoutes(init?: RequestInit): Promise<MapActiveRoutesResponse> {
-  return request("/api/map/active-routes", {
-    method: "GET",
-    ...init
-  });
+  return apiGet<MapActiveRoutesResponse>("/api/map/active-routes", init);
 }
 
 export function getMapRoute(payload: MapRouteRequest, init?: RequestInit): Promise<MapRouteResponse> {
@@ -1171,3 +1181,4 @@ export type CommandCenterSummary = {
 export function getCommandCenterSummary(init?: RequestInit): Promise<CommandCenterSummary> {
   return apiGet<CommandCenterSummary>("/api/command-center/summary", init);
 }
+

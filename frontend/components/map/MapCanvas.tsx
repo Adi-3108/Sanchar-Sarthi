@@ -27,7 +27,7 @@ function providerBadge(config: MapConfig, sdkState: MapmyIndiaLoadState): string
 export function MapCanvas({ config, children, className }: MapCanvasProps) {
   const mapId = useId().replace(/:/g, "");
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef = useRef<{ remove?: () => void } | null>(null);
+  const mapInstanceRef = useRef<{ remove?: () => void; invalidateSize?: () => void } | null>(null);
   const [sdkState, setSdkState] = useState<MapmyIndiaLoadState>(
     config.activeProvider === "mapmyindia"
       ? { status: "disabled", reason: "missing_browser_key" }
@@ -67,7 +67,7 @@ export function MapCanvas({ config, children, className }: MapCanvasProps) {
       geolocation: false,
       clickableIcons: false,
       theme: "standardNight"
-    });
+    }) as { remove?: () => void; invalidateSize?: () => void };
     mapInstanceRef.current = map;
 
     let resizeObserver: ResizeObserver | null = null;
@@ -136,3 +136,4 @@ export function MapCanvas({ config, children, className }: MapCanvasProps) {
 }
 
 export default MapCanvas;
+

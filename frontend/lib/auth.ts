@@ -34,9 +34,8 @@ export async function loginWithFirebase(email: string, password: string): Promis
   const credential = await signInWithEmailAndPassword(firebaseAuth, email, password);
 
   if (!credential.user.emailVerified) {
-    await sendEmailVerification(credential.user);
     await signOut(firebaseAuth);
-    throw new Error("Please verify your email address before logging in. A new verification link has been sent to your inbox.");
+    throw new Error("UNVERIFIED_EMAIL");
   }
 
   return {
@@ -55,6 +54,21 @@ export async function registerWithFirebase(email: string, password: string): Pro
   const credential = await createUserWithEmailAndPassword(firebaseAuth, email, password);
 
   await sendEmailVerification(credential.user);
+  await signOut(firebaseAuth);
+}
+
+export async function resendVerificationEmail(email: string, password: string): Promise<void> {
+  if (!firebaseAuth) {
+    throw new Error("Firebase web authentication is not configured.");
+  }
+  
+  await setPersistence(firebaseAuth, browserLocalPersistence);
+  const credential = await signInWithEmailAndPassword(firebaseAuth, email, password);
+  
+  if (!credential.user.emailVerified) {
+    await sendEmailVerification(credential.user);
+  }
+  
   await signOut(firebaseAuth);
 }
 

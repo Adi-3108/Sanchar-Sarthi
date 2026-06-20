@@ -862,7 +862,7 @@ def simulate_event(
             hotspot=hotspot,
             similar_event_ids=[row.event_id for row in similar_events],
             commit=False,
-            persist=False,
+            persist=True,
         )
         weather_adjustment = resolve_weather_adjustment(
             payload.latitude,
@@ -882,7 +882,7 @@ def simulate_event(
             weather_condition=payload.weather_condition,
             weather_adjustment_override=weather_adjustment,
             commit=False,
-            persist=False,
+            persist=True,
         )
         serialized_prediction = serialize_event_prediction(prediction_record) or {}
         event_dna_payload = serialize_event_dna(dna_record) or {}
@@ -893,6 +893,10 @@ def simulate_event(
             include_logistics_impact=True,
             include_emergency_corridor=True,
         )
+        if recommendation_payload:
+            from app.services.recommendation_orchestrator import persist_recommendation_plan
+            persist_recommendation_plan(db, recommendation_payload, commit=False, persist=True)
+
         hotspot_overlay = _serialize_hotspot_overlay(hotspot)
         impact_explanation = dict(
             (
@@ -939,7 +943,7 @@ def simulate_event(
             map_overlays={"hotspot": hotspot_overlay.model_dump() if hotspot_overlay else None},
             prediction_explanation_json=dict(serialized_prediction.get("prediction_explanation_json") or {}),
         )
-        db.rollback()
+        db.commit()
         return response
     except SQLAlchemyError:
         db.rollback()

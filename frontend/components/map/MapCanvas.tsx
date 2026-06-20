@@ -27,7 +27,7 @@ function providerBadge(config: MapConfig, sdkState: MapmyIndiaLoadState): string
 export function MapCanvas({ config, children, className }: MapCanvasProps) {
   const mapId = useId().replace(/:/g, "");
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef = useRef<{ remove?: () => void } | null>(null);
+  const mapInstanceRef = useRef<{ remove?: () => void; invalidateSize?: () => void } | null>(null);
   const [sdkState, setSdkState] = useState<MapmyIndiaLoadState>(
     config.activeProvider === "mapmyindia"
       ? { status: "disabled", reason: "missing_browser_key" }
@@ -60,19 +60,36 @@ export function MapCanvas({ config, children, className }: MapCanvasProps) {
     }
 
     mapInstanceRef.current?.remove?.();
-    mapInstanceRef.current = new window.mappls.Map(`mappls-container-${mapId}`, {
+    const map = new window.mappls.Map(`mappls-container-${mapId}`, {
       center: [config.defaultCenter[1], config.defaultCenter[0]],
       zoom: config.defaultZoom,
       zoomControl: false,
       geolocation: false,
-      clickableIcons: false
-    });
+      clickableIcons: false,
+      theme: "standardNight"
+    }) as { remove?: () => void; invalidateSize?: () => void };
+    mapInstanceRef.current = map;
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (mapContainerRef.current) {
+      resizeObserver = new ResizeObserver(() => {
+        // MapmyIndia Map object exposes Leaflet's invalidateSize
+        if (map && typeof map.invalidateSize === "function") {
+          map.invalidateSize();
+        } else {
+          // Fallback if Mappls SDK hides the method: trigger a global resize
+          window.dispatchEvent(new Event("resize"));
+        }
+      });
+      resizeObserver.observe(mapContainerRef.current);
+    }
 
     return () => {
+      resizeObserver?.disconnect();
       mapInstanceRef.current?.remove?.();
       mapInstanceRef.current = null;
     };
-  }, [activeProvider, config.defaultCenter, config.defaultZoom]);
+  }, [activeProvider, config.defaultCenter, config.defaultZoom, mapId]);
 
   return (
     <section
@@ -112,10 +129,11 @@ export function MapCanvas({ config, children, className }: MapCanvasProps) {
       <div className="absolute inset-0 z-10">{children(project)}</div>
 
       <div className="absolute bottom-4 left-5 z-20 max-w-xl rounded-2xl border border-slate-700/80 bg-slate-950/85 px-4 py-3 text-xs leading-6 text-slate-300">
-        {config.fallbackNote}
+        Sanchar Sarthi
       </div>
     </section>
   );
 }
 
 export default MapCanvas;
+

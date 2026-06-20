@@ -3,7 +3,7 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { getCurrentFirebaseToken, loginWithFirebase, logoutFirebase, registerWithFirebase, useFirebaseAuthState } from "@/lib/auth";
+import { getCurrentFirebaseToken, loginWithFirebase, logoutFirebase, registerWithFirebase, resendVerificationEmail, useFirebaseAuthState } from "@/lib/auth";
 import { getCurrentAccess } from "@/lib/api";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import { type AccessLevel, useSessionStore } from "@/lib/stores/useSessionStore";
@@ -24,6 +24,12 @@ type AuthPanelProps = {
 
 function errorText(error: unknown): string {
   if (error instanceof Error) {
+    if (error.message === "UNVERIFIED_EMAIL") {
+      return "Please verify your email address before signing in.";
+    }
+    if (error.message.includes("auth/invalid-credential") || error.message.includes("auth/user-not-found") || error.message.includes("auth/wrong-password")) {
+      return "Account not found or invalid credentials. Would you like to sign up?";
+    }
     return error.message;
   }
   return "Firebase sign-in failed.";
@@ -36,6 +42,13 @@ function normalizeBackendRole(role: string): Exclude<AccessLevel, "public_citize
   return "citizen";
 }
 
+function resolveInteractiveRole(
+  accessLevel: AccessLevel,
+  preferredRole: Exclude<AccessLevel, "public_citizen">
+): Exclude<AccessLevel, "public_citizen"> {
+  return accessLevel === "public_citizen" ? preferredRole : accessLevel as Exclude<AccessLevel, "public_citizen">;
+}
+
 export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
   const queryClient = useQueryClient();
   const session = useSessionStore();
@@ -45,6 +58,17 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isUnverified, setIsUnverified] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const [loginSuccess, setLoginSuccess] = useState(false);
+  const [role, setRole] = useState<Exclude<AccessLevel, "public_citizen">>(
+    resolveInteractiveRole(session.accessLevel, preferredRole)
+  );
+
+  useEffect(() => {
+    const resolvedRole = resolveInteractiveRole(session.accessLevel, preferredRole);
+    setRole(resolvedRole);
+  }, [preferredRole, session.accessLevel]);
 
   useEffect(() => {
     if (!ready) {
@@ -59,10 +83,10 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
     }
 
     if (
-      session.firebaseUid === user.uid &&
-      session.email === user.email &&
+      session.firebaseUid === user.uid && 
+      session.email === user.email && 
       session.firebaseIdToken &&
-      session.accessLevel !== "public_citizen"
+      session.accessLevel === resolveInteractiveRole(session.accessLevel, role)
     ) {
       return;
     }
@@ -87,14 +111,31 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
     };
   }, [ready, session, user]);
 
+  async function handleResendVerification() {
+    setPending(true);
+    setError(null);
+    try {
+      await resendVerificationEmail(email, password);
+      setResendSuccess(true);
+      setError("A new verification link has been sent to your email. Please check your inbox.");
+    } catch (caught) {
+      setError(errorText(caught));
+    } finally {
+      setPending(false);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true);
     setError(null);
+    setIsUnverified(false);
+    setResendSuccess(false);
 
     try {
       if (isSignUp) {
         await registerWithFirebase(email, password);
+        setIsUnverified(true);
         setError("Account created! A verification link has been sent to your email. Please verify before signing in.");
         setIsSignUp(false);
         setPending(false);
@@ -109,8 +150,12 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
         firebaseUid: result.uid,
         email: result.email
       });
+      session.setLoginSuccess(true);
       await queryClient.invalidateQueries();
     } catch (caught) {
+      if (caught instanceof Error && caught.message === "UNVERIFIED_EMAIL") {
+        setIsUnverified(true);
+      }
       setError(errorText(caught));
     } finally {
       setPending(false);
@@ -120,6 +165,7 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
   async function handleLogout() {
     await logoutFirebase();
     session.clearSession();
+    setLoginSuccess(false);
     await queryClient.invalidateQueries();
   }
 
@@ -141,6 +187,16 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
         </div>
       ) : user ? (
         <div className="mt-5 space-y-3">
+          {loginSuccess && (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-7 text-emerald-800 shadow-sm animate-in fade-in zoom-in-95">
+              <p className="font-semibold flex items-center gap-2">
+                <svg className="h-5 w-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Login Successful!
+              </p>
+            </div>
+          )}
           <div className="rounded-2xl border border-line/70 bg-bg/60 p-4 text-sm leading-7 text-copy">
             <p>Signed in: {user.email ?? user.uid}</p>
             <p>Selected UI role: {roleLabels[visibleRole]}</p>
@@ -196,7 +252,52 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
             </button>
           </div>
           
-          {error ? <p className="text-sm leading-6 text-danger">{error}</p> : null}
+          {error && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+              <div className="relative w-full max-w-sm rounded-3xl border border-line bg-panel p-6 shadow-xl animate-in zoom-in-95 duration-200">
+                <div className="flex flex-col items-center text-center">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-danger/10 text-danger">
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-bold text-copy">Authentication Error</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted">{error}</p>
+                  <div className="mt-6 flex w-full flex-col gap-3">
+                    {error.includes("Would you like to sign up") && !isSignUp ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setError(null);
+                          setIsSignUp(true);
+                        }}
+                        className="w-full rounded-2xl bg-accent px-4 py-3 text-sm font-semibold text-white transition hover:bg-accentSoft"
+                      >
+                        Sign Up Now
+                      </button>
+                    ) : null}
+                    {isUnverified && !resendSuccess ? (
+                      <button
+                        type="button"
+                        onClick={handleResendVerification}
+                        disabled={pending}
+                        className="w-full rounded-2xl bg-accent px-4 py-3 text-sm font-semibold text-white transition hover:bg-accentSoft disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {pending ? "Sending..." : "Resend Verification Email"}
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => setError(null)}
+                      className="w-full rounded-2xl border border-line bg-bg/50 px-4 py-3 text-sm font-semibold text-copy transition hover:bg-line/30"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </form>
       )}
     </section>

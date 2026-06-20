@@ -1,14 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 
 import { getCommandCenterSummary } from "@/lib/api";
 import { useLanguage } from "@/components/LanguageContext";
 import { t } from "@/lib/i18n";
+import CorridorRiskTimeline from "./components/CorridorRiskTimeline";
 
 export default function CommandCenterPage() {
   const { language } = useLanguage();
+  const [selectedCorridor, setSelectedCorridor] = useState("ORR");
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["command-center-summary"],
     queryFn: getCommandCenterSummary,
@@ -174,7 +177,29 @@ export default function CommandCenterPage() {
             </ul>
           </article>
         </section>
+
+        <section className="grid gap-5">
+          <div className="flex items-center gap-3 bg-panelAlt/90 p-4 border border-line/70 rounded-[24px]">
+            <span className="text-sm font-semibold text-copy whitespace-nowrap ml-2">Select Corridor:</span>
+            <select
+              value={selectedCorridor}
+              onChange={(e) => setSelectedCorridor(e.target.value)}
+              className="bg-bg/80 border border-line rounded-2xl px-4 py-2 text-sm text-copy outline-none focus:border-accent w-full md:w-auto"
+            >
+              <option value="ORR">Outer Ring Road (ORR)</option>
+              <option value="Tumkur Road">Tumkur Road</option>
+              <option value="Hosur Road">Hosur Road</option>
+              <option value="Old Madras Road">Old Madras Road</option>
+              <option value="Bellary Road">Bellary Road</option>
+              <option value="Bannerghatta Road">Bannerghatta Road</option>
+            </select>
+          </div>
+          <div className="w-full">
+            <CorridorRiskTimeline corridor={selectedCorridor} />
+          </div>
+        </section>
       </div>
     </main>
   );
 }
+

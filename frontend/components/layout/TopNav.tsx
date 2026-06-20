@@ -156,13 +156,20 @@ export function TopNav() {
               {t(language, currentRole)}
             </span>
           </div>
-          {currentRole !== "public_citizen" && (
+          {currentRole !== "public_citizen" ? (
             <button
               onClick={handleLogout}
               className="ml-2 rounded-xl border border-line bg-panel px-4 py-2 text-sm font-semibold text-copy transition hover:border-accent hover:text-accent"
             >
               {t(language, "logout")}
             </button>
+          ) : (
+            <Link
+              href="/login"
+              className="ml-2 rounded-xl border border-line bg-panel px-4 py-2 text-sm font-semibold text-copy transition hover:border-accent hover:text-accent"
+            >
+              {t(language, "login") || "Login"}
+            </Link>
           )}
         </div>
       </div>

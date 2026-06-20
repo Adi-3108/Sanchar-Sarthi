@@ -67,7 +67,8 @@ iframe.goog-te-menu-frame {
 /* Text highlight - only remove the blue box, NOT the text itself */
 .goog-text-highlight,
 .goog-text-highlight:hover,
-[class*="goog-text-highlight"] {
+[class*="goog-text-highlight"],
+body font {
   background: transparent !important;
   background-color: transparent !important;
   background-image: none !important;
@@ -103,9 +104,14 @@ body.translated-rtl {
 .goog-te-spinner-pos,
 .goog-te-spinner-pos *,
 .goog-te-spinner,
+.VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
+.VIpgJd-ZVi9od-aZ2wEe-wOHMyf *,
 #goog-gt-tt,
 #goog-gt-tt *,
-.goog-te-balloon-frame {
+.goog-te-balloon-frame,
+iframe[src*="translate.googleapis.com"],
+iframe[src*="translate.google.com"],
+iframe[name^="goog_"] {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
@@ -118,5 +124,6 @@ body.translated-rtl {
   position: absolute !important;
   top: -9999px !important;
   left: -9999px !important;
+  z-index: -9999 !important;
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -35,7 +36,6 @@ import {
   type FoundationVote
 } from "@/lib/api";
 import { useFirebaseAuthState } from "@/lib/auth";
-import { useSessionStore } from "@/lib/stores/useSessionStore";
 
 function metric(value: number | string | undefined): string {
   if (value === undefined || value === null) {
@@ -132,11 +132,7 @@ export default function AdminPage() {
   const isAdmin = session.accessLevel === "admin";
   const canRunProtectedActions = authReady && Boolean(user) && isAdmin;
 
-  useEffect(() => {
-    if (authReady && (!user || !isAdmin)) {
-      router.replace("/user");
-    }
-  }, [authReady, isAdmin, router, user]);
+  // Redirect removed so users can see the AuthPanel or Unauthorized message.
 
   const healthQuery = useQuery({ queryKey: ["admin-health"], queryFn: getHealth, retry: 1, refetchOnWindowFocus: false });
   // Removed stationsQuery
@@ -202,7 +198,6 @@ export default function AdminPage() {
   //   createControlRoomMutation.mutate(controlRoomForm);
   // }
 
-  const session = useSessionStore();
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
@@ -220,7 +215,17 @@ export default function AdminPage() {
             <h1 className="mt-3 text-4xl font-bold">{authReady ? "Admin access is protected." : "Checking admin session."}</h1>
             <p className="mt-4 text-slate-600">Sign in with an admin Firebase account to access incident management, audit logs, model visibility, and system controls.</p>
           </section>
-          <AuthPanel preferredRole="admin" title="Admin Firebase sign-in" note="Admin mode is not available to public users." />
+          {authReady && user && !hasAccess ? (
+            <div className="rounded-3xl border border-rose-200 bg-rose-50 p-8 shadow-sm flex flex-col justify-center items-center text-center">
+              <svg className="h-12 w-12 text-rose-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <h2 className="text-2xl font-bold text-rose-800">User Not Authorized</h2>
+              <p className="mt-2 text-rose-700">You do not have the required permissions to access the Admin Portal.</p>
+            </div>
+          ) : (
+            <AuthPanel preferredRole="admin" title="Admin Firebase sign-in" note="Admin mode is not available to public users." />
+          )}
         </div>
       </main>
     );

@@ -58,10 +58,8 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
 
   useEffect(() => {
     const resolvedRole = resolveInteractiveRole(session.accessLevel, preferredRole);
-    if (role !== resolvedRole) {
-      setRole(resolvedRole);
-    }
-  }, [preferredRole, role, session.accessLevel]);
+    setRole(resolvedRole);
+  }, [preferredRole, session.accessLevel]);
 
   useEffect(() => {
     if (!ready) {

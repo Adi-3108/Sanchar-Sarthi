@@ -16,7 +16,7 @@ export function LanguageSwitcher() {
       aria-label="Select language"
       value={language}
       onChange={(e) => setLanguage(e.target.value as typeof language)}
-      className="rounded-lg border border-line/60 bg-panel/80 px-3 py-1.5 text-sm text-copy transition hover:border-accent/50 focus:border-accent focus:outline-none"
+      className="notranslate rounded-lg border border-line/60 bg-panel/80 px-3 py-1.5 text-sm text-copy transition hover:border-accent/50 focus:border-accent focus:outline-none"
     >
       {languageOptions.map((opt) => (
         <option key={opt.value} value={opt.value}>

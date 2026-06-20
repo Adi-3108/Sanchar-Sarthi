@@ -723,6 +723,7 @@ export type FoundationIncidentCreateRequest = {
   longitude: number;
   locality?: string | null;
   ward?: string | null;
+  language?: string;
 };
 
 export type FoundationStatusTransitionRequest = {

@@ -10,6 +10,7 @@ import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, accuracy_score
 from sklearn.preprocessing import LabelEncoder
+from sklearn.utils.class_weight import compute_sample_weight
 import joblib
 
 def main():
@@ -26,10 +27,11 @@ def main():
     y_raw = df["target_priority"]
 
     # 2. Encode Categorical Strings into Numbers
-    print("Encoding categorical variables...")
-    # XGBoost needs categories to be properly typed or encoded. We'll use get_dummies for simplicity.
+    print("Encoding categorical variables natively...")
+    # XGBoost supports categorical data natively. Convert to 'category' dtype!
     categorical_cols = ["event_cause", "corridor", "police_station"]
-    X = pd.get_dummies(X, columns=categorical_cols)
+    for col in categorical_cols:
+        X[col] = X[col].astype("category")
 
     # Encode the target labels (Low=0, Medium=1, High=2, Critical=3)
     le = LabelEncoder()
@@ -39,24 +41,36 @@ def main():
     joblib.dump(le, "label_encoder.pkl")
 
     # 3. Train / Test Split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # Use stratify=y to maintain class distribution in train and test sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
     # 4. Configure XGBoost to use the Kaggle GPU
     print("Configuring XGBoost for GPU...")
-    # tree_method="hist" and device="cuda" forces XGBoost to train on the GPU!
+    # tree_method="hist", device="cuda" forces GPU. enable_categorical enables native category support.
     clf = xgb.XGBClassifier(
         tree_method="hist", 
         device="cuda", 
-        n_estimators=500,
+        n_estimators=1000,
+        early_stopping_rounds=50,
         learning_rate=0.05,
         max_depth=6,
         random_state=42,
-        eval_metric="mlogloss"
+        eval_metric="mlogloss",
+        enable_categorical=True
     )
 
     # 5. Train the Model (This will be lightning fast on a Kaggle GPU)
-    print("Training model on GPU...")
-    clf.fit(X_train, y_train)
+    print("Computing class weights and training model with Early Stopping...")
+    # Handle class imbalance by giving more weight to rare classes
+    sample_weights = compute_sample_weight(class_weight="balanced", y=y_train)
+    
+    # Use early stopping to prevent overfitting
+    clf.fit(
+        X_train, y_train,
+        sample_weight=sample_weights,
+        eval_set=[(X_test, y_test)],
+        verbose=50
+    )
 
     # 6. Evaluate Accuracy
     print("Evaluating model...")

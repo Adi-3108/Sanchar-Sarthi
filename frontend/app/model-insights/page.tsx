@@ -66,14 +66,15 @@ function formatTimestamp(value?: string): string {
   if (!value) {
     return "Not available";
   }
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
+  const utcValue = value.endsWith('Z') ? value : `${value}Z`;
+  const date = new Date(utcValue);
+  if (Number.isNaN(date.getTime())) {
     return "Not available";
   }
   return new Intl.DateTimeFormat("en-IN", {
     dateStyle: "medium",
     timeStyle: "short"
-  }).format(parsed);
+  }).format(date);
 }
 
 function latestModelRunByName(modelRuns: ModelRunResponse[] | undefined): Record<string, ModelRunResponse> {

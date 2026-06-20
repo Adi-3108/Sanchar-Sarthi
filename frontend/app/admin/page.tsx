@@ -1,16 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import AuthPanel from "@/components/auth/AuthPanel";
+import { useSessionStore } from "@/lib/stores/useSessionStore";
+import { SearchableSelect } from "@/components/layout/SearchableSelect";
 import {
   ApiError,
   createOfficer,
   deleteFoundationAdminIncident,
   deleteFoundationAdminVote,
+  escalateFoundationAdminIncident,
   generateEventFeatures,
   getFoundationAdminOverview,
   getHealth,
@@ -20,6 +22,8 @@ import {
   updateFoundationAdminIncident,
   updateFoundationAdminStation,
   updateFoundationAdminUser,
+  type CreateControlRoomRequest,
+  type CreateControlRoomResponse,
   type CreateOfficerRequest,
   type CreateOfficerResponse,
   type DatasetLoadResponse,
@@ -42,12 +46,47 @@ function metric(value: number | string | undefined): string {
 
 function errorText(error: unknown): string {
   if (error instanceof ApiError) {
-    return error.body;
+    try {
+      const parsed = JSON.parse(error.body);
+      return parsed.error?.message || error.body;
+    } catch {
+      return error.body;
+    }
   }
   if (error instanceof Error) {
     return error.message;
   }
   return "Action failed.";
+}
+
+function ErrorAlert({ title, error }: { title: string; error: unknown }) {
+  if (!error) return null;
+  return (
+    <div className="mt-4 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-800 shadow-sm animate-in fade-in zoom-in-95">
+      <svg className="mt-0.5 h-5 w-5 shrink-0 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+      <div>
+        <h3 className="font-semibold">{title}</h3>
+        <p className="mt-1 text-sm text-rose-700/90">{errorText(error)}</p>
+      </div>
+    </div>
+  );
+}
+
+function SuccessAlert({ title, message }: { title: string; message: string | null | undefined }) {
+  if (!message) return null;
+  return (
+    <div className="mt-4 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800 shadow-sm animate-in fade-in zoom-in-95">
+      <svg className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <div>
+        <h3 className="font-semibold">{title}</h3>
+        <p className="mt-1 text-sm text-emerald-700/90">{message}</p>
+      </div>
+    </div>
+  );
 }
 
 function splitScope(value: string): string[] {
@@ -62,7 +101,8 @@ function formatTime(value?: string | null): string {
   if (!value) {
     return "-";
   }
-  const date = new Date(value);
+  const utcValue = value.endsWith('Z') ? value : `${value}Z`;
+  const date = new Date(utcValue);
   return Number.isNaN(date.getTime())
     ? value
     : date.toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -75,13 +115,18 @@ export default function AdminPage() {
   const session = useSessionStore();
   const [officerForm, setOfficerForm] = useState<CreateOfficerRequest>({
     email: "officer.demo@sancharsarthi.local",
-    firebase_uid: "firebase-officer-demo-001",
+    password: "Password@123",
     officer_id: "BTP-DEMO-001",
     display_name: "Officer Demo",
     rank: "Traffic Constable",
     police_station: "HSR Layout",
     assigned_corridors: ["ORR East 1"],
     assigned_zones: ["East"]
+  });
+  const [controlRoomForm, setControlRoomForm] = useState<CreateControlRoomRequest>({
+    email: "new.control.room@eventflow.local",
+    password: "Password@123",
+    display_name: "New Control Room Officer"
   });
 
   const isAdmin = session.accessLevel === "admin";
@@ -94,6 +139,7 @@ export default function AdminPage() {
   }, [authReady, isAdmin, router, user]);
 
   const healthQuery = useQuery({ queryKey: ["admin-health"], queryFn: getHealth, retry: 1, refetchOnWindowFocus: false });
+  // Removed stationsQuery
   const modelRunsQuery = useQuery({ queryKey: ["admin-model-runs"], queryFn: getModelRuns, enabled: canRunProtectedActions, retry: 1, refetchOnWindowFocus: false });
   const mapQuery = useQuery({ queryKey: ["admin-map-config"], queryFn: getMapConfig, retry: 1, refetchOnWindowFocus: false });
   const foundationQuery = useQuery({ queryKey: ["foundation-admin-overview"], queryFn: getFoundationAdminOverview, enabled: canRunProtectedActions, retry: 1, refetchOnWindowFocus: false });
@@ -108,8 +154,10 @@ export default function AdminPage() {
   const loadDemoMutation = useMutation<DatasetLoadResponse, unknown>({ mutationFn: () => loadDemoDataset(), onSuccess: refreshAdminData });
   const generateFeaturesMutation = useMutation<FeatureGenerationResponse, unknown>({ mutationFn: () => generateEventFeatures(), onSuccess: refreshAdminData });
   const createOfficerMutation = useMutation<CreateOfficerResponse, unknown, CreateOfficerRequest>({ mutationFn: (payload) => createOfficer(payload) });
+  // const createControlRoomMutation = useMutation<CreateControlRoomResponse, unknown, CreateControlRoomRequest>({ mutationFn: (payload) => createControlRoomUser(payload) });
   const incidentMutation = useMutation({ mutationFn: ({ incidentId, payload }: { incidentId: string; payload: Parameters<typeof updateFoundationAdminIncident>[1] }) => updateFoundationAdminIncident(incidentId, payload), onSuccess: refreshAdminData });
   const deleteIncidentMutation = useMutation({ mutationFn: (incidentId: string) => deleteFoundationAdminIncident(incidentId), onSuccess: refreshAdminData });
+  const escalateMutation = useMutation({ mutationFn: (incidentId: string) => escalateFoundationAdminIncident(incidentId), onSuccess: refreshAdminData });
   const stationMutation = useMutation({ mutationFn: ({ stationId, active }: { stationId: string; active: boolean }) => updateFoundationAdminStation(stationId, { active }), onSuccess: refreshAdminData });
   const userMutation = useMutation({ mutationFn: ({ userId, is_active }: { userId: string; is_active: boolean }) => updateFoundationAdminUser(userId, { is_active }), onSuccess: refreshAdminData });
   const voteMutation = useMutation({ mutationFn: (voteId: string) => deleteFoundationAdminVote(voteId), onSuccess: refreshAdminData });
@@ -128,6 +176,10 @@ export default function AdminPage() {
     return null;
   }, [createOfficerMutation.data, generateFeaturesMutation.data, loadDemoMutation.data]);
 
+  const stationOptions = useMemo(() => {
+    return (foundationQuery.data?.stations || []).map(s => ({ label: s.name, value: s.name }));
+  }, [foundationQuery.data?.stations]);
+
   function updateOfficerField<Key extends keyof CreateOfficerRequest>(key: Key, value: CreateOfficerRequest[Key]) {
     setOfficerForm((current) => ({ ...current, [key]: value }));
   }
@@ -141,7 +193,25 @@ export default function AdminPage() {
     });
   }
 
-  if (!authReady || !user || !isAdmin) {
+  // function updateControlRoomField<Key extends keyof CreateControlRoomRequest>(key: Key, value: CreateControlRoomRequest[Key]) {
+  //   setControlRoomForm((current) => ({ ...current, [key]: value }));
+  // }
+
+  // function handleCreateControlRoom(event: FormEvent<HTMLFormElement>) {
+  //   event.preventDefault();
+  //   createControlRoomMutation.mutate(controlRoomForm);
+  // }
+
+  const session = useSessionStore();
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const hasAccess = mounted && session.accessLevel === "admin";
+
+  if (!authReady || !user || !hasAccess) {
     return (
       <main className="min-h-screen bg-slate-100 px-6 py-8 text-slate-900 md:px-10">
         <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-[1fr_380px]">
@@ -166,12 +236,7 @@ export default function AdminPage() {
               <h1 className="mt-3 text-4xl font-bold tracking-tight md:text-5xl">Sanchar Sarthi admin and operations console</h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">This admin surface now covers Phase 3 management for incidents, users, stations, votes, predictions, and audit logs, while keeping the earlier system-health and officer-bootstrap tools available.</p>
             </div>
-            <nav className="flex flex-wrap gap-3">
-              <Link href="/user" className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:border-blue-300 hover:text-blue-700">User mode</Link>
-              <Link href="/control-room" className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:border-blue-300 hover:text-blue-700">Control room</Link>
-              <Link href="/reports" className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:border-blue-300 hover:text-blue-700">Reports</Link>
-              <Link href="/model-insights" className="rounded-full border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:border-blue-300 hover:text-blue-700">Model insights</Link>
-            </nav>
+
           </div>
         </section>
 
@@ -211,17 +276,41 @@ export default function AdminPage() {
             <h2 className="mt-2 text-2xl font-bold">Create registered police officer</h2>
             <div className="mt-5 grid gap-4">
               <Field label="Officer email" value={officerForm.email} onChange={(value) => updateOfficerField("email", value)} />
-              <Field label="Firebase UID" value={officerForm.firebase_uid} onChange={(value) => updateOfficerField("firebase_uid", value)} />
+              <Field label="Password" type="password" value={officerForm.password} onChange={(value) => updateOfficerField("password", value)} />
               <Field label="Officer ID" value={officerForm.officer_id} onChange={(value) => updateOfficerField("officer_id", value)} />
               <Field label="Display name" value={officerForm.display_name} onChange={(value) => updateOfficerField("display_name", value)} />
               <Field label="Rank" value={officerForm.rank ?? ""} onChange={(value) => updateOfficerField("rank", value)} />
-              <Field label="Police station" value={officerForm.police_station} onChange={(value) => updateOfficerField("police_station", value)} />
+              <div className="flex flex-col gap-2 text-sm">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Police station</span>
+                <SearchableSelect
+                  name="police_station"
+                  value={officerForm.police_station}
+                  onChange={(value) => updateOfficerField("police_station", value)}
+                  options={stationOptions}
+                  placeholder="Select police station..."
+                  required
+                />
+              </div>
               <Field label="Assigned corridors" value={officerForm.assigned_corridors.join(", ")} onChange={(value) => updateOfficerField("assigned_corridors", splitScope(value))} />
               <Field label="Assigned zones" value={officerForm.assigned_zones.join(", ")} onChange={(value) => updateOfficerField("assigned_zones", splitScope(value))} />
             </div>
             <button type="submit" disabled={!canRunProtectedActions || createOfficerMutation.isPending} className="mt-5 rounded-2xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60">{createOfficerMutation.isPending ? "Creating officer" : "Create officer"}</button>
-            {createOfficerMutation.isError ? <p className="mt-3 text-sm text-rose-700">{errorText(createOfficerMutation.error)}</p> : null}
+            <SuccessAlert title="Officer Created" message={createOfficerMutation.isSuccess && createOfficerMutation.data ? `Officer ${createOfficerMutation.data.officer_id} created successfully.` : null} />
+            <ErrorAlert title="Failed to create officer" error={createOfficerMutation.error} />
           </form>
+
+          {/* <form onSubmit={handleCreateControlRoom} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Command Access</p>
+            <h2 className="mt-2 text-2xl font-bold">Create control room user</h2>
+            <div className="mt-5 grid gap-4">
+              <Field label="Email" value={controlRoomForm.email} onChange={(value) => updateControlRoomField("email", value)} />
+              <Field label="Password" value={controlRoomForm.password} onChange={(value) => updateControlRoomField("password", value)} />
+              <Field label="Display name" value={controlRoomForm.display_name} onChange={(value) => updateControlRoomField("display_name", value)} />
+            </div>
+            <button type="submit" disabled={!canRunProtectedActions || createControlRoomMutation.isPending} className="mt-5 rounded-2xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60">{createControlRoomMutation.isPending ? "Creating user" : "Create control room user"}</button>
+            <SuccessAlert title="User Created" message={createControlRoomMutation.isSuccess && createControlRoomMutation.data ? `Control Room user created! Firebase UID: ${createControlRoomMutation.data.firebase_uid}` : null} />
+            <ErrorAlert title="Failed to create control room user" error={createControlRoomMutation.error} />
+          </form> */}
         </section>
 
         <section className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
@@ -234,14 +323,34 @@ export default function AdminPage() {
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{foundationQuery.data?.incidents.length ?? 0}</span>
             </div>
             <div className="mt-4 grid gap-3">
-              {(foundationQuery.data?.incidents ?? []).slice(0, 8).map((incident) => (
+              {escalateMutation.isSuccess && escalateMutation.data && (
+                <div className="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                  <p className="text-sm font-semibold text-emerald-800">✅ Incident escalated successfully!</p>
+                  <p className="mt-1 text-sm text-emerald-700">
+                    New Event ID: <span className="font-mono font-bold">{escalateMutation.data.event_id}</span>
+                  </p>
+                  <p className="mt-1 text-xs text-emerald-600">AI prediction and recommendations have been generated. You can now generate a Post-Event Report using this Event ID.</p>
+                </div>
+              )}
+              {escalateMutation.isError && (
+                <div className="mb-3 rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                  <p className="text-sm font-semibold text-rose-800">Failed to escalate incident</p>
+                  <p className="mt-1 text-xs text-rose-700">{errorText(escalateMutation.error)}</p>
+                </div>
+              )}
+              {(foundationQuery.data?.incidents ?? [])
+                .filter(incident => !["resolved", "archived", "rejected"].includes(incident.status))
+                .slice(0, 8)
+                .map((incident) => (
                 <IncidentCard
                   key={incident.id}
                   incident={incident}
+                  isEscalating={escalateMutation.isPending}
                   onActivate={() => incidentMutation.mutate({ incidentId: incident.id, payload: { status: "active" } })}
                   onResolve={() => incidentMutation.mutate({ incidentId: incident.id, payload: { status: "resolved", resolution_notes: "Resolved from admin console." } })}
                   onArchive={() => incidentMutation.mutate({ incidentId: incident.id, payload: { status: "archived", visible_to_public: false } })}
                   onDelete={() => deleteIncidentMutation.mutate(incident.id)}
+                  onEscalate={() => { escalateMutation.reset(); escalateMutation.mutate(incident.id); }}
                 />
               ))}
             </div>
@@ -337,11 +446,43 @@ export default function AdminPage() {
           </article>
         </section>
       </div>
+
+      {/* createControlRoomMutation.isSuccess && createControlRoomMutation.data && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
+              <svg className="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 className="mt-4 text-center text-xl font-bold text-slate-900">User Created</h3>
+            <p className="mt-2 text-center text-sm leading-6 text-slate-600">
+              Control Room user has been created successfully. They can now log in using the password you provided.
+            </p>
+            <div className="mt-6 flex justify-center">
+              <button
+                onClick={() => {
+                  createControlRoomMutation.reset();
+                  setControlRoomForm({
+                    email: "new.control.room@eventflow.local",
+                    password: "Password@123",
+                    display_name: "New Control Room Officer"
+                  });
+                }}
+                className="rounded-2xl bg-blue-700 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-600"
+              >
+                Okay, got it
+              </button>
+            </div>
+          </div>
+        </div>
+      ) */}
     </main>
   );
 }
 
-function IncidentCard({ incident, onActivate, onResolve, onArchive, onDelete }: { incident: FoundationIncident; onActivate: () => void; onResolve: () => void; onArchive: () => void; onDelete: () => void }) {
+function IncidentCard({ incident, onActivate, onResolve, onArchive, onDelete, onEscalate, isEscalating }: { incident: FoundationIncident; onActivate: () => void; onResolve: () => void; onArchive: () => void; onDelete: () => void; onEscalate: () => void; isEscalating: boolean }) {
+  const canEscalate = ["reported", "pending_verification", "active"].includes(incident.status);
   return (
     <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -353,26 +494,36 @@ function IncidentCard({ incident, onActivate, onResolve, onArchive, onDelete }: 
         <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">{pretty(incident.severity)}</span>
       </div>
       <div className="mt-4 grid gap-2 text-sm md:grid-cols-2">
-        <span className="text-slate-600">Prediction: {incident.latest_prediction?.model_name ?? "n/a"}</span>
+        <span className="text-slate-600">ID: <span className="font-mono text-xs">{incident.id}</span></span>
+        <span className="text-slate-600">Confidence: {Math.round(incident.confidence_score * 100)}%</span>
         <span className="text-slate-600">Force: {incident.latest_prediction?.police_force_required ?? incident.police_force_required ?? "-"}</span>
         <span className="text-slate-600">Barricades: {incident.latest_prediction?.barricades_required ?? incident.barricades_required ?? "-"}</span>
-        <span className="text-slate-600">Confidence: {Math.round(incident.confidence_score * 100)}%</span>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <button type="button" onClick={onActivate} className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">Activate</button>
         <button type="button" onClick={onResolve} className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">Resolve</button>
         <button type="button" onClick={onArchive} className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">Archive</button>
         <button type="button" onClick={onDelete} className="rounded-2xl border border-rose-200 bg-white px-3 py-2 text-sm text-rose-700">Delete</button>
+        {canEscalate && (
+          <button
+            type="button"
+            onClick={onEscalate}
+            disabled={isEscalating}
+            className="rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 disabled:opacity-60"
+          >
+            {isEscalating ? "Escalating…" : "⬆ Escalate to Event"}
+          </button>
+        )}
       </div>
     </article>
   );
 }
 
-function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+function Field({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (value: string) => void; type?: string }) {
   return (
     <label className="text-sm text-slate-600">
       <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</span>
-      <input value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-blue-400" />
+      <input type={type} value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-blue-400" />
     </label>
   );
 }

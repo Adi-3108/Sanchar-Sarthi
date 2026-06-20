@@ -25,7 +25,7 @@ export function EmergencyCorridorPanel({
 
   return (
     <section
-      className={`rounded-[28px] border border-slate-800/80 bg-slate-950/85 p-6 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ${
+      className={`flex flex-col h-full rounded-[28px] border border-slate-800/80 bg-slate-950/85 p-6 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ${
         className ?? ""
       }`}
     >
@@ -38,7 +38,7 @@ export function EmergencyCorridorPanel({
         <MetricCard label="Activation trigger" value={emergencyCorridor.activation_trigger} />
       </div>
       <p className="mt-5 text-sm leading-7 text-slate-300">{emergencyCorridor.lane_policy}</p>
-      <p className="mt-4 text-sm leading-7 text-slate-400">{emergencyCorridor.authentication_note}</p>
+      <p className="mt-auto pt-4 text-sm leading-7 text-slate-400">{emergencyCorridor.authentication_note}</p>
     </section>
   );
 }

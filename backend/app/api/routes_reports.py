@@ -13,6 +13,8 @@ from app.db.session import get_db
 from app.orm.system_audit_log import SystemAuditLog
 from app.schemas.reports import CitizenReportCreate, CitizenReportResponse
 from app.services.citizen_report_service import build_report_response, create_citizen_report
+from app.api.routes_translation import get_translation_service
+from app.services.translation_service import TranslationService
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
 
@@ -152,6 +154,7 @@ def submit_congestion_report(
     request: Request,
     auth: AuthContext | None = Depends(resolve_report_auth_context),
     db: Session = Depends(get_db),
+    translation_service: TranslationService = Depends(get_translation_service),
 ):
     auth_error = _authorize_report_source(payload, auth)
     if auth_error is not None:
@@ -162,7 +165,12 @@ def submit_congestion_report(
         return rate_limit_error
 
     try:
-        report, metadata = create_citizen_report(db, payload, commit=False)
+        report, metadata = create_citizen_report(
+            db,
+            payload,
+            translation_service=translation_service,
+            commit=False
+        )
         response_payload = build_report_response(report)
         audit_metadata = {
             **metadata,

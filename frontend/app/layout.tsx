@@ -3,6 +3,10 @@ import type { Metadata } from "next";
 
 import { AppProviders } from "@/components/app-providers";
 import { LanguageProvider } from "@/components/LanguageContext";
+import GoogleTranslate from "@/components/GoogleTranslate";
+
+import { TopNav } from "@/components/layout/TopNav";
+import { GlobalSidebar } from "@/components/layout/GlobalSidebar";
 
 import "./globals.css";
 
@@ -19,8 +23,13 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
       <body>
+        <GoogleTranslate />
         <LanguageProvider>
-          <AppProviders>{children}</AppProviders>
+          <AppProviders>
+            <TopNav />
+            <GlobalSidebar />
+            {children}
+          </AppProviders>
         </LanguageProvider>
       </body>
     </html>

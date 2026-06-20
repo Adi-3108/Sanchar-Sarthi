@@ -6,7 +6,6 @@ import { useQuery } from "@tanstack/react-query";
 import { getCommandCenterSummary } from "@/lib/api";
 import { useLanguage } from "@/components/LanguageContext";
 import { t } from "@/lib/i18n";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export default function CommandCenterPage() {
   const { language } = useLanguage();
@@ -35,10 +34,6 @@ export default function CommandCenterPage() {
   return (
     <main className="shell-grid min-h-screen px-6 py-8 text-copy md:px-10">
       <div className="mx-auto flex max-w-6xl flex-col gap-8">
-        {/* Language Switcher Bar */}
-        <div className="flex justify-end">
-          <LanguageSwitcher />
-        </div>
 
         <section className="overflow-hidden rounded-[28px] border border-line/80 bg-panel/90 p-8 shadow-panel">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">

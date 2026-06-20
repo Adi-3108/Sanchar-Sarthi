@@ -22,7 +22,7 @@ export function BarricadePlanPanel({ barricades, className }: BarricadePlanPanel
 
   return (
     <section
-      className={`rounded-[28px] border border-slate-800/80 bg-slate-950/85 p-6 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ${
+      className={`flex flex-col h-full rounded-[28px] border border-slate-800/80 bg-slate-950/85 p-6 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ${
         className ?? ""
       }`}
     >
@@ -44,7 +44,7 @@ export function BarricadePlanPanel({ barricades, className }: BarricadePlanPanel
           </span>
         ))}
       </div>
-      <p className="mt-5 text-sm leading-7 text-slate-300">{barricades.note}</p>
+      <p className="mt-auto pt-5 text-sm leading-7 text-slate-300">{barricades.note}</p>
     </section>
   );
 }

@@ -279,7 +279,45 @@ def generate_post_event_report(
         raise ValueError("Event not found")
 
     prediction = _get_latest_prediction(db, event_id)
+    if prediction is None:
+        from app.services.feature_engineering_service import build_features_for_event
+        from app.services.prediction_service import predict_event
+        from app.orm.hotspot_cluster import HotspotCluster
+        
+        feature, _ = build_features_for_event(db, event, commit=False)
+        hotspot = None
+        if feature.location_cluster_id:
+            hotspot = db.scalars(
+                select(HotspotCluster).where(HotspotCluster.location_cluster_id == feature.location_cluster_id)
+            ).first()
+            
+        prediction, _ = predict_event(
+            db,
+            event,
+            feature=feature,
+            hotspot=hotspot,
+            commit=False,
+            persist=False,
+        )
+
     recommendation = _get_latest_recommendation(db, event_id)
+    if recommendation is None and prediction is not None:
+        from app.services.recommendation_orchestrator import build_recommendation_input, generate_recommendation_plan
+        rec_input = build_recommendation_input(event, prediction)
+        plan_dict = generate_recommendation_plan(rec_input)
+        recommendation = EventRecommendation(
+            event_id=event.id,
+            recommended_total_officers=int(dict(plan_dict.get("manpower") or {}).get("recommended_total_officers") or 0),
+            deployment_plan_json=plan_dict.get("manpower"),
+            barricade_plan_json=plan_dict.get("barricades"),
+            diversion_plan_json=plan_dict.get("diversions"),
+            emergency_corridor_json=plan_dict.get("emergency_corridor"),
+            logistics_impact_json=plan_dict.get("flipkart_logistics_impact"),
+            action_confidence_ledger_json=plan_dict.get("action_confidence_ledger"),
+            recommended_action_summary=str(plan_dict.get("recommended_action_summary") or ""),
+            weather_risk_json=plan_dict.get("weather_risk"),
+            risk_summary_json=plan_dict.get("risk_summary")
+        )
     reports = _list_reports(db, event_id)
     updates = _list_live_updates(db, event_id)
     lessons = _build_lessons(

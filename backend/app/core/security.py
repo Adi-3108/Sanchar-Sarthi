@@ -51,7 +51,7 @@ def verify_firebase_token(
 
     token = authorization.removeprefix("Bearer ").strip()
     try:
-        return firebase_auth.verify_id_token(token, check_revoked=True)
+        return firebase_auth.verify_id_token(token, check_revoked=True, clock_skew_seconds=10)
     except firebase_auth.RevokedIdTokenError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

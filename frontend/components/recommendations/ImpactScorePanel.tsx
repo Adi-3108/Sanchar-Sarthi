@@ -64,11 +64,11 @@ export function ImpactScorePanel({
 
   return (
     <section
-      className={`rounded-[28px] border border-slate-800/80 bg-slate-950/85 p-6 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ${
+      className={`flex flex-col h-full rounded-[28px] border border-slate-800/80 bg-slate-950/85 p-6 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ${
         className ?? ""
       }`}
     >
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex flex-col gap-4">
         <div className="max-w-3xl">
           <p className="text-[11px] uppercase tracking-[0.24em] text-fuchsia-300/80">Estimated Impact</p>
           <h2 className="mt-2 text-2xl font-semibold text-slate-100">Operational disruption estimate</h2>
@@ -78,7 +78,7 @@ export function ImpactScorePanel({
           </p>
         </div>
         <div
-          className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] ${categoryTone(
+          className={`self-start rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] ${categoryTone(
             impactCategory
           )}`}
         >
@@ -86,7 +86,7 @@ export function ImpactScorePanel({
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+      <div className="mt-6 grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
         <article className="rounded-3xl border border-slate-800/70 bg-slate-900/70 p-5">
           <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Impact score</p>
           <p className="mt-3 text-4xl font-semibold text-slate-100">{formatNumber(estimatedImpactScore)}</p>
@@ -110,8 +110,9 @@ export function ImpactScorePanel({
         </p>
       </div>
 
-      <div className="mt-6 rounded-3xl border border-slate-800/70 bg-slate-900/70 p-4">
-        <div className="flex items-center justify-between gap-4">
+      <div className="mt-auto pt-6">
+        <div className="rounded-3xl border border-slate-800/70 bg-slate-900/70 p-4">
+          <div className="flex items-center justify-between gap-4">
           <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Reason codes</p>
           <p className="text-xs text-slate-500">Dataset-backed scoring signals</p>
         </div>
@@ -129,6 +130,7 @@ export function ImpactScorePanel({
             <span className="text-sm text-slate-400">No reason codes were available.</span>
           )}
         </div>
+      </div>
       </div>
     </section>
   );

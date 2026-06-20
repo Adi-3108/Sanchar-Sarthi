@@ -4,6 +4,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { getCurrentFirebaseToken, loginWithFirebase, logoutFirebase, registerWithFirebase, resendVerificationEmail, useFirebaseAuthState } from "@/lib/auth";
+import { getCurrentAccess } from "@/lib/api";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import { type AccessLevel, useSessionStore } from "@/lib/stores/useSessionStore";
 
@@ -41,6 +42,13 @@ function normalizeBackendRole(role: string): Exclude<AccessLevel, "public_citize
   return "citizen";
 }
 
+function resolveInteractiveRole(
+  accessLevel: AccessLevel,
+  preferredRole: Exclude<AccessLevel, "public_citizen">
+): Exclude<AccessLevel, "public_citizen"> {
+  return accessLevel === "public_citizen" ? preferredRole : accessLevel as Exclude<AccessLevel, "public_citizen">;
+}
+
 export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
   const queryClient = useQueryClient();
   const session = useSessionStore();
@@ -52,6 +60,10 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isUnverified, setIsUnverified] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
+  const [loginSuccess, setLoginSuccess] = useState(false);
+  const [role, setRole] = useState<Exclude<AccessLevel, "public_citizen">>(
+    resolveInteractiveRole(session.accessLevel, preferredRole)
+  );
 
   useEffect(() => {
     const resolvedRole = resolveInteractiveRole(session.accessLevel, preferredRole);
@@ -138,6 +150,7 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
         firebaseUid: result.uid,
         email: result.email
       });
+      session.setLoginSuccess(true);
       await queryClient.invalidateQueries();
     } catch (caught) {
       if (caught instanceof Error && caught.message === "UNVERIFIED_EMAIL") {
@@ -152,6 +165,7 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
   async function handleLogout() {
     await logoutFirebase();
     session.clearSession();
+    setLoginSuccess(false);
     await queryClient.invalidateQueries();
   }
 
@@ -173,6 +187,16 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
         </div>
       ) : user ? (
         <div className="mt-5 space-y-3">
+          {loginSuccess && (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-7 text-emerald-800 shadow-sm animate-in fade-in zoom-in-95">
+              <p className="font-semibold flex items-center gap-2">
+                <svg className="h-5 w-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Login Successful!
+              </p>
+            </div>
+          )}
           <div className="rounded-2xl border border-line/70 bg-bg/60 p-4 text-sm leading-7 text-copy">
             <p>Signed in: {user.email ?? user.uid}</p>
             <p>Selected UI role: {roleLabels[visibleRole]}</p>

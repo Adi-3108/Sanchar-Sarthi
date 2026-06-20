@@ -30,7 +30,6 @@ import {
   type MapActiveRoutesResponse
 } from "@/lib/api";
 import { useFirebaseAuthState } from "@/lib/auth";
-import { useSessionStore } from "@/lib/stores/useSessionStore";
 import { type AppLanguage, languageOptions } from "@/lib/i18n";
 import { useLanguage } from "@/components/LanguageContext";
 
@@ -282,16 +281,13 @@ export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mod
   const [officialDraft, setOfficialDraft] = useState<FoundationIncidentCreateRequest>({ ...emptyDraft, incident_type: "road_accident", severity: "high" });
   const [locationMessage, setLocationMessage] = useState<string | null>(null);
   const labels = labelsByLanguage[language];
+  const session = useSessionStore();
   const protectedMode = mode !== "user";
   const canManage = mode !== "user";
   const canAccessControl = session.accessLevel === "admin" || session.accessLevel === "control_room";
   const canAccessAdmin = session.accessLevel === "admin";
 
-  useEffect(() => {
-    if (ready && mode === "control" && (!user || !canAccessControl)) {
-      router.replace("/user");
-    }
-  }, [canAccessControl, mode, ready, router, user]);
+  // Redirect removed so users can see the AuthPanel or Unauthorized message.
 
   const query = useQuery({
     queryKey: [mode === "user" ? "foundation-public" : "foundation-control"],
@@ -411,7 +407,6 @@ export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mod
     }
   }, [selectedIncident, selectedIncidentId]);
 
-  const session = useSessionStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -430,7 +425,17 @@ export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mod
             <h1 className="mt-3 text-4xl font-bold">{mode === "admin" ? labels.admin : labels.control}</h1>
             <p className="mt-4 text-slate-600">{labels.protectedNote}</p>
           </section>
-          <AuthPanel preferredRole={mode === "admin" ? "admin" : "control_room"} title={labels.protectedTitle} note={labels.protectedNote} />
+          {user && !hasAccess ? (
+            <div className="rounded-3xl border border-rose-200 bg-rose-50 p-8 shadow-sm flex flex-col justify-center items-center text-center">
+              <svg className="h-12 w-12 text-rose-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <h2 className="text-2xl font-bold text-rose-800">User Not Authorized</h2>
+              <p className="mt-2 text-rose-700">You do not have the required permissions to access the {mode === "admin" ? labels.admin : labels.control}.</p>
+            </div>
+          ) : (
+            <AuthPanel preferredRole={mode === "admin" ? "admin" : "control_room"} title={labels.protectedTitle} note={labels.protectedNote} />
+          )}
         </div>
       </main>
     );

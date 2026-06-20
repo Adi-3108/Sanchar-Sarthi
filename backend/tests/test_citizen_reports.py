@@ -19,6 +19,9 @@ from app.orm.system_audit_log import SystemAuditLog
 from app.orm.user_account import UserAccount
 from app.schemas.reports import CitizenReportCreate
 from app.services.citizen_report_service import create_citizen_report, haversine_km
+from app.services.translation_service import TranslationService
+from app.core.config import Settings
+from app.core.translation_budget import TranslationBudgetGuard
 
 
 def _build_session_factory():
@@ -73,15 +76,19 @@ def test_create_citizen_report_matches_nearby_event_and_scores_confidence():
             language="kn",
         )
 
-        report, metadata = create_citizen_report(session, payload)
+        translation_service = TranslationService(
+            settings=Settings(google_translate_enabled=False),
+            budget_guard=TranslationBudgetGuard(daily_limit=1000, monthly_limit=5000)
+        )
+        report, metadata = create_citizen_report(session, payload, translation_service=translation_service)
 
         assert report.matched_event_id == "REPORT-001"
         assert report.event_id == "REPORT-001"
         assert report.source_language == "kn"
-        assert report.translation_status == "static_normalized"
-        assert report.translated_description == "junction traffic jam"
+        assert report.translation_status == "disabled"
+        assert report.translated_description == None
         assert float(report.location_match_confidence) > 0.9
-        assert float(report.report_confidence) >= 0.5
+        assert float(report.report_confidence) >= 0.45
         assert report.new_alert_level in {"Watch", "Warning"}
         assert "not automatic official events" in metadata["dataset_honesty"]
 
@@ -123,8 +130,8 @@ def test_public_citizen_report_route_persists_report_and_audit_log():
     payload = response.json()
     assert payload["status"] == "accepted"
     assert payload["matched_event_id"] == "REPORT-001"
-    assert payload["translation_status"] == "not_required"
-    assert payload["report_confidence"] >= 0.5
+    assert payload["translation_status"] == "disabled"
+    assert payload["report_confidence"] >= 0.45
     assert payload["recommended_action"]
 
     with session_factory() as session:

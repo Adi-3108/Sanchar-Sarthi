@@ -41,13 +41,13 @@ export function EventDNACard({ eventDna, className }: EventDNACardProps) {
         className ?? ""
       }`}
     >
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex flex-col gap-3">
         <div className="max-w-3xl">
           <p className="text-[11px] uppercase tracking-[0.24em] text-sky-300/80">Event DNA</p>
           <h2 className="mt-2 text-2xl font-semibold text-slate-100">Operational fingerprint</h2>
           <p className="mt-3 text-sm leading-7 text-slate-300">{eventDna.dna_summary}</p>
         </div>
-        <div className="rounded-2xl border border-sky-400/25 bg-sky-500/10 px-4 py-3 text-xs text-sky-100">
+        <div className="self-start rounded-2xl border border-sky-400/25 bg-sky-500/10 px-4 py-3 text-xs text-sky-100">
           <p className="uppercase tracking-[0.2em] text-sky-300/80">Similar memory</p>
           <p className="mt-2 text-lg font-semibold">{eventDna.similar_event_ids_json.length} matches</p>
         </div>

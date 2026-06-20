@@ -4,6 +4,9 @@ import type { ReactNode } from "react";
 
 import type { HotspotResponseItem } from "@/lib/api";
 
+import type { MapConfig } from "@/lib/map-provider";
+import MapCanvas from "./MapCanvas";
+
 type ProjectedPoint = {
   x: number;
   y: number;
@@ -16,6 +19,7 @@ export type HotspotLayerProps = {
   selectedHotspotId?: string | null;
   onSelectHotspot?: (hotspot: HotspotResponseItem) => void;
   project?: (hotspot: HotspotResponseItem) => ProjectedPoint | null;
+  mapConfig?: MapConfig;
 };
 
 function formatPercent(value: number | null | undefined): string {
@@ -127,7 +131,7 @@ function HotspotCard({
   );
 }
 
-function HotspotOverlay({
+function HotspotOverlayContent({
   hotspots,
   selectedHotspotId,
   onSelectHotspot,
@@ -135,8 +139,7 @@ function HotspotOverlay({
 }: Required<Pick<HotspotLayerProps, "hotspots" | "selectedHotspotId" | "project">> &
   Pick<HotspotLayerProps, "onSelectHotspot">) {
   return (
-    <div className="relative min-h-[320px] overflow-hidden rounded-[28px] border border-slate-800/80 bg-[radial-gradient(circle_at_top,#172554_0%,#020617_52%,#020617_100%)]">
-      <div className="absolute inset-0 bg-[linear-gradient(transparent_0,transparent_calc(100%-1px),rgba(148,163,184,0.1)_100%),linear-gradient(90deg,transparent_0,transparent_calc(100%-1px),rgba(148,163,184,0.1)_100%)] bg-[length:56px_56px]" />
+    <>
       {hotspots.map((hotspot) => {
         const projected = project(hotspot);
         if (!projected) {
@@ -157,8 +160,8 @@ function HotspotOverlay({
             <span
               className={`absolute left-1/2 top-1/2 rounded-full border transition ${
                 selected
-                  ? "border-sky-300/70 bg-sky-400/25"
-                  : "border-cyan-300/45 bg-cyan-400/18"
+                  ? "border-indigo-700 bg-indigo-600/40"
+                  : "border-indigo-600/80 bg-indigo-500/30"
               }`}
               style={{
                 width: `${size}px`,
@@ -169,8 +172,8 @@ function HotspotOverlay({
             <span
               className={`absolute left-1/2 top-1/2 rounded-full border transition ${
                 selected
-                  ? "border-sky-200/80 bg-sky-200"
-                  : "border-cyan-100/60 bg-cyan-100"
+                  ? "border-indigo-900 bg-indigo-800"
+                  : "border-indigo-800 bg-indigo-700"
               }`}
               style={{
                 width: "10px",
@@ -184,6 +187,45 @@ function HotspotOverlay({
           </button>
         );
       })}
+    </>
+  );
+}
+
+export function HotspotOverlay({
+  hotspots,
+  selectedHotspotId,
+  onSelectHotspot,
+  project,
+  mapConfig
+}: Required<Pick<HotspotLayerProps, "hotspots" | "selectedHotspotId">> &
+  Pick<HotspotLayerProps, "onSelectHotspot" | "project" | "mapConfig">) {
+  
+  if (mapConfig) {
+    return (
+      <MapCanvas config={mapConfig} className="min-h-[320px]">
+        {(mapProject) => (
+          <HotspotOverlayContent
+            hotspots={hotspots}
+            selectedHotspotId={selectedHotspotId}
+            onSelectHotspot={onSelectHotspot}
+            project={(hotspot) => mapProject([hotspot.centroid_longitude, hotspot.centroid_latitude])}
+          />
+        )}
+      </MapCanvas>
+    );
+  }
+
+  if (!project) return null;
+
+  return (
+    <div className="relative min-h-[320px] overflow-hidden rounded-[28px] border border-slate-800/80 bg-[radial-gradient(circle_at_top,#172554_0%,#020617_52%,#020617_100%)]">
+      <div className="absolute inset-0 bg-[linear-gradient(transparent_0,transparent_calc(100%-1px),rgba(148,163,184,0.1)_100%),linear-gradient(90deg,transparent_0,transparent_calc(100%-1px),rgba(148,163,184,0.1)_100%)] bg-[length:56px_56px]" />
+      <HotspotOverlayContent
+        hotspots={hotspots}
+        selectedHotspotId={selectedHotspotId}
+        onSelectHotspot={onSelectHotspot}
+        project={project}
+      />
     </div>
   );
 }
@@ -194,7 +236,8 @@ export function HotspotLayer({
   emptyState,
   selectedHotspotId = null,
   onSelectHotspot,
-  project
+  project,
+  mapConfig
 }: HotspotLayerProps) {
   if (hotspots.length === 0) {
     return (
@@ -210,12 +253,13 @@ export function HotspotLayer({
 
   return (
     <section className={`space-y-5 ${className ?? ""}`}>
-      {project ? (
+      {project || mapConfig ? (
         <HotspotOverlay
           hotspots={hotspots}
           selectedHotspotId={selectedHotspotId}
           onSelectHotspot={onSelectHotspot}
           project={project}
+          mapConfig={mapConfig}
         />
       ) : null}
 

@@ -33,3 +33,97 @@ a {
     linear-gradient(90deg, rgba(15, 94, 168, 0.06) 1px, transparent 1px);
   background-size: 28px 28px;
 }
+
+/* ===== Hide ALL Google Translate UI - banner, logo, tooltip, highlight ===== */
+body {
+  top: 0 !important;
+}
+
+/* Hide the top bar that pushes content down */
+.goog-te-banner-frame,
+.goog-te-banner-frame.skiptranslate {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Hide all skip-translate wrappers and iframes */
+.skiptranslate,
+.skiptranslate iframe,
+iframe.goog-te-menu-frame {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  width: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Tooltip popup - HIDE this completely */
+.goog-tooltip,
+.goog-tooltip:hover {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Text highlight - only remove the blue box, NOT the text itself */
+.goog-text-highlight,
+.goog-text-highlight:hover,
+[class*="goog-text-highlight"],
+body font {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+  text-decoration: none !important;
+}
+
+/* Hide the translate logo/spinner that flashes on load */
+.goog-te-spinner-pos,
+#goog-gt-tt,
+.goog-te-balloon-frame,
+.goog-logo-link,
+.goog-te-gadget-icon,
+.goog-te-gadget span {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Prevent body from shifting down when translated */
+body.translated-ltr,
+body.translated-rtl {
+  margin-top: 0 !important;
+  top: 0 !important;
+}
+
+/* Hide the translate widget container itself and everything inside it */
+#google_translate_element,
+#google_translate_element *,
+.goog-te-gadget,
+.goog-te-gadget *,
+.goog-te-spinner-pos,
+.goog-te-spinner-pos *,
+.goog-te-spinner,
+.VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
+.VIpgJd-ZVi9od-aZ2wEe-wOHMyf *,
+#goog-gt-tt,
+#goog-gt-tt *,
+.goog-te-balloon-frame,
+iframe[src*="translate.googleapis.com"],
+iframe[src*="translate.google.com"],
+iframe[name^="goog_"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  max-width: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  position: absolute !important;
+  top: -9999px !important;
+  left: -9999px !important;
+  z-index: -9999 !important;
+}
+

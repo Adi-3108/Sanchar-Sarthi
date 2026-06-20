@@ -512,6 +512,8 @@ export type MapRouteRequest = {
   destination: [number, number];
   mode?: "driving";
   purpose?: string;
+  incidentId?: string | null;
+  forceReload?: boolean;
 };
 
 export type MapRouteResponse = {
@@ -635,7 +637,7 @@ export type ModelRunListResponse = {
 
 export type CreateOfficerRequest = {
   email: string;
-  firebase_uid: string;
+  password: string;
   officer_id: string;
   display_name: string;
   rank?: string | null;
@@ -651,6 +653,18 @@ export type CreateOfficerResponse = {
   active: boolean;
 };
 
+export type CreateControlRoomRequest = {
+  email: string;
+  password: string;
+  display_name: string;
+};
+
+export type CreateControlRoomResponse = {
+  status: string;
+  firebase_uid: string;
+  role: string;
+  active: boolean;
+};
 export type FoundationPrediction = {
   model_name: string;
   model_version: string;
@@ -732,6 +746,7 @@ export type FoundationIncidentCreateRequest = {
   longitude: number;
   locality?: string | null;
   ward?: string | null;
+  language?: string;
 };
 
 export type FoundationStatusTransitionRequest = {
@@ -969,6 +984,17 @@ export function analyzeMultiEvent(payload: MultiEventAnalysisRequest, init?: Req
   return apiPost<MultiEventAnalysisResponse>("/api/events/multi-event-analysis", payload, init);
 }
 
+export type MapActiveRoutesResponse = {
+  routes: Array<{
+    incidentId: string;
+    polyline: Array<[number, number]>;
+  }>;
+};
+
+export function getMapActiveRoutes(init?: RequestInit): Promise<MapActiveRoutesResponse> {
+  return apiGet<MapActiveRoutesResponse>("/api/map/active-routes", init);
+}
+
 export function getMapRoute(payload: MapRouteRequest, init?: RequestInit): Promise<MapRouteResponse> {
   return apiPost<MapRouteResponse>("/api/map/route", payload, init);
 }
@@ -1116,6 +1142,10 @@ export function deleteFoundationAdminIncident(incidentId: string, init?: Request
   return apiDelete<{ status: string; incident_id: string }>(`/api/foundation/admin/incidents/${encodeURIComponent(incidentId)}`, init);
 }
 
+export function escalateFoundationAdminIncident(incidentId: string, init?: RequestInit): Promise<{ status: string; incident_id: string; event_id: string; message: string }> {
+  return apiPost<{ status: string; incident_id: string; event_id: string; message: string }>(`/api/foundation/admin/incidents/${encodeURIComponent(incidentId)}/escalate`, {}, init);
+}
+
 export function updateFoundationAdminStation(
   stationId: string,
   payload: FoundationStationAdminUpdateRequest,
@@ -1151,3 +1181,4 @@ export type CommandCenterSummary = {
 export function getCommandCenterSummary(init?: RequestInit): Promise<CommandCenterSummary> {
   return apiGet<CommandCenterSummary>("/api/command-center/summary", init);
 }
+

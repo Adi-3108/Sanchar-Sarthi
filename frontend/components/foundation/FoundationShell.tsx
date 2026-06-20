@@ -186,7 +186,8 @@ const emptyDraft: FoundationIncidentCreateRequest = {
   latitude: 12.9716,
   longitude: 77.5946,
   locality: "",
-  ward: ""
+  ward: "",
+  language: "auto"
 };
 
 function errorText(error: unknown): string {
@@ -221,7 +222,8 @@ function cleanDraft(draft: FoundationIncidentCreateRequest): FoundationIncidentC
     description: draft.description.trim(),
     location_name: draft.location_name.trim(),
     locality: draft.locality?.trim() || null,
-    ward: draft.ward?.trim() || null
+    ward: draft.ward?.trim() || null,
+    language: draft.language || "auto"
   };
 }
 
@@ -768,6 +770,17 @@ function IncidentForm({ labels, draft, setDraft, locationMessage, setLocationMes
         <Field label="Ward"><input className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900" value={draft.ward ?? ""} onChange={(event) => setDraft({ ...draft, ward: event.target.value })} /></Field>
         <Field label="Latitude"><input className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900" type="number" step="0.0001" value={draft.latitude} onChange={(event) => setDraft({ ...draft, latitude: Number(event.target.value) })} /></Field>
         <Field label="Longitude"><input className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900" type="number" step="0.0001" value={draft.longitude} onChange={(event) => setDraft({ ...draft, longitude: Number(event.target.value) })} /></Field>
+        <div className="md:col-span-2">
+          <Field label="Description Language">
+            <select className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900" value={draft.language || "auto"} onChange={(event) => setDraft({ ...draft, language: event.target.value })}>
+              <option value="auto">Auto-detect</option>
+              <option value="en">English</option>
+              <option value="kn">Kannada</option>
+              <option value="hi">Hindi</option>
+              <option value="other">Other</option>
+            </select>
+          </Field>
+        </div>
         <div className="md:col-span-2"><Field label="Description"><textarea className="min-h-[120px] w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900" value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} /></Field></div>
         <div className="md:col-span-2 flex flex-wrap items-center gap-3">
           <button className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm" onClick={() => fillLocation(draft, setDraft, setLocationMessage, labels)} type="button">{labels.useLocation}</button>

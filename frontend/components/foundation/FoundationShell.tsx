@@ -30,6 +30,7 @@ import {
 } from "@/lib/api";
 import { useFirebaseAuthState } from "@/lib/auth";
 import { type AppLanguage, languageOptions } from "@/lib/i18n";
+import { useLanguage } from "@/components/LanguageContext";
 
 type Mode = "user" | "control" | "admin";
 type Panel = "overview" | "report" | "official";
@@ -128,97 +129,51 @@ const labelsByLanguage: Record<AppLanguage, Labels> = {
     gpsOk: "Device location captured.",
     gpsFail: "Could not fetch device location. Please enter the coordinates manually."
   },
-  hi: {
-    app: "Sanchar Sarthi",
-    dept: "Bengaluru Traffic Incident Response System",
-    user: "User mode",
-    control: "Control room",
-    admin: "Admin",
-    active: "Active incidents",
-    reports: "User reported incidents",
-    map: "Bengaluru incident map",
-    stations: "Station mapping",
-    routes: "Route advisory",
-    report: "Report incident",
-    official: "Official incident",
-    overview: "Overview",
-    submit: "Submit",
-    useLocation: "Use my location",
-    voteTrue: "Vote true",
-    voteFalse: "Vote false",
-    approve: "Approve",
-    reject: "Reject",
-    activate: "Activate",
-    resolve: "Resolve",
-    status: "Status",
-    severity: "Severity",
-    confidence: "Confidence",
-    station: "Station",
-    contact: "Contact",
-    impact: "Route impact",
-    time: "Time",
-    source: "Source",
-    noIncidents: "No incidents here right now.",
-    loginNote: "Login is required for reporting and voting.",
-    protectedTitle: "Protected operational access",
-    protectedNote: "Sign in with a registered account to access control-room and admin actions.",
-    citizenTitle: "Citizen sign-in",
-    citizenNote: "Signed-in citizens can report incidents and vote on pending reports.",
-    routeNote: "This route module is advisory-focused and ready to connect to a live routing provider later.",
-    hotspot: "Hotspot",
-    viewRoutes: "View alternate routes",
-    seed: "Seed foundation data",
-    seedDone: "Foundation data seeded successfully.",
-    reportDone: "Incident reported successfully.",
-    officialDone: "Official incident created successfully.",
-    gpsOk: "Device location captured.",
-    gpsFail: "Could not fetch device location. Please enter the coordinates manually."
-  },
   kn: {
-    app: "Sanchar Sarthi",
-    dept: "Bengaluru Traffic Incident Response System",
-    user: "User mode",
-    control: "Control room",
-    admin: "Admin",
-    active: "Active incidents",
-    reports: "User reported incidents",
-    map: "Bengaluru incident map",
-    stations: "Station mapping",
-    routes: "Route advisory",
-    report: "Report incident",
-    official: "Official incident",
-    overview: "Overview",
-    submit: "Submit",
-    useLocation: "Use my location",
-    voteTrue: "Vote true",
-    voteFalse: "Vote false",
-    approve: "Approve",
-    reject: "Reject",
-    activate: "Activate",
-    resolve: "Resolve",
-    status: "Status",
-    severity: "Severity",
-    confidence: "Confidence",
-    station: "Station",
-    contact: "Contact",
-    impact: "Route impact",
-    time: "Time",
-    source: "Source",
-    noIncidents: "No incidents here right now.",
-    loginNote: "Login is required for reporting and voting.",
-    protectedTitle: "Protected operational access",
-    protectedNote: "Sign in with a registered account to access control-room and admin actions.",
-    citizenTitle: "Citizen sign-in",
-    citizenNote: "Signed-in citizens can report incidents and vote on pending reports.",
-    routeNote: "This route module is advisory-focused and ready to connect to a live routing provider later.",
-    hotspot: "Hotspot",
-    viewRoutes: "View alternate routes",
-    seed: "Seed foundation data",
-    seedDone: "Foundation data seeded successfully.",
-    reportDone: "Incident reported successfully.",
-    officialDone: "Official incident created successfully.",
-    gpsOk: "Device location captured.",
-    gpsFail: "Could not fetch device location. Please enter the coordinates manually."
+    app: "\u0cb8\u0c82\u0c9a\u0cbe\u0cb0\u0ccd \u0cb8\u0cbe\u0cb0\u0ca5\u0cbf",
+    dept: "\u0cac\u0cc6\u0c82\u0c97\u0cb3\u0cc2\u0cb0\u0cc1 \u0c9f\u0ccd\u0cb0\u0cbe\u0cab\u0cbf\u0c95\u0ccd \u0c98\u0c9f\u0ca8\u0cc6 \u0caa\u0ccd\u0cb0\u0ca4\u0cbf\u0c95\u0ccd\u0cb0\u0cbf\u0caf\u0cc6 \u0cb5\u0ccd\u0caf\u0cb5\u0cb8\u0ccd\u0ca5\u0cc6",
+    user: "\u0cac\u0cb3\u0c95\u0cc6\u0ca6\u0cbe\u0cb0 \u0cae\u0ccb\u0ca1\u0ccd",
+    control: "\u0ca8\u0cbf\u0caf\u0c82\u0ca4\u0ccd\u0cb0\u0ca3 \u0c95\u0cca\u0ca0\u0ca1\u0cbf",
+    admin: "\u0ca8\u0cbf\u0cb0\u0ccd\u0cb5\u0cbe\u0cb9\u0c95",
+    active: "\u0cb8\u0c95\u0ccd\u0cb0\u0cbf\u0caf \u0c98\u0c9f\u0ca8\u0cc6\u0c97\u0cb3\u0cc1",
+    reports: "\u0cac\u0cb3\u0c95\u0cc6\u0ca6\u0cbe\u0cb0\u0cb0\u0cc1 \u0cb5\u0cb0\u0ca6\u0cbf \u0cae\u0cbe\u0ca1\u0cbf\u0ca6 \u0c98\u0c9f\u0ca8\u0cc6\u0c97\u0cb3\u0cc1",
+    map: "\u0cac\u0cc6\u0c82\u0c97\u0cb3\u0cc2\u0cb0\u0cc1 \u0c98\u0c9f\u0ca8\u0cc6\u0c97\u0cb3 \u0ca8\u0c95\u0ccd\u0cb7\u0cc6",
+    stations: "\u0ca0\u0cbe\u0ca3\u0cc6 \u0ca8\u0c95\u0ccd\u0cb7\u0cc6",
+    routes: "\u0cae\u0cbe\u0cb0\u0ccd\u0c97 \u0cb8\u0cb2\u0cb9\u0cc6",
+    report: "\u0c98\u0c9f\u0ca8\u0cc6 \u0cb5\u0cb0\u0ca6\u0cbf \u0cae\u0cbe\u0ca1\u0cbf",
+    official: "\u0c85\u0ca7\u0cbf\u0c95\u0cc3\u0ca4 \u0c98\u0c9f\u0ca8\u0cc6",
+    overview: "\u0c85\u0cb5\u0cb2\u0ccb\u0c95\u0ca8",
+    submit: "\u0cb8\u0cb2\u0ccd\u0cb2\u0cbf\u0cb8\u0cbf",
+    useLocation: "\u0ca8\u0ca8\u0ccd\u0ca8 \u0cb8\u0ccd\u0ca5\u0cb3\u0cb5\u0ca8\u0ccd\u0ca8\u0cc1 \u0cac\u0cb3\u0cb8\u0cbf",
+    voteTrue: "\u0cb8\u0cb0\u0cbf \u0c8e\u0c82\u0ca6\u0cc1 \u0cae\u0ca4 \u0cb9\u0cbe\u0c95\u0cbf",
+    voteFalse: "\u0ca4\u0caa\u0ccd\u0caa\u0cc1 \u0c8e\u0c82\u0ca6\u0cc1 \u0cae\u0ca4 \u0cb9\u0cbe\u0c95\u0cbf",
+    approve: "\u0c85\u0ca8\u0cc1\u0cae\u0ccb\u0ca6\u0cbf\u0cb8\u0cbf",
+    reject: "\u0ca4\u0cbf\u0cb0\u0cb8\u0ccd\u0c95\u0cb0\u0cbf\u0cb8\u0cbf",
+    activate: "\u0cb8\u0c95\u0ccd\u0cb0\u0cbf\u0caf\u0c97\u0cca\u0cb3\u0cbf\u0cb8\u0cbf",
+    resolve: "\u0caa\u0cb0\u0cbf\u0cb9\u0cb0\u0cbf\u0cb8\u0cbf",
+    status: "\u0cb8\u0ccd\u0ca5\u0cbf\u0ca4\u0cbf",
+    severity: "\u0ca4\u0cc0\u0cb5\u0ccd\u0cb0\u0ca4\u0cc6",
+    confidence: "\u0cb5\u0cbf\u0cb6\u0ccd\u0cb5\u0cbe\u0cb8",
+    station: "\u0ca0\u0cbe\u0ca3\u0cc6",
+    contact: "\u0cb8\u0c82\u0caa\u0cb0\u0ccd\u0c95",
+    impact: "\u0cae\u0cbe\u0cb0\u0ccd\u0c97 \u0caa\u0ccd\u0cb0\u0cad\u0cbe\u0cb5",
+    time: "\u0cb8\u0cae\u0caf",
+    source: "\u0cae\u0cc2\u0cb2",
+    noIncidents: "\u0c87\u0cb2\u0ccd\u0cb2\u0cbf \u0caf\u0cbe\u0cb5\u0cc1\u0ca6\u0cc6 \u0c98\u0c9f\u0ca8\u0cc6\u0c97\u0cb3\u0cbf\u0cb2\u0ccd\u0cb2.",
+    loginNote: "\u0cb5\u0cb0\u0ca6\u0cbf \u0cae\u0cbe\u0ca1\u0cb2\u0cc1 \u0cae\u0ca4\u0ccd\u0ca4\u0cc1 \u0cae\u0ca4 \u0cb9\u0cbe\u0c95\u0cb2\u0cc1 \u0cb2\u0cbe\u0c97\u0cbf\u0ca8\u0ccd \u0c85\u0c97\u0ca4\u0ccd\u0caf\u0cb5\u0cbf\u0ca6\u0cc6.",
+    protectedTitle: "\u0cb8\u0cc1\u0cb0\u0c95\u0ccd\u0cb7\u0cbf\u0ca4 \u0c95\u0cbe\u0cb0\u0ccd\u0caf\u0cbe\u0c9a\u0cb0\u0ca3\u0cc6\u0caf \u0caa\u0ccd\u0cb0\u0cb5\u0cc7\u0cb6",
+    protectedNote: "\u0ca8\u0cbf\u0caf\u0c82\u0ca4\u0ccd\u0cb0\u0ca3-\u0c95\u0cca\u0ca0\u0ca1\u0cbf \u0cae\u0ca4\u0ccd\u0ca4\u0cc1 \u0ca8\u0cbf\u0cb0\u0ccd\u0cb5\u0cbe\u0cb9\u0c95 \u0c95\u0ccd\u0cb0\u0cbf\u0caf\u0cc6\u0c97\u0cb3\u0ca8\u0ccd\u0ca8\u0cc1 \u0caa\u0ccd\u0cb0\u0cb5\u0cc7\u0cb6\u0cbf\u0cb8\u0cb2\u0cc1 \u0ca8\u0ccb\u0c82\u0ca6\u0cbe\u0caf\u0cbf\u0ca4 \u0c96\u0cbe\u0ca4\u0cc6\u0caf\u0cca\u0c82\u0ca6\u0cbf\u0c97\u0cc6 \u0cb8\u0cc8\u0ca8\u0ccd-\u0c87\u0ca8\u0ccd \u0cae\u0cbe\u0ca1\u0cbf.",
+    citizenTitle: "\u0ca8\u0cbe\u0c97\u0cb0\u0cbf\u0c95\u0cb0 \u0cb8\u0cc8\u0ca8\u0ccd-\u0c87\u0ca8\u0ccd",
+    citizenNote: "\u0cb8\u0cc8\u0ca8\u0ccd-\u0c87\u0ca8\u0ccd \u0c86\u0ca6 \u0ca8\u0cbe\u0c97\u0cb0\u0cbf\u0c95\u0cb0\u0cc1 \u0c98\u0c9f\u0ca8\u0cc6\u0c97\u0cb3\u0ca8\u0ccd\u0ca8\u0cc1 \u0cb5\u0cb0\u0ca6\u0cbf \u0cae\u0cbe\u0ca1\u0cac\u0cb9\u0cc1\u0ca6\u0cc1 \u0cae\u0ca4\u0ccd\u0ca4\u0cc1 \u0cac\u0cbe\u0c95\u0cbf \u0c87\u0cb0\u0cc1\u0cb5 \u0cb5\u0cb0\u0ca6\u0cbf\u0c97\u0cb3 \u0cae\u0cc7\u0cb2\u0cc6 \u0cae\u0ca4 \u0cb9\u0cbe\u0c95\u0cac\u0cb9\u0cc1\u0ca6\u0cc1.",
+    routeNote: "\u0c88 \u0cae\u0cbe\u0cb0\u0ccd\u0c97 \u0cae\u0cbe\u0ca1\u0ccd\u0caf\u0cc2\u0cb2\u0ccd \u0cb8\u0cb2\u0cb9\u0cbe-\u0c95\u0cc7\u0c82\u0ca6\u0ccd\u0cb0\u0cbf\u0ca4\u0cb5\u0cbe\u0c97\u0cbf\u0ca6\u0cc6 \u0cae\u0ca4\u0ccd\u0ca4\u0cc1 \u0ca8\u0c82\u0ca4\u0cb0 \u0cb2\u0cc8\u0cb5\u0ccd \u0cae\u0cbe\u0cb0\u0ccd\u0c97 \u0caa\u0cc2\u0cb0\u0cc8\u0c95\u0cc6\u0ca6\u0cbe\u0cb0\u0cb0\u0cbf\u0c97\u0cc6 \u0cb8\u0c82\u0caa\u0cb0\u0ccd\u0c95\u0cbf\u0cb8\u0cb2\u0cc1 \u0cb8\u0cbf\u0ca6\u0ccd\u0ca7\u0cb5\u0cbe\u0c97\u0cbf\u0ca6\u0cc6.",
+    hotspot: "\u0cb9\u0cbe\u0c9f\u0ccd\u200c\u0cb8\u0ccd\u0caa\u0cbe\u0c9f\u0ccd",
+    viewRoutes: "\u0caa\u0cb0\u0ccd\u0caf\u0cbe\u0caf \u0cae\u0cbe\u0cb0\u0ccd\u0c97\u0c97\u0cb3\u0ca8\u0ccd\u0ca8\u0cc1 \u0cb5\u0cc0\u0c95\u0ccd\u0cb7\u0cbf\u0cb8\u0cbf",
+    seed: "\u0cab\u0ccc\u0c82\u0ca1\u0cc7\u0cb6\u0ca8\u0ccd \u0ca1\u0cc7\u0c9f\u0cbe\u0cb5\u0ca8\u0ccd\u0ca8\u0cc1 \u0cb8\u0cc0\u0ca1\u0ccd \u0cae\u0cbe\u0ca1\u0cbf",
+    seedDone: "\u0cab\u0ccc\u0c82\u0ca1\u0cc7\u0cb6\u0ca8\u0ccd \u0ca1\u0cc7\u0c9f\u0cbe\u0cb5\u0ca8\u0ccd\u0ca8\u0cc1 \u0caf\u0cb6\u0cb8\u0ccd\u0cb5\u0cbf\u0caf\u0cbe\u0c97\u0cbf \u0cb8\u0cc0\u0ca1\u0ccd \u0cae\u0cbe\u0ca1\u0cb2\u0cbe\u0c97\u0cbf\u0ca6\u0cc6.",
+    reportDone: "\u0c98\u0c9f\u0ca8\u0cc6\u0caf\u0ca8\u0ccd\u0ca8\u0cc1 \u0caf\u0cb6\u0cb8\u0ccd\u0cb5\u0cbf\u0caf\u0cbe\u0c97\u0cbf \u0cb5\u0cb0\u0ca6\u0cbf \u0cae\u0cbe\u0ca1\u0cb2\u0cbe\u0c97\u0cbf\u0ca6\u0cc6.",
+    officialDone: "\u0c85\u0ca7\u0cbf\u0c95\u0cc3\u0ca4 \u0c98\u0c9f\u0ca8\u0cc6\u0caf\u0ca8\u0ccd\u0ca8\u0cc1 \u0caf\u0cb6\u0cb8\u0ccd\u0cb5\u0cbf\u0caf\u0cbe\u0c97\u0cbf \u0cb0\u0c9a\u0cbf\u0cb8\u0cb2\u0cbe\u0c97\u0cbf\u0ca6\u0cc6.",
+    gpsOk: "\u0cb8\u0cbe\u0ca7\u0ca8\u0ca6 \u0cb8\u0ccd\u0ca5\u0cb3\u0cb5\u0ca8\u0ccd\u0ca8\u0cc1 \u0cb8\u0cc6\u0cb0\u0cc6\u0cb9\u0cbf\u0ca1\u0cbf\u0caf\u0cb2\u0cbe\u0c97\u0cbf\u0ca6\u0cc6.",
+    gpsFail: "\u0cb8\u0cbe\u0ca7\u0ca8\u0ca6 \u0cb8\u0ccd\u0ca5\u0cb3\u0cb5\u0ca8\u0ccd\u0ca8\u0cc1 \u0caa\u0ca1\u0cc6\u0caf\u0cb2\u0cbe\u0c97\u0cb2\u0cbf\u0cb2\u0ccd\u0cb2. \u0ca6\u0caf\u0cb5\u0cbf\u0c9f\u0ccd\u0c9f\u0cc1 \u0ca8\u0cbf\u0cb0\u0ccd\u0ca6\u0cc7\u0cb6\u0cbe\u0c82\u0c95\u0c7c\u0cb3\u0ca8\u0ccd\u0ca8\u0cc1 \u0cb9\u0cb8\u0ccd\u0ca4\u0c9a\u0cbe\u0cb2\u0cbf\u0ca4\u0cb5\u0cbe\u0c97\u0cbf \u0ca8\u0cae\u0cc2\u0ca6\u0cbf\u0cb8\u0cbf."
   }
 };
 
@@ -248,7 +203,8 @@ function formatTime(value?: string | null): string {
   if (!value) {
     return "-";
   }
-  const date = new Date(value);
+  const utcValue = value.endsWith('Z') ? value : `${value}Z`;
+  const date = new Date(utcValue);
   return Number.isNaN(date.getTime())
     ? value
     : date.toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -313,7 +269,7 @@ import { useUIStore } from "@/lib/stores/useUIStore";
 export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mode; initialPanel?: Panel }) {
   const queryClient = useQueryClient();
   const { user, ready } = useFirebaseAuthState();
-  const [language, setLanguage] = useState<AppLanguage>("en");
+  const { language } = useLanguage();
   const { sidebarOpen } = useUIStore();
   const [panel, setPanel] = useState<Panel>(initialPanel);
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);

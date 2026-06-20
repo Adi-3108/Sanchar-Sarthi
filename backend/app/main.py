@@ -17,6 +17,8 @@ from app.api.routes_officer import router as officer_router
 from app.api.routes_post_event import router as post_event_router
 from app.api.routes_recommendations import router as recommendations_router
 from app.api.routes_reports import router as reports_router
+from app.api.routes_translation import router as translation_router
+from app.api import routes_analytics_corridor
 from app.core.config import get_settings
 from app.core.firebase import initialize_firebase
 from app.db.base import import_model_modules
@@ -50,7 +52,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from app.api.routes_translation import router as translation_router
 
 app.include_router(health_router)
 app.include_router(command_center_router)
@@ -67,3 +68,4 @@ app.include_router(post_event_router)
 app.include_router(recommendations_router)
 app.include_router(reports_router)
 app.include_router(translation_router)
+app.include_router(routes_analytics_corridor.router)

@@ -50,6 +50,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.api.routes_translation import router as translation_router
+
 app.include_router(health_router)
 app.include_router(command_center_router)
 app.include_router(foundation_router)
@@ -64,3 +66,4 @@ app.include_router(officer_router)
 app.include_router(post_event_router)
 app.include_router(recommendations_router)
 app.include_router(reports_router)
+app.include_router(translation_router)

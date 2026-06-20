@@ -45,14 +45,23 @@ function errorText(error: unknown): string {
   return "Report submission failed.";
 }
 
+const descriptionLanguageOptions = [
+  { value: "auto", label: "Auto-detect" },
+  { value: "en", label: "English" },
+  { value: "kn", label: "Kannada" },
+  { value: "hi", label: "Hindi" },
+  { value: "other", label: "Other" }
+];
+
 export function ReportForm() {
-  const { language, setLanguage } = useCommandStore();
+  const { language } = useCommandStore();
   const [reportSource, setReportSource] = useState<CitizenReportSource>("citizen");
   const [reportType, setReportType] = useState("road_blockage");
   const [severity, setSeverity] = useState("High");
   const [latitude, setLatitude] = useState("12.9716");
   const [longitude, setLongitude] = useState("77.5946");
   const [description, setDescription] = useState("");
+  const [reportLanguage, setReportLanguage] = useState("auto");
   const [locationMessage, setLocationMessage] = useState<string | null>(null);
 
   const labels = useMemo(() => reportLabelsFor(language), [language]);
@@ -95,7 +104,7 @@ export function ReportForm() {
       longitude: lng,
       severity,
       description,
-      language
+      language: reportLanguage
     });
   }
 
@@ -116,11 +125,11 @@ export function ReportForm() {
               {labels.language}
             </span>
             <select
-              value={language}
-              onChange={(event) => setLanguage(event.target.value as AppLanguage)}
+              value={reportLanguage}
+              onChange={(event) => setReportLanguage(event.target.value)}
               className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 outline-none transition focus:border-cyan-300"
             >
-              {languageOptions.map((item) => (
+              {descriptionLanguageOptions.map((item) => (
                 <option key={item.value} value={item.value}>
                   {item.label}
                 </option>

@@ -13,14 +13,20 @@ from app.core.security import AuthContext, require_role
 from app.db.session import get_db
 from app.orm.police_officer_profile import PoliceOfficerProfile
 from app.orm.system_audit_log import SystemAuditLog
+from app.orm.traffic_station import TrafficStation
 from app.orm.user_account import UserAccount
+
+try:
+    from firebase_admin import auth as firebase_auth
+except ModuleNotFoundError:
+    firebase_auth = None
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 
 class CreateOfficerRequest(BaseModel):
     email: str = Field(..., min_length=5, max_length=255)
-    firebase_uid: str = Field(..., min_length=3, max_length=255)
+    password: str = Field(..., min_length=6, max_length=255)
     officer_id: str = Field(..., min_length=3, max_length=64)
     display_name: str = Field(..., min_length=2, max_length=255)
     rank: str | None = Field(default=None, max_length=128)
@@ -32,6 +38,19 @@ class CreateOfficerRequest(BaseModel):
 class CreateOfficerResponse(BaseModel):
     status: str
     officer_id: str
+    role: str
+    active: bool
+
+
+class CreateControlRoomRequest(BaseModel):
+    email: str = Field(..., min_length=5, max_length=255)
+    password: str = Field(..., min_length=6, max_length=128)
+    display_name: str = Field(..., min_length=2, max_length=255)
+
+
+class CreateControlRoomResponse(BaseModel):
+    status: str
+    firebase_uid: str
     role: str
     active: bool
 
@@ -83,6 +102,24 @@ def _normalize_scope(values: list[str]) -> list[str]:
         seen.add(key)
     return deduped
 
+class StationResponse(BaseModel):
+    id: str
+    station_code: str
+    name: str
+
+@router.get("/stations", response_model=list[StationResponse])
+def get_stations(
+    auth: AuthContext = Depends(require_admin_access),
+    db: Session = Depends(get_db)
+):
+    stations = db.scalars(select(TrafficStation).where(TrafficStation.active.is_(True)).order_by(TrafficStation.name)).all()
+    return [
+        StationResponse(
+            id=str(station.id),
+            station_code=station.station_code,
+            name=station.name
+        ) for station in stations
+    ]
 
 @router.post("/officers", response_model=CreateOfficerResponse)
 def create_officer(
@@ -98,17 +135,37 @@ def create_officer(
             {"field": "email"},
         )
 
-    firebase_uid = payload.firebase_uid.strip()
+    email = payload.email.strip()
     officer_id = payload.officer_id.strip()
     display_name = payload.display_name.strip()
     police_station = payload.police_station.strip()
 
-    if not firebase_uid or not officer_id or not display_name or not police_station:
+    if not email or not officer_id or not display_name or not police_station:
         return error_response(
             400,
             "VALIDATION_ERROR",
             "Officer creation fields cannot be blank.",
         )
+
+    if firebase_auth is None:
+        return error_response(503, "FIREBASE_NOT_CONFIGURED", "Firebase Admin SDK is missing.")
+
+    try:
+        user_record = firebase_auth.create_user(
+            email=email,
+            password=payload.password,
+            display_name=display_name,
+            email_verified=True
+        )
+        firebase_uid = user_record.uid
+    except firebase_auth.EmailAlreadyExistsError:
+        try:
+            user_record = firebase_auth.get_user_by_email(email)
+            firebase_uid = user_record.uid
+        except Exception as e:
+            return error_response(500, "FIREBASE_ERROR", str(e))
+    except Exception as e:
+        return error_response(500, "FIREBASE_ERROR", str(e))
 
     existing_account = db.scalar(
         select(UserAccount).where(UserAccount.auth_provider_uid == firebase_uid)
@@ -194,3 +251,80 @@ def create_officer(
         role=user_account.role,
         active=officer_profile.active,
     )
+
+@router.post("/control-room-users", response_model=CreateControlRoomResponse)
+def create_control_room_user(
+    payload: CreateControlRoomRequest,
+    auth: AuthContext = Depends(require_admin_access),
+    db: Session = Depends(get_db),
+):
+    if "@" not in payload.email:
+        return error_response(400, "VALIDATION_ERROR", "Email must be valid.", {"field": "email"})
+        
+    if firebase_auth is None:
+        return error_response(503, "FIREBASE_NOT_CONFIGURED", "Firebase Admin SDK is missing.")
+
+    email = payload.email.strip()
+    display_name = payload.display_name.strip()
+    
+    try:
+        user_record = firebase_auth.create_user(
+            email=email,
+            password=payload.password,
+            display_name=display_name,
+            email_verified=True
+        )
+        firebase_uid = user_record.uid
+    except firebase_auth.EmailAlreadyExistsError:
+        try:
+            user_record = firebase_auth.get_user_by_email(email)
+            firebase_uid = user_record.uid
+        except Exception as e:
+            return error_response(500, "FIREBASE_ERROR", str(e))
+    except Exception as e:
+        return error_response(500, "FIREBASE_ERROR", str(e))
+
+    existing_account = db.scalar(
+        select(UserAccount).where(UserAccount.auth_provider_uid == firebase_uid)
+    )
+    if existing_account is not None:
+        existing_account.role = "control_room"
+        db.commit()
+        return CreateControlRoomResponse(
+            status="updated",
+            firebase_uid=firebase_uid,
+            role="control_room",
+            active=existing_account.is_active
+        )
+        
+    try:
+        user_account = UserAccount(
+            role="control_room",
+            display_name=display_name,
+            auth_provider="firebase",
+            auth_provider_uid=firebase_uid,
+            is_active=True,
+        )
+        db.add(user_account)
+        
+        log = SystemAuditLog(
+            actor_user_id=_coerce_uuid(auth.user_account_id),
+            actor_role="admin",
+            action="create_control_room_user",
+            resource_type="user_account",
+            resource_id=firebase_uid,
+            metadata_json={"email": email},
+        )
+        db.add(log)
+        
+        db.commit()
+        
+        return CreateControlRoomResponse(
+            status="created",
+            firebase_uid=firebase_uid,
+            role="control_room",
+            active=True
+        )
+    except SQLAlchemyError as e:
+        db.rollback()
+        return error_response(500, "DATABASE_ERROR", str(e))

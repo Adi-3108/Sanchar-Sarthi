@@ -24,11 +24,16 @@ from app.db.base import import_model_modules
 settings = get_settings()
 
 
+from app.background_route_fetcher import _fetch_routes_loop
+import asyncio
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     import_model_modules()
     initialize_firebase(settings)
+    task = asyncio.create_task(_fetch_routes_loop())
     yield
+    task.cancel()
 
 
 app = FastAPI(
@@ -45,6 +50,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.api.routes_translation import router as translation_router
+
 app.include_router(health_router)
 app.include_router(command_center_router)
 app.include_router(foundation_router)
@@ -59,3 +66,4 @@ app.include_router(officer_router)
 app.include_router(post_event_router)
 app.include_router(recommendations_router)
 app.include_router(reports_router)
+app.include_router(translation_router)

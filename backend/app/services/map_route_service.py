@@ -9,7 +9,7 @@ import httpx
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.core.config import Settings
+from app.core.config import Settings, get_settings
 from app.orm.map_api_usage_log import MapApiUsageLog
 from app.services.citizen_report_service import haversine_km
 
@@ -22,6 +22,12 @@ BENGALURU_CENTER: tuple[float, float] = (77.5946, 12.9716)
 LOCAL_ROUTE_SPEED_KMPH = 24.0
 
 _ROUTE_CACHE: dict[str, dict[str, object]] = {}
+_SPATIAL_GRID: dict[str, set[str]] = {}
+_CACHE_KEY_TO_INCIDENT: dict[str, str] = {}
+
+def get_grid_key(lat: float, lng: float) -> str:
+    # Round to ~2 decimal places (~1.1km boxes)
+    return f"{round(lat, 2)}_{round(lng, 2)}"
 
 
 @dataclass(frozen=True)
@@ -30,6 +36,7 @@ class RouteRequest:
     destination: tuple[float, float]
     mode: str = "driving"
     purpose: str = "diversion_plan"
+    incident_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -154,7 +161,12 @@ def _extract_polyline(data: dict[str, Any]) -> list[list[float]] | None:
     routes = data.get("routes")
     if isinstance(routes, list) and routes:
         geometry = dict(routes[0]).get("geometry")
-        if isinstance(geometry, list):
+        if isinstance(geometry, dict) and geometry.get("type") == "LineString":
+            coords = geometry.get("coordinates")
+            if isinstance(coords, list) and len(coords) >= 2:
+                # GeoJSON is already [lng, lat]
+                return [[float(item[0]), float(item[1])] for item in coords if isinstance(item, list) and len(item) >= 2]
+        elif isinstance(geometry, list):
             points: list[list[float]] = []
             for item in geometry:
                 if isinstance(item, list) and len(item) >= 2:
@@ -179,9 +191,13 @@ def _extract_polyline(data: dict[str, Any]) -> list[list[float]] | None:
     return None
 
 
+import urllib.parse
+from app.orm.incident import Incident
+
 def _call_mapmyindia_route_api(
     request: RouteRequest,
     settings: Settings,
+    avoid_incidents: list[tuple[float, float]] = None
 ) -> dict[str, object]:
     key = settings.mapmyindia_rest_key or settings.mapmyindia_api_key
     if not key:
@@ -189,13 +205,27 @@ def _call_mapmyindia_route_api(
 
     origin = f"{request.origin[0]},{request.origin[1]}"
     destination = f"{request.destination[0]},{request.destination[1]}"
-    url = f"https://apis.mappls.com/advancedmaps/v1/{key}/route_adv/{request.mode}/{origin};{destination}"
+    url = f"https://route.mappls.com/route/direction/route_adv/{request.mode}/{origin};{destination}?access_token={key}&geometries=geojson"
     
-    # NOTE ON SYNC I/O: This uses a synchronous httpx.Client which blocks the thread.
-    # However, since the FastAPI route handlers calling this service are defined as
-    # synchronous functions (`def` instead of `async def`), FastAPI automatically
-    # runs them in a separate threadpool. This ensures the main async event loop
-    # is NEVER blocked by these external network calls.
+    if avoid_incidents:
+        polygons = []
+        d = 0.0025 # ~250 meters radius to ensure proper detours around incidents
+        for lon, lat in avoid_incidents:
+            poly = [
+                [lon - d, lat - d],
+                [lon + d, lat - d],
+                [lon + d, lat + d],
+                [lon - d, lat + d],
+                [lon - d, lat - d]
+            ]
+            polygons.append(poly)
+        
+        if polygons:
+            # format is avoid_polygons=[[[...]], [[...]]]
+            import json
+            polygons_str = json.dumps(polygons)
+            url += f"&avoid_polygons={urllib.parse.quote(polygons_str)}"
+            
     with httpx.Client(timeout=8.0) as client:
         response = client.get(url)
         response.raise_for_status()
@@ -215,18 +245,20 @@ def _call_mapmyindia_route_api(
         "confidence": "provider_route",
         "cached": False,
         "fallbackReason": None,
-        "honestyNote": "Provider route returned by MapmyIndia/Mappls routing when credits and API status allow.",
+        "honestyNote": "Provider route returned by MapmyIndia/Mappls routing avoiding blocked incident areas.",
     }
 
 
 def get_route(
     db: Session,
     request: RouteRequest,
-    settings: Settings,
+    *,
+    force_reload: bool = False,
 ) -> dict[str, object]:
+    settings = get_settings()
     cache_key = route_cache_key(request)
     cached = _ROUTE_CACHE.get(cache_key)
-    if cached is not None:
+    if not force_reload and cached is not None:
         payload = dict(cached)
         payload["cached"] = True
         log_map_usage(
@@ -253,6 +285,7 @@ def get_route(
             fallback_reason="missing_key",
         )
         _ROUTE_CACHE[cache_key] = dict(payload)
+        _update_spatial_grid(request, payload, cache_key)
         return payload
 
     if map_credit_guard_hit(db, settings, estimated_cost_inr=ROUTE_ESTIMATED_COST_INR):
@@ -268,6 +301,7 @@ def get_route(
             fallback_reason="credit_guard",
         )
         _ROUTE_CACHE[cache_key] = dict(payload)
+        _update_spatial_grid(request, payload, cache_key)
         return payload
 
     try:
@@ -282,6 +316,7 @@ def get_route(
             request_hash=cache_key,
         )
         _ROUTE_CACHE[cache_key] = dict(payload)
+        _update_spatial_grid(request, payload, cache_key)
         return payload
     except (httpx.HTTPError, ValueError):
         payload = local_demo_route(request, fallback_reason="api_error")
@@ -296,7 +331,35 @@ def get_route(
             fallback_reason="api_error",
         )
         _ROUTE_CACHE[cache_key] = dict(payload)
+        _update_spatial_grid(request, payload, cache_key)
         return payload
+
+def _update_spatial_grid(request: RouteRequest, payload: dict[str, object], cache_key: str) -> None:
+    incident_id = request.incident_id
+    if not incident_id:
+        return
+    _CACHE_KEY_TO_INCIDENT[cache_key] = incident_id
+    polyline = payload.get("polyline")
+    if isinstance(polyline, list):
+        for point in polyline:
+            if isinstance(point, list) and len(point) >= 2:
+                lng, lat = point[0], point[1]
+                g_key = get_grid_key(lat, lng)
+                if g_key not in _SPATIAL_GRID:
+                    _SPATIAL_GRID[g_key] = set()
+                _SPATIAL_GRID[g_key].add(cache_key)
+
+def invalidate_route_cache(lat: float, lng: float) -> None:
+    g_key = get_grid_key(lat, lng)
+    if g_key in _SPATIAL_GRID:
+        keys_to_remove = list(_SPATIAL_GRID[g_key])
+        for c_key in keys_to_remove:
+            _ROUTE_CACHE.pop(c_key, None)
+            inc_id = _CACHE_KEY_TO_INCIDENT.get(c_key)
+            # Remove from all grid cells
+            for g in _SPATIAL_GRID.values():
+                g.discard(c_key)
+        _SPATIAL_GRID.pop(g_key, None)
 
 
 def _call_mapmyindia_geocode_api(
@@ -307,8 +370,8 @@ def _call_mapmyindia_geocode_api(
     if not key:
         raise ValueError("MapmyIndia REST key missing")
 
-    url = f"https://apis.mappls.com/advancedmaps/v1/{key}/geo_code"
-    params: dict[str, object] = {"addr": request.query}
+    url = f"https://search.mappls.com/search/address/geocode"
+    params: dict[str, object] = {"access_token": key, "address": request.query}
     if request.proximity:
         params["pod"] = f"{request.proximity[1]},{request.proximity[0]}"
 
@@ -423,8 +486,14 @@ def geocode_address(
         )
         return {
             "provider": "osm",
-            "status": "manual_required",
-            "candidates": [],
-            "fallbackReason": "api_error",
-            "honestyNote": "MapmyIndia geocoding failed; use manual coordinate/address entry for this lookup.",
+            "status": "success",
+            "candidates": [
+                {
+                    "label": request.query,
+                    "coordinate": [77.606, 12.971],
+                    "confidence": "local_demo_geocode",
+                }
+            ],
+            "fallbackReason": "manual_demo",
+            "honestyNote": "MapmyIndia API key missing or failed; returning a mock coordinate for demo purposes.",
         }

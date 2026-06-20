@@ -58,20 +58,6 @@ export default function PostEventLearningPage() {
                 citizen report, and live escalation timeline.
               </p>
             </div>
-            <nav className="flex flex-wrap gap-3">
-              <Link
-                href="/command-center"
-                className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
-              >
-                Command center
-              </Link>
-              <Link
-                href="/explorer"
-                className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
-              >
-                Explorer
-              </Link>
-            </nav>
           </div>
         </section>
 

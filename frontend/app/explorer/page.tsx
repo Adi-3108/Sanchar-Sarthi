@@ -61,14 +61,6 @@ export default function ExplorerPage() {
                 Browse risk clusters, inspect historical patterns, and open a protected event dossier by ID.
               </p>
             </div>
-            <nav className="flex flex-wrap gap-3">
-              <Link href="/command-center" className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy">
-                Command center
-              </Link>
-              <Link href="/map-intelligence" className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy">
-                Map intelligence
-              </Link>
-            </nav>
           </div>
         </section>
 

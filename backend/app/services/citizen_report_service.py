@@ -14,6 +14,7 @@ from app.orm.citizen_report import CitizenReport
 from app.orm.event import Event
 from app.schemas.reports import CitizenReportCreate
 from app.services.text_normalization_service import NormalizedDescription, normalize_description
+from app.services.translation_service import TranslationService
 
 EARTH_RADIUS_KM = 6371.0088
 EVENT_MATCH_RADIUS_KM = 2.0
@@ -168,40 +169,20 @@ def count_nearby_duplicate_reports(
     )
 
 
-def build_translation_bookkeeping(
-    *,
-    requested_language: str,
-    description: str,
-) -> TranslationBookkeeping:
-    normalized = normalize_description(description)
-    selected_language = requested_language.strip().casefold() or "auto"
-    source_language = normalized.language if selected_language == "auto" else selected_language
-    persisted_language = source_language if selected_language == "auto" else selected_language
-
-    if normalized.method == "raw_ascii":
-        provider = "disabled"
-        status = "not_required"
-    elif normalized.method in {
-        "static_kannada_glossary",
-        "static_hindi_glossary",
-        "static_multilingual_glossary",
-        "mixed_ascii_preserved",
-    }:
-        provider = "static_glossary"
-        status = "static_normalized"
-    else:
-        provider = "disabled"
-        status = "not_supported"
-
-    return TranslationBookkeeping(
-        language=persisted_language[:16],
-        source_language=source_language[:16],
-        translated_description=normalized.text_for_features,
-        translation_provider=provider,
-        translation_status=status,
-        translation_character_count=len(description),
-        normalization=normalized,
+def normalize_report_description(description: str, language: str | None, translation_service: TranslationService) -> dict[str, object]:
+    result = translation_service.normalize(
+        text=description,
+        source_language=language,
+        target_language='en',
     )
+    return {
+        'description': description,
+        'source_language': result.source_language,
+        'translated_description': result.translated_text,
+        'translation_provider': result.provider,
+        'translation_status': result.status,
+        'translation_character_count': result.character_count,
+    }
 
 
 def _severity_signal(severity: str | None) -> float:
@@ -349,14 +330,16 @@ def serialize_citizen_report(record: CitizenReport) -> dict[str, object]:
 def create_citizen_report(
     db: Session,
     payload: CitizenReportCreate,
+    translation_service: TranslationService,
     *,
     commit: bool = True,
 ) -> tuple[CitizenReport, dict[str, object]]:
     report_type = payload.report_type.strip().casefold()
     sanitized_description = sanitize_report_description(payload.description)
-    translation = build_translation_bookkeeping(
-        requested_language=payload.language,
+    translation = normalize_report_description(
         description=sanitized_description,
+        language=payload.language,
+        translation_service=translation_service,
     )
     event_match = match_nearest_event(
         db,
@@ -375,7 +358,7 @@ def create_citizen_report(
         location_match_confidence=event_match.location_match_confidence,
         nearby_duplicate_count=duplicate_count,
         severity=payload.severity,
-        translated_description=translation.translated_description,
+        translated_description=translation["translated_description"],
     )
     impact_score_change = estimate_impact_score_change(
         report_confidence=report_confidence,
@@ -403,12 +386,12 @@ def create_citizen_report(
         longitude=payload.longitude,
         severity=payload.severity.strip() if payload.severity else None,
         description=sanitized_description,
-        language=translation.language,
-        source_language=translation.source_language,
-        translated_description=translation.translated_description,
-        translation_provider=translation.translation_provider,
-        translation_status=translation.translation_status,
-        translation_character_count=translation.translation_character_count,
+        language=payload.language or "en",
+        source_language=translation["source_language"],
+        translated_description=translation["translated_description"],
+        translation_provider=translation["translation_provider"],
+        translation_status=translation["translation_status"],
+        translation_character_count=translation["translation_character_count"],
         event_id=matched_event_id,
         matched_event_id=matched_event_id,
         location_match_confidence=event_match.location_match_confidence,
@@ -430,7 +413,6 @@ def create_citizen_report(
         "distance_km": event_match.distance_km,
         "nearby_duplicate_count": duplicate_count,
         "confidence_breakdown": confidence_breakdown,
-        "normalization_method": translation.normalization.method,
         "dataset_honesty": (
             "Citizen and field reports are confidence-scored signals, not automatic official events."
         ),

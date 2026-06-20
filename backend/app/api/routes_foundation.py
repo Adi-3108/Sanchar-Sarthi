@@ -23,6 +23,8 @@ from app.orm.user_account import UserAccount
 from app.services.foundation_seed_service import seed_foundation_data
 from app.services.incident_service import apply_incident_vote, transition_incident
 from app.services.map_route_service import geocode_address, invalidate_route_cache
+from app.api.routes_translation import get_translation_service
+from app.services.translation_service import TranslationService
 
 router = APIRouter(prefix="/api/foundation", tags=["foundation"])
 
@@ -126,6 +128,7 @@ class IncidentCreateRequest(BaseModel):
     longitude: float = Field(ge=77.0, le=78.0)
     locality: str | None = Field(default=None, max_length=255)
     ward: str | None = Field(default=None, max_length=128)
+    language: str = Field(default="auto")
 
 
 class SeedResponse(BaseModel):
@@ -529,16 +532,21 @@ def create_user_incident_report(
     payload: IncidentCreateRequest,
     auth: AuthContext = Depends(require_role("citizen", "admin")),
     db: Session = Depends(get_db),
+    translation: TranslationService = Depends(get_translation_service),
 ):
     user_id = _coerce_uuid(auth.user_account_id)
     if user_id is None:
         return error_response(403, "USER_ACCOUNT_REQUIRED", "Reporting requires a registered user account.")
 
     station = _find_nearest_station(db, payload.latitude, payload.longitude)
+    
+    translation_result = translation.normalize(payload.description, payload.language)
+    final_description = translation_result.translated_text or payload.description.strip()
+
     incident = Incident(
         incident_type=payload.incident_type.strip(),
         title=payload.title.strip(),
-        description=payload.description.strip(),
+        description=final_description,
         status="pending_verification",
         severity=payload.severity,
         location_name=payload.location_name.strip(),

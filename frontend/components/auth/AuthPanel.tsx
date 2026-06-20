@@ -3,8 +3,7 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { getCurrentFirebaseToken, loginWithFirebase, logoutFirebase, registerWithFirebase, useFirebaseAuthState } from "@/lib/auth";
-import { getCurrentAccess } from "@/lib/api";
+import { getCurrentFirebaseToken, loginWithFirebase, logoutFirebase, registerWithFirebase, resendVerificationEmail, useFirebaseAuthState } from "@/lib/auth";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import { type AccessLevel, useSessionStore } from "@/lib/stores/useSessionStore";
 
@@ -24,6 +23,9 @@ type AuthPanelProps = {
 
 function errorText(error: unknown): string {
   if (error instanceof Error) {
+    if (error.message === "UNVERIFIED_EMAIL") {
+      return "Please verify your email address before signing in.";
+    }
     if (error.message.includes("auth/invalid-credential") || error.message.includes("auth/user-not-found") || error.message.includes("auth/wrong-password")) {
       return "Account not found or invalid credentials. Would you like to sign up?";
     }
@@ -48,6 +50,13 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isUnverified, setIsUnverified] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+
+  useEffect(() => {
+    const resolvedRole = resolveInteractiveRole(session.accessLevel, preferredRole);
+    setRole(resolvedRole);
+  }, [preferredRole, session.accessLevel]);
 
   useEffect(() => {
     if (!ready) {
@@ -90,14 +99,31 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
     };
   }, [ready, session, user]);
 
+  async function handleResendVerification() {
+    setPending(true);
+    setError(null);
+    try {
+      await resendVerificationEmail(email, password);
+      setResendSuccess(true);
+      setError("A new verification link has been sent to your email. Please check your inbox.");
+    } catch (caught) {
+      setError(errorText(caught));
+    } finally {
+      setPending(false);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true);
     setError(null);
+    setIsUnverified(false);
+    setResendSuccess(false);
 
     try {
       if (isSignUp) {
         await registerWithFirebase(email, password);
+        setIsUnverified(true);
         setError("Account created! A verification link has been sent to your email. Please verify before signing in.");
         setIsSignUp(false);
         setPending(false);
@@ -114,6 +140,9 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
       });
       await queryClient.invalidateQueries();
     } catch (caught) {
+      if (caught instanceof Error && caught.message === "UNVERIFIED_EMAIL") {
+        setIsUnverified(true);
+      }
       setError(errorText(caught));
     } finally {
       setPending(false);
@@ -221,6 +250,16 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
                         className="w-full rounded-2xl bg-accent px-4 py-3 text-sm font-semibold text-white transition hover:bg-accentSoft"
                       >
                         Sign Up Now
+                      </button>
+                    ) : null}
+                    {isUnverified && !resendSuccess ? (
+                      <button
+                        type="button"
+                        onClick={handleResendVerification}
+                        disabled={pending}
+                        className="w-full rounded-2xl bg-accent px-4 py-3 text-sm font-semibold text-white transition hover:bg-accentSoft disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {pending ? "Sending..." : "Resend Verification Email"}
                       </button>
                     ) : null}
                     <button

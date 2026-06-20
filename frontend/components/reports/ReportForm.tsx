@@ -10,7 +10,7 @@ import {
   type CitizenReportResponse,
   type CitizenReportSource
 } from "@/lib/api";
-import { languageOptions, type AppLanguage, t } from "@/lib/i18n";
+import { type AppLanguage, t } from "@/lib/i18n";
 import { useCommandStore } from "@/lib/stores/useCommandStore";
 
 const reportTypes = [
@@ -304,7 +304,7 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function reportLabelsFor(language: AppLanguage): Record<string, string> {
+function reportLabelsFor(language: AppLanguage | "hi"): Record<string, string> {
   const keys = [
     "reportIssue",
     "issueType",
@@ -325,7 +325,9 @@ function reportLabelsFor(language: AppLanguage): Record<string, string> {
     "publicNote"
   ];
 
-  return Object.fromEntries(keys.map((key) => [key, t(language, key)]));
+  const resolvedLanguage: AppLanguage = language === "hi" ? "en" : language;
+  return Object.fromEntries(keys.map((key) => [key, t(resolvedLanguage, key)]));
 }
 
 export default ReportForm;
+

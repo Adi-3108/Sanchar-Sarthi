@@ -6,6 +6,9 @@ import { logoutFirebase } from "@/lib/auth";
 import { type AccessLevel, useSessionStore } from "@/lib/stores/useSessionStore";
 import { useUIStore } from "@/lib/stores/useUIStore";
 import { useState, useEffect } from "react";
+import { useLanguage } from "@/components/LanguageContext";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { t } from "@/lib/i18n";
 
 type NavLink = {
   name: string;
@@ -20,35 +23,35 @@ type NavGroup = {
 
 const NAV_STRUCTURE: NavGroup[] = [
   {
-    title: "Portals",
+    title: "portals",
     links: [
-      { name: "Command Center", href: "/command-center" },
-      { name: "Control Room", href: "/control-room" },
-      { name: "Officer Portal", href: "/officer" },
-      { name: "Admin Portal", href: "/admin" },
-      { name: "User Mode", href: "/user" }
+      { name: "commandCenter", href: "/command-center" },
+      { name: "controlRoom", href: "/control-room" },
+      { name: "officerPortal", href: "/officer" },
+      { name: "adminPortal", href: "/admin" },
+      { name: "userMode", href: "/user" }
     ]
   },
   {
-    title: "Dashboards",
+    title: "dashboards",
     links: [
-      { name: "Map Intelligence", href: "/map-intelligence" },
-      { name: "Explorer", href: "/explorer" },
-      { name: "Reports", href: "/reports" }
+      { name: "mapIntelligence", href: "/map-intelligence" },
+      { name: "explorer", href: "/explorer" },
+      { name: "reports", href: "/reports" }
     ]
   },
   {
-    title: "Intelligence",
+    title: "intelligence",
     links: [
-      { name: "Model Insights", href: "/model-insights" },
-      { name: "Simulation", href: "/simulation" },
-      { name: "Post-Event Learning", href: "/post-event-learning" }
+      { name: "modelInsights", href: "/model-insights" },
+      { name: "simulation", href: "/simulation" },
+      { name: "postEventLearning", href: "/post-event-learning" }
     ]
   },
   {
-    title: "System",
+    title: "system",
     links: [
-      { name: "Settings (Demo Data)", href: "/settings" }
+      { name: "settings", href: "/settings" }
     ]
   }
 ];
@@ -58,6 +61,7 @@ export function TopNav() {
   const router = useRouter();
   const session = useSessionStore();
   const { toggleSidebar } = useUIStore();
+  const { language } = useLanguage();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -99,14 +103,14 @@ export function TopNav() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-white font-bold">
             SS
           </div>
-          <span className="text-lg font-bold tracking-tight text-copy">Sanchar Sarthi</span>
+          <span className="text-lg font-bold tracking-tight text-copy">{t(language, "appName")}</span>
         </Link>
 
         <nav className="flex h-full items-center gap-6">
           {visibleGroups.map((group) => (
             <div key={group.title} className="group relative flex h-full items-center">
-              <button className="flex h-full items-center gap-1.5 text-sm font-semibold text-muted transition hover:text-copy">
-                {group.title}
+              <button className="flex h-full items-center gap-1.5 text-sm font-semibold text-muted transition hover:text-copy capitalize">
+                {t(language, group.title)}
                 <svg
                   className="h-4 w-4 opacity-50 transition-transform group-hover:rotate-180"
                   fill="none"
@@ -132,7 +136,7 @@ export function TopNav() {
                             : "text-copy hover:bg-bg"
                         }`}
                       >
-                        {link.name}
+                        {t(language, link.name)}
                       </Link>
                     );
                   })}
@@ -143,12 +147,13 @@ export function TopNav() {
         </nav>
 
         <div className="ml-auto flex items-center gap-4">
+          <LanguageSwitcher />
           <div className="flex flex-col text-right">
             <span className="text-xs font-semibold uppercase tracking-wider text-accentSoft">
-              Current Role
+              {t(language, "currentRole") || "Current Role"}
             </span>
             <span className="text-sm font-medium text-copy capitalize">
-              {currentRole.replace("_", " ")}
+              {t(language, currentRole)}
             </span>
           </div>
           {currentRole !== "public_citizen" && (
@@ -156,7 +161,7 @@ export function TopNav() {
               onClick={handleLogout}
               className="ml-2 rounded-xl border border-line bg-panel px-4 py-2 text-sm font-semibold text-copy transition hover:border-accent hover:text-accent"
             >
-              Sign Out
+              {t(language, "logout")}
             </button>
           )}
         </div>

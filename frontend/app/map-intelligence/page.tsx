@@ -26,6 +26,8 @@ import {
 } from "@/lib/api";
 import { useFirebaseAuthState } from "@/lib/auth";
 import { projectLngLat, severityFromScore, type LngLat } from "@/lib/map-provider";
+import { useLanguage } from "@/components/LanguageContext";
+import { t } from "@/lib/i18n";
 
 const demoRoute = {
   origin: [77.5946, 12.9716] as LngLat,
@@ -176,6 +178,7 @@ function parseEventIds(value: string): string[] {
 
 export default function MapIntelligencePage() {
   const { user, ready: authReady } = useFirebaseAuthState();
+  const { language } = useLanguage();
   const [selectedHotspotId, setSelectedHotspotId] = useState<string | null>(null);
   const [eventIdsInput, setEventIdsInput] = useState("");
   const [availableOfficers, setAvailableOfficers] = useState("18");
@@ -253,7 +256,7 @@ export default function MapIntelligencePage() {
         <section className="rounded-[28px] border border-line/80 bg-panel/90 p-7 shadow-panel">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
-              <p className="text-sm uppercase tracking-[0.32em] text-accentSoft">Map Intelligence</p>
+              <p className="text-sm uppercase tracking-[0.32em] text-accentSoft">{t(language, "mapIntelligence")}</p>
               <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
                 Operational map for hotspots, reports, routes, and conflicts.
               </h1>

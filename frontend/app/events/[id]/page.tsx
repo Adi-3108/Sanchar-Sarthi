@@ -31,6 +31,8 @@ import {
 } from "@/lib/api";
 import { useFirebaseAuthState } from "@/lib/auth";
 import { useCommandStore } from "@/lib/stores/useCommandStore";
+import { useLanguage } from "@/components/LanguageContext";
+import { t } from "@/lib/i18n";
 
 type EventDetailPageProps = {
   params: {
@@ -98,11 +100,12 @@ function reportHeadline(report: EventCitizenReportRecordResponse): string {
   return report.translated_description || report.description || "No description provided.";
 }
 
-export default function EventDetailPage({ params }: EventDetailPageProps) {
+export default function EventDetailPage({ params: { id: eventIdParam } }: EventDetailPageProps) {
   const queryClient = useQueryClient();
   const { user, ready: authReady } = useFirebaseAuthState();
+  const { language } = useLanguage();
   const { setSelectedEventId } = useCommandStore();
-  const eventId = decodeURIComponent(params.id);
+  const eventId = decodeURIComponent(eventIdParam);
   const [availableOfficers, setAvailableOfficers] = useState("10");
   const [fieldUpdate, setFieldUpdate] = useState("Field team reports crowd spillover and slow movement.");
 
@@ -173,7 +176,7 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
         <section className="rounded-[28px] border border-line/80 bg-panel/90 p-8 shadow-panel">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-sm uppercase tracking-[0.32em] text-accentSoft">Event dossier</p>
+              <p className="text-sm uppercase tracking-[0.32em] text-accentSoft">{t(language, "eventDossier")}</p>
               <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">{eventId}</h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-muted">
                 Protected dossier view for Event DNA, predictions, recommendations, citizen reports, and live updates.
@@ -193,7 +196,7 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
             {detail ? (
               <>
                 <article className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel">
-                  <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Event snapshot</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">{t(language, "eventSnapshot")}</p>
                   <div className="mt-4 grid gap-3">
                     <Metric label="Cause" value={detail.event.event_cause_clean ?? "n/a"} />
                     <Metric label="Priority" value={detail.event.priority ?? "n/a"} />
@@ -205,7 +208,7 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                 </article>
 
                 <article className="rounded-[24px] border border-line/70 bg-panel/85 p-5 shadow-panel">
-                  <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Signals</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">{t(language, "signals")}</p>
                   <div className="mt-4 grid gap-3">
                     <Metric label="Impact score" value={formatNumber(prediction?.estimated_impact_score)} />
                     <Metric label="Impact category" value={prediction?.impact_category ?? "n/a"} />
@@ -223,7 +226,7 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                 </article>
 
                 <article className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel">
-                  <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Citizen and field reports</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">{t(language, "citizenReports")}</p>
                   <div className="mt-4 grid gap-3">
                     {detail.citizen_reports.length ? (
                       detail.citizen_reports.slice(0, 4).map((report) => (

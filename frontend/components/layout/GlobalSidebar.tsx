@@ -5,38 +5,40 @@ import { usePathname } from "next/navigation";
 import { useUIStore } from "@/lib/stores/useUIStore";
 import { useSessionStore, type AccessLevel } from "@/lib/stores/useSessionStore";
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/components/LanguageContext";
+import { t } from "@/lib/i18n";
 
 const NAV_STRUCTURE = [
   {
-    title: "Portals",
+    title: "portals", // Will map if added to i18n
     links: [
-      { name: "Command Center", href: "/command-center" },
-      { name: "Control Room", href: "/control-room" },
-      { name: "Officer Portal", href: "/officer" },
-      { name: "Admin Portal", href: "/admin" },
-      { name: "User Mode", href: "/user" }
+      { name: "commandCenter", href: "/command-center" },
+      { name: "controlRoom", href: "/control-room" },
+      { name: "officerPortal", href: "/officer" },
+      { name: "adminPortal", href: "/admin" },
+      { name: "userMode", href: "/user" }
     ]
   },
   {
-    title: "Dashboards",
+    title: "dashboards",
     links: [
-      { name: "Map Intelligence", href: "/map-intelligence" },
-      { name: "Explorer", href: "/explorer" },
-      { name: "Reports", href: "/reports" }
+      { name: "mapIntelligence", href: "/map-intelligence" },
+      { name: "explorer", href: "/explorer" },
+      { name: "reports", href: "/reports" }
     ]
   },
   {
-    title: "Intelligence",
+    title: "intelligence",
     links: [
-      { name: "Model Insights", href: "/model-insights" },
-      { name: "Simulation", href: "/simulation" },
-      { name: "Post-Event Learning", href: "/post-event-learning" }
+      { name: "modelInsights", href: "/model-insights" },
+      { name: "simulation", href: "/simulation" },
+      { name: "postEventLearning", href: "/post-event-learning" }
     ]
   },
   {
-    title: "System",
+    title: "system",
     links: [
-      { name: "Settings (Demo Data)", href: "/settings" }
+      { name: "settings", href: "/settings" }
     ]
   }
 ];
@@ -45,6 +47,7 @@ export function GlobalSidebar() {
   const { sidebarOpen, setSidebarOpen } = useUIStore();
   const pathname = usePathname();
   const session = useSessionStore();
+  const { language } = useLanguage();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -79,7 +82,7 @@ export function GlobalSidebar() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-white font-bold">
               SS
             </div>
-            <span className="text-lg font-bold tracking-tight text-copy">Sanchar Sarthi</span>
+            <span className="text-lg font-bold tracking-tight text-copy">{t(language, "appName")}</span>
           </Link>
           <button 
             onClick={() => setSidebarOpen(false)} 
@@ -95,7 +98,7 @@ export function GlobalSidebar() {
           {visibleGroups.map((group) => (
             <div key={group.title}>
               <h3 className="mb-2 px-2 text-xs font-semibold uppercase tracking-widest text-accentSoft">
-                {group.title}
+                {t(language, group.title)}
               </h3>
               <div className="flex flex-col gap-1">
                 {group.links.map((link) => {
@@ -111,7 +114,7 @@ export function GlobalSidebar() {
                           : "text-copy hover:bg-bg"
                       }`}
                     >
-                      {link.name}
+                      {t(language, link.name)}
                     </Link>
                   );
                 })}

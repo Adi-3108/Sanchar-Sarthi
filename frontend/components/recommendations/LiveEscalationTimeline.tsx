@@ -22,7 +22,8 @@ function formatTimestamp(value?: string | null): string {
   if (!value) {
     return "Just recorded";
   }
-  const parsed = new Date(value);
+  const utcValue = value.endsWith('Z') ? value : `${value}Z`;
+  const parsed = new Date(utcValue);
   if (Number.isNaN(parsed.getTime())) {
     return "Just recorded";
   }

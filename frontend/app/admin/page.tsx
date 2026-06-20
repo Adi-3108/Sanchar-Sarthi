@@ -9,13 +9,11 @@ import { useSessionStore } from "@/lib/stores/useSessionStore";
 import { SearchableSelect } from "@/components/layout/SearchableSelect";
 import {
   ApiError,
-  createControlRoomUser,
   createOfficer,
   deleteFoundationAdminIncident,
   deleteFoundationAdminVote,
   escalateFoundationAdminIncident,
   generateEventFeatures,
-  getAdminStations,
   getFoundationAdminOverview,
   getHealth,
   getMapConfig,
@@ -102,7 +100,8 @@ function formatTime(value?: string | null): string {
   if (!value) {
     return "-";
   }
-  const date = new Date(value);
+  const utcValue = value.endsWith('Z') ? value : `${value}Z`;
+  const date = new Date(utcValue);
   return Number.isNaN(date.getTime())
     ? value
     : date.toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -130,7 +129,7 @@ export default function AdminPage() {
   const canRunProtectedActions = authReady && Boolean(user);
 
   const healthQuery = useQuery({ queryKey: ["admin-health"], queryFn: getHealth, retry: 1, refetchOnWindowFocus: false });
-  const stationsQuery = useQuery({ queryKey: ["admin-stations"], queryFn: getAdminStations, enabled: canRunProtectedActions, retry: 1, refetchOnWindowFocus: false });
+  // Removed stationsQuery
   const modelRunsQuery = useQuery({ queryKey: ["admin-model-runs"], queryFn: getModelRuns, enabled: canRunProtectedActions, retry: 1, refetchOnWindowFocus: false });
   const mapQuery = useQuery({ queryKey: ["admin-map-config"], queryFn: getMapConfig, retry: 1, refetchOnWindowFocus: false });
   const foundationQuery = useQuery({ queryKey: ["foundation-admin-overview"], queryFn: getFoundationAdminOverview, enabled: canRunProtectedActions, retry: 1, refetchOnWindowFocus: false });
@@ -145,7 +144,7 @@ export default function AdminPage() {
   const loadDemoMutation = useMutation<DatasetLoadResponse, unknown>({ mutationFn: () => loadDemoDataset(), onSuccess: refreshAdminData });
   const generateFeaturesMutation = useMutation<FeatureGenerationResponse, unknown>({ mutationFn: () => generateEventFeatures(), onSuccess: refreshAdminData });
   const createOfficerMutation = useMutation<CreateOfficerResponse, unknown, CreateOfficerRequest>({ mutationFn: (payload) => createOfficer(payload) });
-  const createControlRoomMutation = useMutation<CreateControlRoomResponse, unknown, CreateControlRoomRequest>({ mutationFn: (payload) => createControlRoomUser(payload) });
+  // const createControlRoomMutation = useMutation<CreateControlRoomResponse, unknown, CreateControlRoomRequest>({ mutationFn: (payload) => createControlRoomUser(payload) });
   const incidentMutation = useMutation({ mutationFn: ({ incidentId, payload }: { incidentId: string; payload: Parameters<typeof updateFoundationAdminIncident>[1] }) => updateFoundationAdminIncident(incidentId, payload), onSuccess: refreshAdminData });
   const deleteIncidentMutation = useMutation({ mutationFn: (incidentId: string) => deleteFoundationAdminIncident(incidentId), onSuccess: refreshAdminData });
   const escalateMutation = useMutation({ mutationFn: (incidentId: string) => escalateFoundationAdminIncident(incidentId), onSuccess: refreshAdminData });
@@ -155,9 +154,6 @@ export default function AdminPage() {
 
   const latestRun = modelRunsQuery.data?.model_runs[0];
   const latestAction = useMemo(() => {
-    if (createControlRoomMutation.data) {
-      return `Control Room user created! Firebase UID: ${createControlRoomMutation.data.firebase_uid}`;
-    }
     if (createOfficerMutation.data) {
       return `Officer ${createOfficerMutation.data.officer_id} created for Level 2 access.`;
     }
@@ -168,11 +164,11 @@ export default function AdminPage() {
       return loadDemoMutation.data.message ?? "Demo dataset loaded.";
     }
     return null;
-  }, [createControlRoomMutation.data, createOfficerMutation.data, generateFeaturesMutation.data, loadDemoMutation.data]);
+  }, [createOfficerMutation.data, generateFeaturesMutation.data, loadDemoMutation.data]);
 
   const stationOptions = useMemo(() => {
-    return (stationsQuery.data || []).map(s => ({ label: s.name, value: s.name }));
-  }, [stationsQuery.data]);
+    return (foundationQuery.data?.stations || []).map(s => ({ label: s.name, value: s.name }));
+  }, [foundationQuery.data?.stations]);
 
   function updateOfficerField<Key extends keyof CreateOfficerRequest>(key: Key, value: CreateOfficerRequest[Key]) {
     setOfficerForm((current) => ({ ...current, [key]: value }));
@@ -187,14 +183,14 @@ export default function AdminPage() {
     });
   }
 
-  function updateControlRoomField<Key extends keyof CreateControlRoomRequest>(key: Key, value: CreateControlRoomRequest[Key]) {
-    setControlRoomForm((current) => ({ ...current, [key]: value }));
-  }
+  // function updateControlRoomField<Key extends keyof CreateControlRoomRequest>(key: Key, value: CreateControlRoomRequest[Key]) {
+  //   setControlRoomForm((current) => ({ ...current, [key]: value }));
+  // }
 
-  function handleCreateControlRoom(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    createControlRoomMutation.mutate(controlRoomForm);
-  }
+  // function handleCreateControlRoom(event: FormEvent<HTMLFormElement>) {
+  //   event.preventDefault();
+  //   createControlRoomMutation.mutate(controlRoomForm);
+  // }
 
   const session = useSessionStore();
   const [mounted, setMounted] = useState(false);
@@ -293,7 +289,7 @@ export default function AdminPage() {
             <ErrorAlert title="Failed to create officer" error={createOfficerMutation.error} />
           </form>
 
-          <form onSubmit={handleCreateControlRoom} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          {/* <form onSubmit={handleCreateControlRoom} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Command Access</p>
             <h2 className="mt-2 text-2xl font-bold">Create control room user</h2>
             <div className="mt-5 grid gap-4">
@@ -304,7 +300,7 @@ export default function AdminPage() {
             <button type="submit" disabled={!canRunProtectedActions || createControlRoomMutation.isPending} className="mt-5 rounded-2xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60">{createControlRoomMutation.isPending ? "Creating user" : "Create control room user"}</button>
             <SuccessAlert title="User Created" message={createControlRoomMutation.isSuccess && createControlRoomMutation.data ? `Control Room user created! Firebase UID: ${createControlRoomMutation.data.firebase_uid}` : null} />
             <ErrorAlert title="Failed to create control room user" error={createControlRoomMutation.error} />
-          </form>
+          </form> */}
         </section>
 
         <section className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
@@ -441,7 +437,7 @@ export default function AdminPage() {
         </section>
       </div>
 
-      {createControlRoomMutation.isSuccess && createControlRoomMutation.data && (
+      {/* createControlRoomMutation.isSuccess && createControlRoomMutation.data && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
@@ -470,7 +466,7 @@ export default function AdminPage() {
             </div>
           </div>
         </div>
-      )}
+      ) */}
     </main>
   );
 }

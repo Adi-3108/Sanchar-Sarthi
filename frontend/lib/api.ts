@@ -501,6 +501,8 @@ export type MapRouteRequest = {
   destination: [number, number];
   mode?: "driving";
   purpose?: string;
+  incidentId?: string | null;
+  forceReload?: boolean;
 };
 
 export type MapRouteResponse = {
@@ -958,6 +960,20 @@ export function analyzeMultiEvent(payload: MultiEventAnalysisRequest, init?: Req
   return apiPost<MultiEventAnalysisResponse>("/api/events/multi-event-analysis", payload, init);
 }
 
+export type MapActiveRoutesResponse = {
+  routes: Array<{
+    incidentId: string;
+    polyline: Array<[number, number]>;
+  }>;
+};
+
+export function getMapActiveRoutes(init?: RequestInit): Promise<MapActiveRoutesResponse> {
+  return request("/api/map/active-routes", {
+    method: "GET",
+    ...init
+  });
+}
+
 export function getMapRoute(payload: MapRouteRequest, init?: RequestInit): Promise<MapRouteResponse> {
   return apiPost<MapRouteResponse>("/api/map/route", payload, init);
 }
@@ -1103,6 +1119,10 @@ export function updateFoundationAdminIncident(
 
 export function deleteFoundationAdminIncident(incidentId: string, init?: RequestInit): Promise<{ status: string; incident_id: string }> {
   return apiDelete<{ status: string; incident_id: string }>(`/api/foundation/admin/incidents/${encodeURIComponent(incidentId)}`, init);
+}
+
+export function escalateFoundationAdminIncident(incidentId: string, init?: RequestInit): Promise<{ status: string; incident_id: string; event_id: string; message: string }> {
+  return apiPost<{ status: string; incident_id: string; event_id: string; message: string }>(`/api/foundation/admin/incidents/${encodeURIComponent(incidentId)}/escalate`, {}, init);
 }
 
 export function updateFoundationAdminStation(

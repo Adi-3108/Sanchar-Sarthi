@@ -117,14 +117,6 @@ export default function OfficerPage() {
                 Firebase identity and event assignment before accepting protected updates.
               </p>
             </div>
-            <nav className="flex flex-wrap gap-3">
-              <Link href="/map-intelligence" className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy">
-                Map intelligence
-              </Link>
-              <Link href="/reports" className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy">
-                Public report
-              </Link>
-            </nav>
           </div>
         </section>
 

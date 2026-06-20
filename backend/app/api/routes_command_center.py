@@ -34,8 +34,13 @@ class CommandSummary(BaseModel):
     activeIncidents: int
 
 
+from app.core.security import AuthContext, require_role
+
 @router.get("/summary", response_model=CommandSummary)
-def command_center_summary(db: Session = Depends(get_db)):
+def command_center_summary(
+    auth: AuthContext = Depends(require_role("admin", "control_room")),
+    db: Session = Depends(get_db),
+):
     """Public operational overview for the command center dashboard.
 
     Returns aggregate counts from the event, hotspot, recommendation,

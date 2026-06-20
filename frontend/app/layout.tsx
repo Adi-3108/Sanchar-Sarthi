@@ -4,6 +4,9 @@ import type { Metadata } from "next";
 import { AppProviders } from "@/components/app-providers";
 import { LanguageProvider } from "@/components/LanguageContext";
 
+import { TopNav } from "@/components/layout/TopNav";
+import { GlobalSidebar } from "@/components/layout/GlobalSidebar";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,7 +23,11 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang="en">
       <body>
         <LanguageProvider>
-          <AppProviders>{children}</AppProviders>
+          <AppProviders>
+            <TopNav />
+            <GlobalSidebar />
+            {children}
+          </AppProviders>
         </LanguageProvider>
       </body>
     </html>

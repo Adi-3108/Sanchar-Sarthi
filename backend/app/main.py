@@ -24,11 +24,16 @@ from app.db.base import import_model_modules
 settings = get_settings()
 
 
+from app.background_route_fetcher import _fetch_routes_loop
+import asyncio
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     import_model_modules()
     initialize_firebase(settings)
+    task = asyncio.create_task(_fetch_routes_loop())
     yield
+    task.cancel()
 
 
 app = FastAPI(

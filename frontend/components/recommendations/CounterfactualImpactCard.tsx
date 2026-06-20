@@ -49,7 +49,7 @@ export function CounterfactualImpactCard({
 
   return (
     <section
-      className={`rounded-[28px] border border-slate-800/80 bg-slate-950/85 p-6 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ${
+      className={`flex flex-col h-full rounded-[28px] border border-slate-800/80 bg-slate-950/85 p-6 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ${
         className ?? ""
       }`}
     >
@@ -63,17 +63,19 @@ export function CounterfactualImpactCard({
         </p>
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
+      <div className="mt-6 grid gap-4 grid-cols-2">
         <MetricCard label="Baseline risk" value={formatNumber(baselineRiskScore)} />
         <MetricCard label="Event-adjusted score" value={formatNumber(eventImpactScore)} />
         <MetricCard label="Additional delta" value={formatNumber(additionalEventDelta)} />
       </div>
 
-      <div className="mt-6 rounded-3xl border border-slate-800/70 bg-slate-900/70 p-4">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Honesty note</p>
+      <div className="mt-auto pt-6">
+        <div className="rounded-3xl border border-slate-800/70 bg-slate-900/70 p-4">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Honesty note</p>
         <p className="mt-2 text-sm leading-7 text-slate-300">
           {honestyNote ?? "Delta is a relative operational estimate, not measured vehicle delay."}
         </p>
+        </div>
       </div>
     </section>
   );

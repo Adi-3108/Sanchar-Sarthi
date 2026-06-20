@@ -169,7 +169,7 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
 
   return (
     <main className="shell-grid min-h-screen px-6 py-8 text-copy md:px-10">
-      <div className="mx-auto flex max-w-7xl flex-col gap-8">
+      <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-8">
         <section className="rounded-[28px] border border-line/80 bg-panel/90 p-8 shadow-panel">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
@@ -179,30 +179,10 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                 Protected dossier view for Event DNA, predictions, recommendations, citizen reports, and live updates.
               </p>
             </div>
-            <nav className="flex flex-wrap gap-3">
-              <Link
-                href="/explorer"
-                className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
-              >
-                Explorer
-              </Link>
-              <Link
-                href="/officer"
-                className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
-              >
-                Officer portal
-              </Link>
-              <Link
-                href="/post-event-learning"
-                className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
-              >
-                Post-event learning
-              </Link>
-            </nav>
           </div>
         </section>
 
-        <section className="grid gap-5 lg:grid-cols-[0.32fr_0.68fr]">
+        <section className="grid gap-5 lg:grid-cols-[0.22fr_0.56fr_0.22fr]">
           <aside className="space-y-5">
             <AuthPanel
               preferredRole="control_room"
@@ -262,6 +242,7 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                     )}
                   </div>
                 </article>
+
               </>
             ) : null}
           </aside>
@@ -306,8 +287,25 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                   </div>
                 </div>
 
+                <div className="grid gap-5 xl:grid-cols-2">
+                  <ManpowerPlanPanel manpower={recommendation?.manpower} />
+                  <BarricadePlanPanel barricades={recommendation?.barricades} />
+                  <DiversionPlanPanel diversions={recommendation?.diversions} />
+                  <EmergencyCorridorPanel emergencyCorridor={recommendation?.emergency_corridor} />
+                  <FlipkartLogisticsImpactPanel logisticsImpact={recommendation?.flipkart_logistics_impact} />
+                  <ActionConfidenceLedger items={recommendation?.action_confidence_ledger ?? []} />
+                </div>
+
+
+              </>
+            ) : null}
+          </div>
+
+          <aside className="space-y-5">
+            {detail ? (
+              <>
                 <article className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                  <div className="flex flex-col gap-4">
                     <div>
                       <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Recommendation</p>
                       <h2 className="mt-2 text-2xl font-semibold">Generate event plan</h2>
@@ -315,19 +313,19 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                         Regenerate the stored plan for this event and immediately rehydrate the dossier panels below.
                       </p>
                     </div>
-                    <form onSubmit={handlePlanSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                    <form onSubmit={handlePlanSubmit} className="flex flex-col gap-3">
                       <label className="text-sm text-muted">
                         <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-accentSoft">Officers</span>
                         <input
                           value={availableOfficers}
                           onChange={(event) => setAvailableOfficers(event.target.value)}
-                          className="w-32 rounded-2xl border border-line bg-bg/80 px-4 py-3 text-copy outline-none transition focus:border-accent"
+                          className="w-full rounded-2xl border border-line bg-bg/80 px-4 py-3 text-copy outline-none transition focus:border-accent"
                         />
                       </label>
                       <button
                         type="submit"
                         disabled={!user || planMutation.isPending}
-                        className="rounded-2xl border border-accent/50 bg-accent px-5 py-3 text-sm font-semibold text-bg transition hover:bg-accentSoft disabled:cursor-not-allowed disabled:opacity-60"
+                        className="w-full rounded-2xl border border-accent/50 bg-accent px-5 py-3 text-sm font-semibold text-bg transition hover:bg-accentSoft disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {planMutation.isPending ? "Generating" : "Generate"}
                       </button>
@@ -343,15 +341,6 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                   ) : null}
                 </article>
 
-                <div className="grid gap-5 xl:grid-cols-2">
-                  <ManpowerPlanPanel manpower={recommendation?.manpower} />
-                  <BarricadePlanPanel barricades={recommendation?.barricades} />
-                  <DiversionPlanPanel diversions={recommendation?.diversions} />
-                  <EmergencyCorridorPanel emergencyCorridor={recommendation?.emergency_corridor} />
-                  <FlipkartLogisticsImpactPanel logisticsImpact={recommendation?.flipkart_logistics_impact} />
-                  <ActionConfidenceLedger items={recommendation?.action_confidence_ledger ?? []} />
-                </div>
-
                 <form onSubmit={handleLiveUpdate} className="rounded-[24px] border border-line/70 bg-panel/85 p-5 shadow-panel">
                   <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Monitor and adapt</p>
                   <label className="mt-4 block text-sm text-muted">
@@ -366,7 +355,7 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                   <button
                     type="submit"
                     disabled={!user || liveUpdateMutation.isPending}
-                    className="mt-4 rounded-2xl border border-accent/50 bg-accent px-5 py-3 text-sm font-semibold text-bg transition hover:bg-accentSoft disabled:cursor-not-allowed disabled:opacity-60"
+                    className="w-full mt-4 rounded-2xl border border-accent/50 bg-accent px-5 py-3 text-sm font-semibold text-bg transition hover:bg-accentSoft disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {liveUpdateMutation.isPending ? "Submitting" : "Submit live update"}
                   </button>
@@ -383,7 +372,7 @@ export default function EventDetailPage({ params }: EventDetailPageProps) {
                 <LiveEscalationTimeline updates={detail.live_updates} />
               </>
             ) : null}
-          </div>
+          </aside>
         </section>
       </div>
     </main>

@@ -22,7 +22,7 @@ export function ManpowerPlanPanel({ manpower, className }: ManpowerPlanPanelProp
 
   return (
     <section
-      className={`rounded-[28px] border border-slate-800/80 bg-slate-950/85 p-6 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ${
+      className={`flex flex-col h-full rounded-[28px] border border-slate-800/80 bg-slate-950/85 p-6 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ${
         className ?? ""
       }`}
     >
@@ -34,7 +34,7 @@ export function ManpowerPlanPanel({ manpower, className }: ManpowerPlanPanelProp
         <p className="text-3xl font-semibold text-slate-100">{manpower.recommended_total_officers}</p>
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-4">
+      <div className="mt-6 grid gap-4 grid-cols-2">
         <MetricCard label="Deployment style" value={manpower.deployment_style.replaceAll("_", " ")} />
         <MetricCard label="Reserve officers" value={String(manpower.reserve_officers)} />
         <MetricCard label="Sector count" value={String(manpower.sector_count)} />
@@ -55,7 +55,7 @@ export function ManpowerPlanPanel({ manpower, className }: ManpowerPlanPanelProp
         </div>
       </div>
 
-      <p className="mt-5 text-sm leading-7 text-slate-300">{manpower.note}</p>
+      <p className="mt-auto pt-5 text-sm leading-7 text-slate-300">{manpower.note}</p>
     </section>
   );
 }

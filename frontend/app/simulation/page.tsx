@@ -150,20 +150,6 @@ export default function SimulationPage() {
                 clearance, manpower, barricade, and diversion recommendations.
               </p>
             </div>
-            <nav className="flex flex-wrap gap-3">
-              <Link
-                href="/command-center"
-                className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
-              >
-                Command center
-              </Link>
-              <Link
-                href="/map-intelligence"
-                className="rounded-full border border-line/80 px-4 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-copy"
-              >
-                Map intelligence
-              </Link>
-            </nav>
           </div>
         </section>
 
@@ -240,8 +226,11 @@ export default function SimulationPage() {
             ) : (
               <>
                 <article className="rounded-[24px] border border-line/70 bg-panel/85 p-5 shadow-panel">
-                  <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Simulation summary</p>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="mb-4 flex items-center justify-between">
+                    <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Simulation summary</p>
+                    <p className="text-xs font-semibold text-slate-100 bg-slate-800 px-3 py-1 rounded-md border border-slate-700">Event ID: {result.event_dna.event_id}</p>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <Metric label="Predicted priority" value={result.predicted_priority ?? "n/a"} />
                     <Metric label="Impact category" value={result.impact_category ?? "n/a"} />
                     <Metric

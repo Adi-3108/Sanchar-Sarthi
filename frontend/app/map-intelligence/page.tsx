@@ -438,6 +438,7 @@ export default function MapIntelligencePage() {
           hotspots={hotspots}
           selectedHotspotId={selectedHotspotId}
           onSelectHotspot={(hotspot) => setSelectedHotspotId(hotspot.location_cluster_id)}
+          mapConfig={config}
           project={(hotspot) => projectLngLat([hotspot.centroid_longitude, hotspot.centroid_latitude])}
           emptyState={
             authReady && user

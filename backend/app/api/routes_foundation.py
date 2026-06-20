@@ -22,6 +22,7 @@ from app.orm.traffic_station import TrafficStation
 from app.orm.user_account import UserAccount
 from app.services.foundation_seed_service import seed_foundation_data
 from app.services.incident_service import apply_incident_vote, transition_incident
+from app.services.map_route_service import geocode_address, invalidate_route_cache
 
 router = APIRouter(prefix="/api/foundation", tags=["foundation"])
 
@@ -564,6 +565,8 @@ def create_user_incident_report(
         )
         db.commit()
         db.refresh(incident)
+        if incident.latitude and incident.longitude:
+            invalidate_route_cache(float(incident.latitude), float(incident.longitude))
     except SQLAlchemyError:
         db.rollback()
         return error_response(503, "DATABASE_UNAVAILABLE", "Database is unavailable for incident reporting.")
@@ -626,6 +629,8 @@ def create_control_room_incident(
         )
         db.commit()
         db.refresh(incident)
+        if incident.latitude and incident.longitude:
+            invalidate_route_cache(float(incident.latitude), float(incident.longitude))
     except SQLAlchemyError:
         db.rollback()
         return error_response(503, "DATABASE_UNAVAILABLE", "Database is unavailable for official incident creation.")
@@ -777,6 +782,8 @@ def admin_update_incident(
         )
         db.commit()
         db.refresh(incident)
+        if incident.latitude and incident.longitude:
+            invalidate_route_cache(float(incident.latitude), float(incident.longitude))
     except ValueError as exc:
         db.rollback()
         return error_response(400, "INVALID_STATUS_TRANSITION", str(exc))
@@ -815,6 +822,149 @@ def admin_delete_incident(
         return error_response(503, "DATABASE_UNAVAILABLE", "Database is unavailable for incident deletion.")
 
     return {"status": "deleted", "incident_id": incident_id}
+
+
+@router.post("/admin/incidents/{incident_id}/escalate")
+def admin_escalate_incident_to_event(
+    incident_id: str,
+    auth: AuthContext = Depends(require_role("admin")),
+    db: Session = Depends(get_db),
+):
+    """Escalate a citizen incident into a full operational Event and run the full AI pipeline."""
+    from datetime import timezone
+    from uuid import uuid4
+
+    from sqlalchemy import select
+    from app.orm.event import Event
+    from app.orm.hotspot_cluster import HotspotCluster
+    from app.services.event_dna_service import persist_event_dna
+    from app.services.feature_engineering_service import build_features_for_event
+    from app.services.prediction_service import predict_event
+    from app.services.similar_event_service import find_similar_events
+    from app.services.recommendation_orchestrator import (
+        build_recommendation_input,
+        generate_recommendation_plan,
+        persist_recommendation_plan,
+    )
+
+    incident = db.get(Incident, incident_id)
+    if incident is None:
+        return error_response(404, "INCIDENT_NOT_FOUND", "Incident was not found.")
+
+    if incident.status not in {"reported", "pending_verification", "active"}:
+        return error_response(
+            409,
+            "INVALID_INCIDENT_STATUS",
+            f"Incident with status '{incident.status}' cannot be escalated. Only reported, pending_verification, or active incidents can be escalated.",
+        )
+
+    short_id = uuid4().hex[:8].upper()
+    event_id = f"SS-EVT-{short_id}"
+
+    severity_to_priority = {"low": "low", "medium": "medium", "high": "high", "critical": "critical"}
+    priority = severity_to_priority.get(incident.severity or "medium", "medium")
+
+    cause_map = {
+        "accident": "accident",
+        "breakdown": "vehicle_breakdown",
+        "construction": "road_work",
+        "flood": "waterlogging",
+        "protest": "protest",
+        "fire": "fire",
+        "crowd": "crowd_gathering",
+    }
+    cause_clean = next(
+        (v for k, v in cause_map.items() if k in (incident.incident_type or "").lower()),
+        incident.incident_type or "unplanned_incident",
+    )
+
+    now = datetime.now(timezone.utc)
+
+    try:
+        event = Event(
+            id=event_id,
+            event_type="unplanned",
+            latitude=incident.latitude,
+            longitude=incident.longitude,
+            address=incident.location_name,
+            event_cause=incident.incident_type,
+            event_cause_clean=cause_clean,
+            requires_road_closure=incident.severity in {"high", "critical"},
+            start_datetime=incident.created_at if incident.created_at else now,
+            status="active",
+            description=incident.description,
+            description_language="en",
+            police_station=incident.assigned_station_name,
+            zone=incident.ward,
+            priority=priority,
+            raw_payload={
+                "escalated_from_incident": incident.id,
+                "incident_type": incident.incident_type,
+                "severity": incident.severity,
+                "source_type": incident.source_type,
+            },
+        )
+        db.add(event)
+        db.flush()
+
+        feature, _ = build_features_for_event(db, event, commit=False)
+
+        hotspot = None
+        if feature.location_cluster_id:
+            hotspot = db.scalars(
+                select(HotspotCluster).where(
+                    HotspotCluster.location_cluster_id == feature.location_cluster_id
+                )
+            ).first()
+
+        prediction, _ = predict_event(db, event, feature=feature, hotspot=hotspot, commit=False, persist=True)
+
+        similar_events = find_similar_events(db, event.id, limit=5)
+        persist_event_dna(
+            db,
+            event,
+            feature=feature,
+            hotspot=hotspot,
+            similar_event_ids=[row.event_id for row in similar_events],
+            commit=False,
+            persist=True,
+        )
+
+        rec_input = build_recommendation_input(event, prediction)
+        plan_dict = generate_recommendation_plan(rec_input)
+        persist_recommendation_plan(db, plan_dict, commit=False, persist=True)
+
+        incident.status = "escalated"
+        incident.resolution_notes = f"Escalated to Event {event_id} by admin."
+
+        db.add(
+            SystemAuditLog(
+                actor_user_id=_coerce_uuid(auth.user_account_id),
+                actor_role=auth.role,
+                action="admin_escalate_incident_to_event",
+                resource_type="events",
+                resource_id=event_id,
+                metadata_json={
+                    "incident_id": incident.id,
+                    "incident_title": incident.title,
+                    "severity": incident.severity,
+                    "new_event_id": event_id,
+                },
+            )
+        )
+
+        db.commit()
+
+    except SQLAlchemyError:
+        db.rollback()
+        return error_response(503, "DATABASE_UNAVAILABLE", "Database unavailable during escalation.")
+
+    return {
+        "status": "escalated",
+        "incident_id": incident_id,
+        "event_id": event_id,
+        "message": f"Incident successfully escalated to Event {event_id}. AI prediction and recommendation plan have been generated.",
+    }
 
 
 @router.patch("/admin/stations/{station_id}", response_model=StationResponse)

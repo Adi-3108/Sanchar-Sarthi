@@ -38,6 +38,13 @@ import {
   type FoundationVote
 } from "@/lib/api";
 import { useFirebaseAuthState } from "@/lib/auth";
+import {
+  getRagIndexStatus,
+  rebuildRagEventIndex,
+  rebuildRagIndex,
+  type RagIndexRefreshResponse,
+  type RagIndexStatusResponse
+} from "@/lib/ragApi";
 
 function metric(value: number | string | undefined): string {
   if (value === undefined || value === null) {
@@ -132,6 +139,8 @@ export default function AdminPage() {
     display_name: "New Control Room Officer"
   });
 
+  const [ragEventId, setRagEventId] = useState("");
+
   const isAdmin = session.accessLevel === "admin";
   const canRunProtectedActions = authReady && Boolean(user) && isAdmin;
 
@@ -142,11 +151,13 @@ export default function AdminPage() {
   const modelRunsQuery = useQuery({ queryKey: ["admin-model-runs"], queryFn: getModelRuns, enabled: canRunProtectedActions, retry: 1, refetchOnWindowFocus: false });
   const mapQuery = useQuery({ queryKey: ["admin-map-config"], queryFn: getMapConfig, retry: 1, refetchOnWindowFocus: false });
   const foundationQuery = useQuery({ queryKey: ["foundation-admin-overview"], queryFn: getFoundationAdminOverview, enabled: canRunProtectedActions, retry: 1, refetchOnWindowFocus: false });
+  const ragStatusQuery = useQuery<RagIndexStatusResponse>({ queryKey: ["admin-rag-status"], queryFn: getRagIndexStatus, enabled: canRunProtectedActions, retry: 1, refetchOnWindowFocus: false });
 
   async function refreshAdminData() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["admin-model-runs"] }),
-      queryClient.invalidateQueries({ queryKey: ["foundation-admin-overview"] })
+      queryClient.invalidateQueries({ queryKey: ["foundation-admin-overview"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin-rag-status"] })
     ]);
   }
 
@@ -154,6 +165,8 @@ export default function AdminPage() {
   const generateFeaturesMutation = useMutation<FeatureGenerationResponse, unknown>({ mutationFn: () => generateEventFeatures(), onSuccess: refreshAdminData });
   const createOfficerMutation = useMutation<CreateOfficerResponse, unknown, CreateOfficerRequest>({ mutationFn: (payload) => createOfficer(payload) });
   const createControlRoomMutation = useMutation<CreateControlRoomResponse, unknown, CreateControlRoomRequest>({ mutationFn: (payload) => createControlRoomUser(payload) });
+  const rebuildRagMutation = useMutation<RagIndexRefreshResponse, unknown>({ mutationFn: () => rebuildRagIndex(), onSuccess: refreshAdminData });
+  const rebuildRagEventMutation = useMutation<RagIndexRefreshResponse, unknown, string>({ mutationFn: (eventId) => rebuildRagEventIndex(eventId), onSuccess: refreshAdminData });
   const incidentMutation = useMutation({ mutationFn: ({ incidentId, payload }: { incidentId: string; payload: Parameters<typeof updateFoundationAdminIncident>[1] }) => updateFoundationAdminIncident(incidentId, payload), onSuccess: refreshAdminData });
   const deleteIncidentMutation = useMutation({ mutationFn: (incidentId: string) => deleteFoundationAdminIncident(incidentId), onSuccess: refreshAdminData });
   const escalateMutation = useMutation({ mutationFn: (incidentId: string) => escalateFoundationAdminIncident(incidentId), onSuccess: refreshAdminData });
@@ -174,6 +187,16 @@ export default function AdminPage() {
     }
     return null;
   }, [createOfficerMutation.data, generateFeaturesMutation.data, loadDemoMutation.data]);
+
+  const latestRagAction = useMemo(() => {
+    if (rebuildRagEventMutation.data) {
+      return `Indexed ${rebuildRagEventMutation.data.chunks_upserted} chunks for event ${(rebuildRagEventMutation.data.event_id ?? ragEventId) || "selected event"}.`;
+    }
+    if (rebuildRagMutation.data) {
+      return `Rebuilt ${rebuildRagMutation.data.chunks_upserted} RAG chunks across ${rebuildRagMutation.data.records_indexed} records.`;
+    }
+    return null;
+  }, [ragEventId, rebuildRagEventMutation.data, rebuildRagMutation.data]);
 
   const stationOptions = useMemo(() => {
     return (foundationQuery.data?.stations || []).map(s => ({ label: s.name, value: s.name }));
@@ -199,6 +222,15 @@ export default function AdminPage() {
   function handleCreateControlRoom(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     createControlRoomMutation.mutate(controlRoomForm);
+  }
+
+  function handleEventRagRebuild(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmedEventId = ragEventId.trim();
+    if (!trimmedEventId) {
+      return;
+    }
+    rebuildRagEventMutation.mutate(trimmedEventId);
   }
 
   const [mounted, setMounted] = useState(false);
@@ -253,6 +285,92 @@ export default function AdminPage() {
           <MetricCard label="Firebase" value={healthQuery.data?.auth.firebase ?? "n/a"} note={`Priority model: ${healthQuery.data?.models.priority ?? "n/a"}`} />
           <MetricCard label="Map provider" value={mapQuery.data?.activeProvider ?? "Checking"} note={`Fallback: ${mapQuery.data?.fallbackProvider ?? "osm"}`} />
           <MetricCard label="Latest model run" value={latestRun?.model_name ?? "No run yet"} note={`Version: ${latestRun?.model_version ?? "n/a"}`} />
+        </section>
+
+        <section className="grid gap-5 xl:grid-cols-[1.45fr_1fr]">
+          <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="max-w-3xl">
+                <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-700">Knowledge retrieval and admin indexing</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">RAG control plane</h2>
+                <p className="mt-3 text-sm leading-7 text-slate-600">Monitor the grounded retrieval index, trigger a full rebuild, or reindex a single event after controlled data updates.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => rebuildRagMutation.mutate()}
+                disabled={!canRunProtectedActions || rebuildRagMutation.isPending}
+                className="rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                {rebuildRagMutation.isPending ? "Rebuilding index" : "Rebuild full index"}
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-4">
+              <MetricCard label="RAG status" value={ragStatusQuery.data?.enabled ? "Enabled" : ragStatusQuery.isLoading ? "Checking" : "Disabled"} note={`LLM: ${ragStatusQuery.data?.llm_provider ?? "n/a"}`} />
+              <MetricCard label="Embedding" value={ragStatusQuery.data?.embedding_provider ?? "n/a"} note={`Chunks: ${metric(ragStatusQuery.data?.chunk_count)}`} />
+              <MetricCard label="Control-room chunks" value={metric(ragStatusQuery.data?.by_visibility?.control_room)} note={`Public: ${metric(ragStatusQuery.data?.by_visibility?.public)}`} />
+              <MetricCard label="Admin chunks" value={metric(ragStatusQuery.data?.by_visibility?.admin)} note={`Updated: ${formatTime(ragStatusQuery.data?.latest_updated_at)}`} />
+            </div>
+
+            <form onSubmit={handleEventRagRebuild} className="mt-5 flex flex-col gap-3 md:flex-row md:items-end">
+              <label className="flex-1 text-sm font-medium text-slate-700">
+                Event-specific reindex
+                <input
+                  value={ragEventId}
+                  onChange={(event) => setRagEventId(event.target.value)}
+                  placeholder="Enter event id"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-cyan-400"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={!ragEventId.trim() || rebuildRagEventMutation.isPending}
+                className="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:border-slate-900 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
+              >
+                {rebuildRagEventMutation.isPending ? "Indexing event" : "Reindex event"}
+              </button>
+            </form>
+
+            <SuccessAlert title="RAG action completed" message={latestRagAction} />
+            <ErrorAlert title="RAG index action failed" error={rebuildRagMutation.error ?? rebuildRagEventMutation.error ?? ragStatusQuery.error} />
+          </article>
+
+          <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-slate-500">Chunk mix</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Visibility and source coverage</h2>
+            <p className="mt-3 text-sm leading-7 text-slate-600">The retrieval layer stays grounded by separating public, control-room, and admin-only chunks while keeping the source mix visible.</p>
+
+            <div className="mt-5 space-y-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">By visibility</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {Object.entries(ragStatusQuery.data?.by_visibility ?? {}).length ? (
+                    Object.entries(ragStatusQuery.data?.by_visibility ?? {}).map(([key, value]) => (
+                      <span key={key} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
+                        {pretty(key)} {value}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">No visibility stats yet</span>
+                  )}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">By chunk type</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {Object.entries(ragStatusQuery.data?.by_type ?? {}).length ? (
+                    Object.entries(ragStatusQuery.data?.by_type ?? {}).map(([key, value]) => (
+                      <span key={key} className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-800">
+                        {pretty(key)} {value}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">No chunk stats yet</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </article>
         </section>
 
         <section className="grid gap-5 lg:grid-cols-3">

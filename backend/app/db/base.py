@@ -51,6 +51,7 @@ def import_model_modules() -> None:
         officer_event_assignment,
         police_officer_profile,
         post_event_report,
+        rag_chunk,
         system_audit_log,
         traffic_station,
         user_account,

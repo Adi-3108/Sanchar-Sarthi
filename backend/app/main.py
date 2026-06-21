@@ -18,6 +18,7 @@ from app.api.routes_post_event import router as post_event_router
 from app.api.routes_recommendations import router as recommendations_router
 from app.api.routes_reports import router as reports_router
 from app.api.routes_translation import router as translation_router
+from app.api.routes_auth import router as auth_router
 from app.api import routes_analytics_corridor
 from app.core.config import get_settings
 from app.core.firebase import initialize_firebase
@@ -69,3 +70,4 @@ app.include_router(recommendations_router)
 app.include_router(reports_router)
 app.include_router(translation_router)
 app.include_router(routes_analytics_corridor.router)
+app.include_router(auth_router)

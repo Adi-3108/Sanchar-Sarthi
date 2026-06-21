@@ -193,7 +193,6 @@ fun EventFlowApp(viewModel: PlatformFoundationViewModel) {
                         title = {
                             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(text = state.blueprint.appName)
-                                Text(text = state.backendAuthorityNote, fontSize = 12.sp)
                             }
                         },
                         navigationIcon = {
@@ -220,13 +219,6 @@ fun EventFlowApp(viewModel: PlatformFoundationViewModel) {
                                     text = { Text("ಕನ್ನಡ (Kannada)") },
                                     onClick = { 
                                         com.namangulati.sancharsarthi.core.translation.TranslationManager.setLanguage(com.google.mlkit.nl.translate.TranslateLanguage.KANNADA)
-                                        expanded = false 
-                                    }
-                                )
-                                androidx.compose.material3.DropdownMenuItem(
-                                    text = { Text("हिंदी (Hindi)") },
-                                    onClick = { 
-                                        com.namangulati.sancharsarthi.core.translation.TranslationManager.setLanguage(com.google.mlkit.nl.translate.TranslateLanguage.HINDI)
                                         expanded = false 
                                     }
                                 )
@@ -257,10 +249,10 @@ fun EventFlowApp(viewModel: PlatformFoundationViewModel) {
                             }
                         )
                         EventFlowDestination.Officer -> {
-                            if (state.selectedAccessLevel in listOf(AccessLevel.PoliceOfficer, AccessLevel.ControlRoom, AccessLevel.Admin)) {
+                            if (state.selectedAccessLevel == AccessLevel.PoliceOfficer) {
                                 OfficerWorkspaceScreen(state = state)
                             } else {
-                                AccessProtectedScreen("Officer workspace is protected.")
+                                AccessProtectedScreen("Officer workspace is restricted to Police Officers only.")
                             }
                         }
                         EventFlowDestination.Map -> MapIntelligenceScreen(state = state)
@@ -279,6 +271,13 @@ fun EventFlowApp(viewModel: PlatformFoundationViewModel) {
                                 com.namangulati.sancharsarthi.feature.admin.AdminScreen()
                             } else {
                                 AccessProtectedScreen("Admin access is protected.")
+                            }
+                        }
+                        EventFlowDestination.ControlRoom -> {
+                            if (state.selectedAccessLevel in listOf(AccessLevel.Admin, AccessLevel.ControlRoom)) {
+                                com.namangulati.sancharsarthi.feature.admin.ControlRoomScreen()
+                            } else {
+                                AccessProtectedScreen("Control Room access is protected.")
                             }
                         }
                         EventFlowDestination.Simulation -> {

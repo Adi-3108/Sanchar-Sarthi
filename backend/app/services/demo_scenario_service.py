@@ -84,9 +84,9 @@ DEMO_OFFICER_BLUEPRINTS: tuple[dict[str, object], ...] = (
     },
 )
 
-DEMO_EVENT_BLUEPRINTS: tuple[dict[str, object], ...] = (
+INCIDENT_BLUEPRINTS: tuple[dict[str, object], ...] = (
     {
-        "id": "DEMO_EVENT_RALLY_ORR",
+        "id": "INCIDENT_RALLY_ORR",
         "event_type": "planned",
         "latitude": 12.9308,
         "longitude": 77.6850,
@@ -113,7 +113,7 @@ DEMO_EVENT_BLUEPRINTS: tuple[dict[str, object], ...] = (
         },
     },
     {
-        "id": "DEMO_EVENT_CROWD_IBLUR",
+        "id": "INCIDENT_CROWD_IBLUR",
         "event_type": "planned",
         "latitude": 12.9327,
         "longitude": 77.6882,
@@ -140,7 +140,7 @@ DEMO_EVENT_BLUEPRINTS: tuple[dict[str, object], ...] = (
         },
     },
     {
-        "id": "DEMO_EVENT_WATERLOGGING_HSR",
+        "id": "INCIDENT_WATERLOGGING_HSR",
         "event_type": "unplanned",
         "latitude": 12.9296,
         "longitude": 77.6824,
@@ -170,7 +170,7 @@ DEMO_EVENT_BLUEPRINTS: tuple[dict[str, object], ...] = (
         },
     },
     {
-        "id": "DEMO_EVENT_BREAKDOWN_TUMKUR",
+        "id": "INCIDENT_BREAKDOWN_TUMKUR",
         "event_type": "unplanned",
         "latitude": 13.0400,
         "longitude": 77.5181,
@@ -197,7 +197,7 @@ DEMO_EVENT_BLUEPRINTS: tuple[dict[str, object], ...] = (
         },
     },
     {
-        "id": "DEMO_EVENT_CONSTRUCTION_TUMKUR",
+        "id": "INCIDENT_CONSTRUCTION_TUMKUR",
         "event_type": "planned",
         "latitude": 13.0418,
         "longitude": 77.5211,
@@ -224,7 +224,7 @@ DEMO_EVENT_BLUEPRINTS: tuple[dict[str, object], ...] = (
         },
     },
     {
-        "id": "DEMO_EVENT_ACCIDENT_PEENYA",
+        "id": "INCIDENT_ACCIDENT_PEENYA",
         "event_type": "unplanned",
         "latitude": 13.0376,
         "longitude": 77.5160,
@@ -263,7 +263,7 @@ DEMO_REPORT_BLUEPRINTS: tuple[dict[str, object], ...] = (
         "severity": "Critical",
         "description": "Heavy rain has flooded the upstream service road and vehicles are stacking back rapidly.",
         "language": "en",
-        "event_id": "DEMO_EVENT_WATERLOGGING_HSR",
+        "event_id": "INCIDENT_WATERLOGGING_HSR",
     },
     {
         "report_source": "demo",
@@ -273,7 +273,7 @@ DEMO_REPORT_BLUEPRINTS: tuple[dict[str, object], ...] = (
         "severity": "High",
         "description": "Barricades and standing water have reduced the corridor to a narrow pass-through lane.",
         "language": "en",
-        "event_id": "DEMO_EVENT_WATERLOGGING_HSR",
+        "event_id": "INCIDENT_WATERLOGGING_HSR",
     },
     {
         "report_source": "demo",
@@ -283,13 +283,13 @@ DEMO_REPORT_BLUEPRINTS: tuple[dict[str, object], ...] = (
         "severity": "High",
         "description": "Queue spillback is extending into the upstream junction and blocking turn pockets.",
         "language": "en",
-        "event_id": "DEMO_EVENT_WATERLOGGING_HSR",
+        "event_id": "INCIDENT_WATERLOGGING_HSR",
     },
 )
 
 DEMO_LIVE_UPDATE_BLUEPRINTS: tuple[dict[str, object], ...] = (
     {
-        "event_id": "DEMO_EVENT_WATERLOGGING_HSR",
+        "event_id": "INCIDENT_WATERLOGGING_HSR",
         "update_source": "field_officer",
         "current_congestion_level": "Warning",
         "field_update": "Water depth rising near the upstream drain and lane discipline is breaking.",
@@ -300,7 +300,7 @@ DEMO_LIVE_UPDATE_BLUEPRINTS: tuple[dict[str, object], ...] = (
         "new_nearby_incident": False,
     },
     {
-        "event_id": "DEMO_EVENT_WATERLOGGING_HSR",
+        "event_id": "INCIDENT_WATERLOGGING_HSR",
         "update_source": "control_room",
         "current_congestion_level": "Critical",
         "field_update": "Spillback has reached the junction mouth and reserve manpower is being requested.",
@@ -335,12 +335,12 @@ DEMO_SCENARIO_BLUEPRINTS: tuple[dict[str, object], ...] = (
     },
 )
 
-DEMO_EVENT_IDS = tuple(str(item["id"]) for item in DEMO_EVENT_BLUEPRINTS)
+INCIDENT_IDS = tuple(str(item["id"]) for item in INCIDENT_BLUEPRINTS)
 DEMO_SCENARIO_NAMES = tuple(str(item["scenario_name"]) for item in DEMO_SCENARIO_BLUEPRINTS)
 DEMO_FIREBASE_UIDS = tuple(str(item["auth_provider_uid"]) for item in DEMO_USER_BLUEPRINTS)
 DEMO_OFFICER_IDS = tuple(str(item["officer_id"]) for item in DEMO_OFFICER_BLUEPRINTS)
-LEARNING_EVENT_ID = "DEMO_EVENT_WATERLOGGING_HSR"
-COORDINATION_EVENT_IDS = ("DEMO_EVENT_BREAKDOWN_TUMKUR", "DEMO_EVENT_CONSTRUCTION_TUMKUR")
+LEARNING_EVENT_ID = "INCIDENT_WATERLOGGING_HSR"
+COORDINATION_EVENT_IDS = ("INCIDENT_BREAKDOWN_TUMKUR", "INCIDENT_CONSTRUCTION_TUMKUR")
 
 
 @dataclass(frozen=True)
@@ -367,7 +367,7 @@ def _order_lookup(values: tuple[str, ...]) -> dict[str, int]:
 
 
 def _event_order(event_id: str) -> int:
-    return _order_lookup(DEMO_EVENT_IDS).get(event_id, len(DEMO_EVENT_IDS))
+    return _order_lookup(INCIDENT_IDS).get(event_id, len(INCIDENT_IDS))
 
 
 def _scenario_order(scenario_name: str) -> int:
@@ -376,56 +376,56 @@ def _scenario_order(scenario_name: str) -> int:
 
 def _list_demo_events(db: Session) -> list[Event]:
     return sorted(
-        db.scalars(select(Event).where(Event.id.in_(DEMO_EVENT_IDS))).all(),
+        db.scalars(select(Event).where(Event.id.in_(INCIDENT_IDS))).all(),
         key=lambda event: _event_order(event.id),
     )
 
 
 def _list_demo_features(db: Session) -> list[EventFeature]:
     return sorted(
-        db.scalars(select(EventFeature).where(EventFeature.event_id.in_(DEMO_EVENT_IDS))).all(),
+        db.scalars(select(EventFeature).where(EventFeature.event_id.in_(INCIDENT_IDS))).all(),
         key=lambda feature: _event_order(feature.event_id),
     )
 
 
 def _list_demo_dna_records(db: Session) -> list[EventDna]:
     return sorted(
-        db.scalars(select(EventDna).where(EventDna.event_id.in_(DEMO_EVENT_IDS))).all(),
+        db.scalars(select(EventDna).where(EventDna.event_id.in_(INCIDENT_IDS))).all(),
         key=lambda record: _event_order(record.event_id),
     )
 
 
 def _list_demo_predictions(db: Session) -> list[EventPrediction]:
     return sorted(
-        db.scalars(select(EventPrediction).where(EventPrediction.event_id.in_(DEMO_EVENT_IDS))).all(),
+        db.scalars(select(EventPrediction).where(EventPrediction.event_id.in_(INCIDENT_IDS))).all(),
         key=lambda record: _event_order(record.event_id),
     )
 
 
 def _list_demo_recommendations(db: Session) -> list[EventRecommendation]:
     return sorted(
-        db.scalars(select(EventRecommendation).where(EventRecommendation.event_id.in_(DEMO_EVENT_IDS))).all(),
+        db.scalars(select(EventRecommendation).where(EventRecommendation.event_id.in_(INCIDENT_IDS))).all(),
         key=lambda record: _event_order(record.event_id),
     )
 
 
 def _list_demo_reports(db: Session) -> list[CitizenReport]:
     return sorted(
-        db.scalars(select(CitizenReport).where(CitizenReport.event_id.in_(DEMO_EVENT_IDS))).all(),
+        db.scalars(select(CitizenReport).where(CitizenReport.event_id.in_(INCIDENT_IDS))).all(),
         key=lambda record: (_event_order(record.event_id or ""), str(record.id)),
     )
 
 
 def _list_demo_live_updates(db: Session) -> list[LiveEventUpdate]:
     return sorted(
-        db.scalars(select(LiveEventUpdate).where(LiveEventUpdate.event_id.in_(DEMO_EVENT_IDS))).all(),
+        db.scalars(select(LiveEventUpdate).where(LiveEventUpdate.event_id.in_(INCIDENT_IDS))).all(),
         key=lambda record: (_event_order(record.event_id), str(record.id)),
     )
 
 
 def _list_demo_post_event_reports(db: Session) -> list[PostEventReport]:
     return sorted(
-        db.scalars(select(PostEventReport).where(PostEventReport.event_id.in_(DEMO_EVENT_IDS))).all(),
+        db.scalars(select(PostEventReport).where(PostEventReport.event_id.in_(INCIDENT_IDS))).all(),
         key=lambda record: (_event_order(record.event_id), str(record.id)),
     )
 
@@ -542,7 +542,7 @@ def _upsert_demo_officers(db: Session, accounts: dict[str, UserAccount]) -> dict
 
 def _seed_demo_events(db: Session) -> dict[str, Event]:
     seeded: dict[str, Event] = {}
-    for blueprint in DEMO_EVENT_BLUEPRINTS:
+    for blueprint in INCIDENT_BLUEPRINTS:
         event = db.merge(Event(**blueprint))
         db.flush()
         seeded[event.id] = event
@@ -558,21 +558,21 @@ def _seed_demo_assignments(
     assignment_blueprints = (
         {
             "officer_profile_id": officers_by_id["BTP-HSR-001"].id,
-            "event_id": "DEMO_EVENT_RALLY_ORR",
+            "event_id": "INCIDENT_RALLY_ORR",
             "corridor": "ORR East 1",
             "police_station": "HSR Layout",
             "assignment_type": "event",
         },
         {
             "officer_profile_id": officers_by_id["BTP-HSR-001"].id,
-            "event_id": "DEMO_EVENT_CROWD_IBLUR",
+            "event_id": "INCIDENT_CROWD_IBLUR",
             "corridor": "ORR East 1",
             "police_station": "HSR Layout",
             "assignment_type": "event",
         },
         {
             "officer_profile_id": officers_by_id["BTP-HSR-001"].id,
-            "event_id": "DEMO_EVENT_WATERLOGGING_HSR",
+            "event_id": "INCIDENT_WATERLOGGING_HSR",
             "corridor": "ORR East 1",
             "police_station": "HSR Layout",
             "assignment_type": "event",
@@ -586,21 +586,21 @@ def _seed_demo_assignments(
         },
         {
             "officer_profile_id": officers_by_id["BTP-PEENYA-001"].id,
-            "event_id": "DEMO_EVENT_BREAKDOWN_TUMKUR",
+            "event_id": "INCIDENT_BREAKDOWN_TUMKUR",
             "corridor": "Tumkur Road",
             "police_station": "Peenya",
             "assignment_type": "event",
         },
         {
             "officer_profile_id": officers_by_id["BTP-PEENYA-001"].id,
-            "event_id": "DEMO_EVENT_CONSTRUCTION_TUMKUR",
+            "event_id": "INCIDENT_CONSTRUCTION_TUMKUR",
             "corridor": "Tumkur Road",
             "police_station": "Peenya",
             "assignment_type": "event",
         },
         {
             "officer_profile_id": officers_by_id["BTP-PEENYA-001"].id,
-            "event_id": "DEMO_EVENT_ACCIDENT_PEENYA",
+            "event_id": "INCIDENT_ACCIDENT_PEENYA",
             "corridor": "Tumkur Road",
             "police_station": "Peenya",
             "assignment_type": "event",
@@ -645,7 +645,7 @@ def _seed_predictions_and_recommendations(
     prediction_records: dict[str, EventPrediction] = {}
     recommendation_records: dict[str, EventRecommendation] = {}
 
-    for event_id in DEMO_EVENT_IDS:
+    for event_id in INCIDENT_IDS:
         event = events_by_id[event_id]
         feature = features_by_event_id.get(event_id)
         if feature is None:
@@ -764,17 +764,17 @@ def _seed_demo_live_updates(
 def _build_scenario_payloads(
     prediction_by_event_id: dict[str, EventPrediction],
 ) -> dict[str, tuple[dict[str, object], dict[str, object]]]:
-    rally_prediction = serialize_event_prediction(prediction_by_event_id["DEMO_EVENT_RALLY_ORR"]) or {}
+    rally_prediction = serialize_event_prediction(prediction_by_event_id["INCIDENT_RALLY_ORR"]) or {}
     learning_prediction = serialize_event_prediction(prediction_by_event_id[LEARNING_EVENT_ID]) or {}
-    breakdown_prediction = serialize_event_prediction(prediction_by_event_id["DEMO_EVENT_BREAKDOWN_TUMKUR"]) or {}
-    construction_prediction = serialize_event_prediction(prediction_by_event_id["DEMO_EVENT_CONSTRUCTION_TUMKUR"]) or {}
+    breakdown_prediction = serialize_event_prediction(prediction_by_event_id["INCIDENT_BREAKDOWN_TUMKUR"]) or {}
+    construction_prediction = serialize_event_prediction(prediction_by_event_id["INCIDENT_CONSTRUCTION_TUMKUR"]) or {}
 
     return {
         "Judge Walkthrough: Predict And Plan": (
             {
                 "route": "/simulation",
-                "primary_event_id": "DEMO_EVENT_RALLY_ORR",
-                "event_ids": ["DEMO_EVENT_RALLY_ORR", "DEMO_EVENT_CROWD_IBLUR"],
+                "primary_event_id": "INCIDENT_RALLY_ORR",
+                "event_ids": ["INCIDENT_RALLY_ORR", "INCIDENT_CROWD_IBLUR"],
                 "walkthrough_steps": [
                     "Open Simulation Lab and use the seeded ORR rally storyline as the reference case.",
                     "Show Event DNA, similar-event memory, and the estimated impact score before changing weather.",
@@ -950,7 +950,7 @@ def seed_demo_scenarios(db: Session, *, commit: bool = True) -> DemoSeedReport:
         live_updates_seeded=live_update_count,
         post_event_reports_generated=len(_list_demo_post_event_reports(db)),
         scenario_names=list(DEMO_SCENARIO_NAMES),
-        demo_event_ids=list(DEMO_EVENT_IDS),
+        demo_event_ids=list(INCIDENT_IDS),
     )
 
 
@@ -993,8 +993,8 @@ def _build_demo_checks(
         {
             "key": "event_seed",
             "label": "Deterministic events",
-            "ready": summary["demo_events"] >= len(DEMO_EVENT_BLUEPRINTS),
-            "detail": f"{summary['demo_events']} of {len(DEMO_EVENT_BLUEPRINTS)} fixed demo events are available.",
+            "ready": summary["demo_events"] >= len(INCIDENT_BLUEPRINTS),
+            "detail": f"{summary['demo_events']} of {len(INCIDENT_BLUEPRINTS)} fixed demo events are available.",
         },
         {
             "key": "hotspots",
@@ -1006,10 +1006,10 @@ def _build_demo_checks(
             "key": "planning_stack",
             "label": "Predict and plan stack",
             "ready": (
-                summary["demo_features"] >= len(DEMO_EVENT_BLUEPRINTS)
-                and summary["demo_dna_records"] >= len(DEMO_EVENT_BLUEPRINTS)
-                and summary["demo_predictions"] >= len(DEMO_EVENT_BLUEPRINTS)
-                and summary["demo_recommendations"] >= len(DEMO_EVENT_BLUEPRINTS)
+                summary["demo_features"] >= len(INCIDENT_BLUEPRINTS)
+                and summary["demo_dna_records"] >= len(INCIDENT_BLUEPRINTS)
+                and summary["demo_predictions"] >= len(INCIDENT_BLUEPRINTS)
+                and summary["demo_recommendations"] >= len(INCIDENT_BLUEPRINTS)
             ),
             "detail": (
                 f"{summary['demo_features']} features, {summary['demo_dna_records']} DNA records, "
@@ -1078,9 +1078,9 @@ def build_demo_status(db: Session) -> dict[str, object]:
         "summary": summary,
         "checks": checks,
         "scenario_cards": [_scenario_card(record) for record in _list_demo_scenarios(db)],
-        "demo_event_ids": list(DEMO_EVENT_IDS),
+        "demo_event_ids": list(INCIDENT_IDS),
         "sample_event_ids": {
-            "predict_plan": "DEMO_EVENT_RALLY_ORR",
+            "predict_plan": "INCIDENT_RALLY_ORR",
             "learning": LEARNING_EVENT_ID,
             "coordination_pair": list(COORDINATION_EVENT_IDS),
         },

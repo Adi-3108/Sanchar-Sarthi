@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>Incident Map</title>
+    <style>
+        html, body {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: #e8edf2;
+        }
+        #map { width: 100%; height: 100vh; }
+        #loading {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: sans-serif; font-size: 14px; color: #555;
+            z-index: 9999; background: rgba(255,255,255,0.9);
+            padding: 10px 20px; border-radius: 20px;
+        }
+        /* Pulsing hotspot animation */
+        @keyframes pulse {
+            0%   { transform: scale(1);   opacity: 0.9; }
+            50%  { transform: scale(1.5); opacity: 0.4; }
+            100% { transform: scale(1);   opacity: 0.9; }
+        }
+        .hotspot-pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="loading">Loading MapmyIndia...</div>
+
+    <script>
+        window.mapplsCallback = function() { initMapmyIndia(); };
+    </script>
+    <script src="https://sdk.mappls.com/map/sdk/web?v=3.0&layer=vector&access_token=jivutrawyvppouebvybuxnjjqeontdjwrvvv&callback=mapplsCallback" async defer></script>
+
+    <script>
+        var map = null;
+        var incidentMarkers = [];
+        var hotspotMarkers = [];
+        var routePolylines = [];
+
+        function initMapmyIndia() {
+            document.getElementById('loading').style.display = 'none';
+
+            map = new mappls.Map('map', {
+                center: [12.9716, 77.5946],
+                zoom: 12,
+                zoomControl: true,
+                location: false,
+                fullscreenControl: false
+            });
+
+            map.on('load', function() {
+                // Process queued data
+                if (window.pendingMarkers) {
+                    loadIncidents(window.pendingMarkers);
+                    window.pendingMarkers = null;
+                }
+                if (window.pendingHotspots) {
+                    loadHotspots(window.pendingHotspots);
+                    window.pendingHotspots = null;
+                }
+                if (window.pendingRoutes) {
+                    loadRoutes(window.pendingRoutes);
+                    window.pendingRoutes = null;
+                }
+                if (window.AndroidInterface && window.AndroidInterface.onMapLoaded) {
+                    window.AndroidInterface.onMapLoaded();
+                }
+            });
+        }
+
+        function severityColor(severity) {
+            var s = (severity || '').toLowerCase();
+            if (s === 'critical')  return '#DC2626';
+            if (s === 'high')      return '#EA580C';
+            if (s === 'medium')    return '#D97706';
+            if (s === 'reported')  return '#F59E0B';
+            return '#2563EB'; // low / active
+        }
+
+        function loadIncidents(markersJson) {
+            if (!map) { window.pendingMarkers = markersJson; return; }
+            incidentMarkers.forEach(function(m) { m.remove ? m.remove() : null; });
+            incidentMarkers = [];
+            try {
+                var data = JSON.parse(markersJson);
+                data.forEach(function(item) {
+                    var color = item.type === 'reported' ? '#F59E0B' : severityColor(item.severity);
+                    var marker = new mappls.Marker({
+                        map: map,
+                        position: { lat: item.lat, lng: item.lng },
+                        popupHtml: '<div style="font-family:sans-serif;padding:4px 2px"><strong>' + (item.title||'Incident') + '</strong><br><small>' + item.severity + '</small></div>',
+                        popupOptions: { openPopup: false }
+                    });
+                    incidentMarkers.push(marker);
+                });
+            } catch(e) { console.error('loadIncidents error:', e); }
+        }
+
+        function loadHotspots(hotspotsJson) {
+            if (!map) { window.pendingHotspots = hotspotsJson; return; }
+            // Remove existing hotspot divs
+            hotspotMarkers.forEach(function(el) { if (el.parentNode) el.parentNode.removeChild(el); });
+            hotspotMarkers = [];
+            try {
+                var data = JSON.parse(hotspotsJson);
+                data.forEach(function(item) {
+                    var color = severityColor(item.severity);
+                    // Build a custom pulsing HTML element
+                    var size = Math.min(40, 20 + (item.count || 1) * 3);
+                    var html = '<div class="hotspot-pulse" style="'
+                        + 'width:' + size + 'px;height:' + size + 'px;'
+                        + 'background:' + color + ';opacity:0.55;'
+                        + 'border:2px solid ' + color + ';border-radius:50%;'
+                        + 'box-shadow:0 0 0 4px ' + color + '44;'
+                        + 'cursor:pointer;position:relative;">'
+                        + '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);'
+                        + 'color:white;font-size:10px;font-weight:bold;font-family:sans-serif;">'
+                        + (item.count || '') + '</div></div>';
+
+                    var marker = new mappls.Marker({
+                        map: map,
+                        position: { lat: item.lat, lng: item.lng },
+                        html: html,
+                        popupHtml: '<div style="font-family:sans-serif;padding:4px 2px"><strong>🔴 Hotspot</strong><br>'
+                            + (item.label || '') + '<br><small>' + (item.count||0) + ' incidents · ' + item.severity + '</small></div>',
+                        popupOptions: { openPopup: false }
+                    });
+                    hotspotMarkers.push(marker);
+                });
+            } catch(e) { console.error('loadHotspots error:', e); }
+        }
+
+        function loadRoutes(routesJson) {
+            if (!map) { window.pendingRoutes = routesJson; return; }
+            // Remove existing routes
+            routePolylines.forEach(function(p) { p.remove ? p.remove() : null; });
+            routePolylines = [];
+            try {
+                var data = JSON.parse(routesJson);
+                data.forEach(function(item) {
+                    if (!item.polyline || item.polyline.length === 0) return;
+                    
+                    var paths = item.polyline.map(function(coord) {
+                        return { lat: coord[0], lng: coord[1] };
+                    });
+
+                    // Border
+                    var border = new mappls.Polyline({
+                        map: map,
+                        paths: paths,
+                        strokeColor: '#1e293b',
+                        strokeOpacity: 0.8,
+                        strokeWeight: 14,
+                        fitbounds: false
+                    });
+                    
+                    // Core route
+                    var core = new mappls.Polyline({
+                        map: map,
+                        paths: paths,
+                        strokeColor: '#facc15',
+                        strokeOpacity: 0.9,
+                        strokeWeight: 8,
+                        fitbounds: false
+                    });
+                    
+                    routePolylines.push(border);
+                    routePolylines.push(core);
+                });
+            } catch(e) { console.error('loadRoutes error:', e); }
+        }
+
+        setTimeout(function() {
+            var el = document.getElementById('loading');
+            if (el && map === null) { el.textContent = 'Check internet connection'; }
+        }, 10000);
+    </script>
+</body>
+</html>

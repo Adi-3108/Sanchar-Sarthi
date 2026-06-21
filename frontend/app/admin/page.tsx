@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useI18n } from "@/components/LanguageContext";
 
 import AuthPanel from "@/components/auth/AuthPanel";
 import { useSessionStore } from "@/lib/stores/useSessionStore";
 import { SearchableSelect } from "@/components/layout/SearchableSelect";
 import {
   ApiError,
+  createControlRoomUser,
   createOfficer,
   deleteFoundationAdminIncident,
   deleteFoundationAdminVote,
@@ -108,6 +110,7 @@ function formatTime(value?: string | null): string {
 }
 
 export default function AdminPage() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const { user, ready: authReady } = useFirebaseAuthState();
   const [officerForm, setOfficerForm] = useState<CreateOfficerRequest>({
@@ -144,7 +147,7 @@ export default function AdminPage() {
   const loadDemoMutation = useMutation<DatasetLoadResponse, unknown>({ mutationFn: () => loadDemoDataset(), onSuccess: refreshAdminData });
   const generateFeaturesMutation = useMutation<FeatureGenerationResponse, unknown>({ mutationFn: () => generateEventFeatures(), onSuccess: refreshAdminData });
   const createOfficerMutation = useMutation<CreateOfficerResponse, unknown, CreateOfficerRequest>({ mutationFn: (payload) => createOfficer(payload) });
-  // const createControlRoomMutation = useMutation<CreateControlRoomResponse, unknown, CreateControlRoomRequest>({ mutationFn: (payload) => createControlRoomUser(payload) });
+  const createControlRoomMutation = useMutation<CreateControlRoomResponse, unknown, CreateControlRoomRequest>({ mutationFn: (payload) => createControlRoomUser(payload) });
   const incidentMutation = useMutation({ mutationFn: ({ incidentId, payload }: { incidentId: string; payload: Parameters<typeof updateFoundationAdminIncident>[1] }) => updateFoundationAdminIncident(incidentId, payload), onSuccess: refreshAdminData });
   const deleteIncidentMutation = useMutation({ mutationFn: (incidentId: string) => deleteFoundationAdminIncident(incidentId), onSuccess: refreshAdminData });
   const escalateMutation = useMutation({ mutationFn: (incidentId: string) => escalateFoundationAdminIncident(incidentId), onSuccess: refreshAdminData });
@@ -183,14 +186,14 @@ export default function AdminPage() {
     });
   }
 
-  // function updateControlRoomField<Key extends keyof CreateControlRoomRequest>(key: Key, value: CreateControlRoomRequest[Key]) {
-  //   setControlRoomForm((current) => ({ ...current, [key]: value }));
-  // }
+  function updateControlRoomField<Key extends keyof CreateControlRoomRequest>(key: Key, value: CreateControlRoomRequest[Key]) {
+    setControlRoomForm((current) => ({ ...current, [key]: value }));
+  }
 
-  // function handleCreateControlRoom(event: FormEvent<HTMLFormElement>) {
-  //   event.preventDefault();
-  //   createControlRoomMutation.mutate(controlRoomForm);
-  // }
+  function handleCreateControlRoom(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    createControlRoomMutation.mutate(controlRoomForm);
+  }
 
   const session = useSessionStore();
   const [mounted, setMounted] = useState(false);
@@ -262,8 +265,8 @@ export default function AdminPage() {
           </article>
 
           <form onSubmit={handleCreateOfficer} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Officer access</p>
-            <h2 className="mt-2 text-2xl font-bold">Create registered police officer</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">{t("officerAccess")}</p>
+            <h2 className="mt-2 text-2xl font-bold">{t("createPoliceOfficer")}</h2>
             <div className="mt-5 grid gap-4">
               <Field label="Officer email" value={officerForm.email} onChange={(value) => updateOfficerField("email", value)} />
               <Field label="Password" type="password" value={officerForm.password} onChange={(value) => updateOfficerField("password", value)} />
@@ -289,9 +292,9 @@ export default function AdminPage() {
             <ErrorAlert title="Failed to create officer" error={createOfficerMutation.error} />
           </form>
 
-          {/* <form onSubmit={handleCreateControlRoom} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Command Access</p>
-            <h2 className="mt-2 text-2xl font-bold">Create control room user</h2>
+          <form onSubmit={handleCreateControlRoom} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">{t("commandAccess")}</p>
+            <h2 className="mt-2 text-2xl font-bold">{t("createControlRoomUser")}</h2>
             <div className="mt-5 grid gap-4">
               <Field label="Email" value={controlRoomForm.email} onChange={(value) => updateControlRoomField("email", value)} />
               <Field label="Password" value={controlRoomForm.password} onChange={(value) => updateControlRoomField("password", value)} />
@@ -300,15 +303,15 @@ export default function AdminPage() {
             <button type="submit" disabled={!canRunProtectedActions || createControlRoomMutation.isPending} className="mt-5 rounded-2xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60">{createControlRoomMutation.isPending ? "Creating user" : "Create control room user"}</button>
             <SuccessAlert title="User Created" message={createControlRoomMutation.isSuccess && createControlRoomMutation.data ? `Control Room user created! Firebase UID: ${createControlRoomMutation.data.firebase_uid}` : null} />
             <ErrorAlert title="Failed to create control room user" error={createControlRoomMutation.error} />
-          </form> */}
+          </form>
         </section>
 
         <section className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
           <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-end justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Incident management</p>
-                <h2 className="mt-2 text-2xl font-bold">Admin incident controls</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">{t("incidentManagement")}</p>
+                <h2 className="mt-2 text-2xl font-bold">{t("adminIncidentControls")}</h2>
               </div>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{foundationQuery.data?.incidents.length ?? 0}</span>
             </div>
@@ -347,8 +350,8 @@ export default function AdminPage() {
           </article>
 
           <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Status distribution</p>
-            <h2 className="mt-2 text-2xl font-bold">Lifecycle mix</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">{t("statusDistribution")}</p>
+            <h2 className="mt-2 text-2xl font-bold">{t("lifecycleMix")}</h2>
             <div className="mt-4 grid gap-3">
               {Object.entries((foundationQuery.data?.summary.status_counts ?? {}) as Record<string, number>).map(([status, count]) => (
                 <div key={status} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
@@ -362,8 +365,8 @@ export default function AdminPage() {
 
         <section className="grid gap-5 xl:grid-cols-2">
           <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Stations</p>
-            <h2 className="mt-2 text-2xl font-bold">Station controls</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">{t("stationsText")}</p>
+            <h2 className="mt-2 text-2xl font-bold">{t("stationControls")}</h2>
             <div className="mt-4 grid gap-3">
               {(foundationQuery.data?.stations ?? []).map((station: FoundationStation) => (
                 <div key={station.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -381,8 +384,8 @@ export default function AdminPage() {
           </article>
 
           <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Users</p>
-            <h2 className="mt-2 text-2xl font-bold">User access</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">{t("usersText")}</p>
+            <h2 className="mt-2 text-2xl font-bold">{t("userAccessText")}</h2>
             <div className="mt-4 grid gap-3">
               {(foundationQuery.data?.users ?? []).slice(0, 8).map((account: FoundationAdminUser) => (
                 <div key={account.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -402,8 +405,8 @@ export default function AdminPage() {
 
         <section className="grid gap-5 xl:grid-cols-2">
           <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Votes</p>
-            <h2 className="mt-2 text-2xl font-bold">Vote audit and cleanup</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">{t("votesText")}</p>
+            <h2 className="mt-2 text-2xl font-bold">{t("voteAuditAndCleanup")}</h2>
             <div className="mt-4 grid gap-3">
               {(foundationQuery.data?.votes ?? []).slice(0, 10).map((vote: FoundationVote) => (
                 <div key={vote.id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
@@ -418,8 +421,8 @@ export default function AdminPage() {
           </article>
 
           <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Audit logs</p>
-            <h2 className="mt-2 text-2xl font-bold">Recent administrative actions</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">{t("auditLogs")}</p>
+            <h2 className="mt-2 text-2xl font-bold">{t("recentAdministrativeActions")}</h2>
             <div className="mt-4 grid gap-3">
               {(foundationQuery.data?.logs ?? []).slice(0, 12).map((log: FoundationAuditLog) => (
                 <div key={log.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm">
@@ -437,7 +440,7 @@ export default function AdminPage() {
         </section>
       </div>
 
-      {/* createControlRoomMutation.isSuccess && createControlRoomMutation.data && (
+      {createControlRoomMutation.isSuccess && createControlRoomMutation.data && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
@@ -466,7 +469,7 @@ export default function AdminPage() {
             </div>
           </div>
         </div>
-      ) */}
+      )}
     </main>
   );
 }

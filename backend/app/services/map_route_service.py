@@ -205,7 +205,7 @@ def _call_mapmyindia_route_api(
 
     origin = f"{request.origin[0]},{request.origin[1]}"
     destination = f"{request.destination[0]},{request.destination[1]}"
-    url = f"https://route.mappls.com/route/direction/route_adv/{request.mode}/{origin};{destination}?access_token={key}&geometries=geojson"
+    url = f"https://apis.mappls.com/advancedmaps/v1/{key}/route_adv/{request.mode}/{origin};{destination}?geometries=geojson"
     
     if avoid_incidents:
         polygons = []

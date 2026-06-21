@@ -24,6 +24,7 @@ from app.services.live_escalation_service import (
     serialize_live_update,
 )
 from app.services.prediction_service import predict_event
+from app.services.rag_indexer_service import index_live_update_record
 
 router = APIRouter(prefix="/api/events", tags=["live_updates"])
 
@@ -247,6 +248,10 @@ def submit_live_update(
         )
         db.commit()
         db.refresh(record)
+        try:
+            index_live_update_record(db, str(record.id), commit=True)
+        except Exception:
+            db.rollback()
     except SQLAlchemyError:
         db.rollback()
         return error_response(503, "DATABASE_UNAVAILABLE", "Database is unavailable for live updates.")
@@ -254,3 +259,4 @@ def submit_live_update(
     response_payload = serialize_live_update(record)
     response_payload["honesty_note"] = str(result["honesty_note"])
     return LiveUpdateResponse.model_validate(response_payload)
+

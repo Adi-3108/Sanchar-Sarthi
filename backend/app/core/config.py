@@ -110,6 +110,16 @@ class Settings(BaseSettings):
     firebase_project_id: str | None = Field(default=None, validation_alias="FIREBASE_PROJECT_ID")
     firebase_client_email: str | None = Field(default=None, validation_alias="FIREBASE_CLIENT_EMAIL")
     firebase_private_key: str | None = Field(default=None, validation_alias="FIREBASE_PRIVATE_KEY")
+    rag_enabled: bool = Field(default=True, validation_alias="RAG_ENABLED")
+    rag_llm_provider: str = Field(default="deepseek", validation_alias="RAG_LLM_PROVIDER")
+    rag_llm_api_key: str | None = Field(default=None, validation_alias="RAG_LLM_API_KEY")
+    rag_llm_model: str | None = Field(default=None, validation_alias="RAG_LLM_MODEL")
+    rag_embedding_provider: str = Field(default="gemini", validation_alias="RAG_EMBEDDING_PROVIDER")
+    rag_embedding_api_key: str | None = Field(default=None, validation_alias="RAG_EMBEDDING_API_KEY")
+    rag_embedding_model: str | None = Field(default=None, validation_alias="RAG_EMBEDDING_MODEL")
+    rag_max_context_tokens: int = Field(default=6000, validation_alias="RAG_MAX_CONTEXT_TOKENS")
+    rag_vector_top_k: int = Field(default=15, validation_alias="RAG_VECTOR_TOP_K")
+    rag_sql_live_limit: int = Field(default=10, validation_alias="RAG_SQL_LIVE_LIMIT")
 
     @property
     def cors_origins(self) -> list[str]:

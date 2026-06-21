@@ -50,6 +50,7 @@ from app.services.multi_event_service import EventCoordinationInput, analyze_mul
 from app.services.similar_event_service import find_similar_events, serialize_similar_event_match
 from app.services.text_normalization_service import normalize_description
 from app.services.weather_service import resolve_weather_adjustment
+from app.services.rag_indexer_service import index_event_record, rebuild_rag_index
 
 
 class EventRecordResponse(BaseModel):
@@ -944,6 +945,10 @@ def simulate_event(
             prediction_explanation_json=dict(serialized_prediction.get("prediction_explanation_json") or {}),
         )
         db.commit()
+        try:
+            index_event_record(db, simulated_event.id, commit=True)
+        except Exception:
+            db.rollback()
         return response
     except SQLAlchemyError:
         db.rollback()
@@ -970,6 +975,10 @@ def rebuild_event_dna(
             limit_similar=limit_similar,
         )
         db.commit()
+        try:
+            rebuild_rag_index(db, commit=True)
+        except Exception:
+            db.rollback()
     except ValueError as exc:
         db.rollback()
         return error_response(400, "VALIDATION_ERROR", str(exc))

@@ -25,6 +25,7 @@ from app.services.incident_service import apply_incident_vote, transition_incide
 from app.services.map_route_service import geocode_address, invalidate_route_cache
 from app.api.routes_translation import get_translation_service
 from app.services.translation_service import TranslationService
+from app.services.rag_indexer_service import delete_source_chunks, index_event_record, index_incident_record
 
 router = APIRouter(prefix="/api/foundation", tags=["foundation"])
 
@@ -582,6 +583,10 @@ def create_user_incident_report(
         )
         db.commit()
         db.refresh(incident)
+        try:
+            index_incident_record(db, incident.id, commit=True)
+        except Exception:
+            db.rollback()
         if incident.latitude and incident.longitude:
             invalidate_route_cache(float(incident.latitude), float(incident.longitude))
     except SQLAlchemyError:
@@ -646,6 +651,10 @@ def create_control_room_incident(
         )
         db.commit()
         db.refresh(incident)
+        try:
+            index_incident_record(db, incident.id, commit=True)
+        except Exception:
+            db.rollback()
         if incident.latitude and incident.longitude:
             invalidate_route_cache(float(incident.latitude), float(incident.longitude))
     except SQLAlchemyError:
@@ -684,6 +693,10 @@ def transition_incident_status(
         )
         db.commit()
         db.refresh(incident)
+        try:
+            index_incident_record(db, incident.id, commit=True)
+        except Exception:
+            db.rollback()
     except ValueError as exc:
         db.rollback()
         return error_response(400, "INVALID_STATUS_TRANSITION", str(exc))
@@ -799,6 +812,10 @@ def admin_update_incident(
         )
         db.commit()
         db.refresh(incident)
+        try:
+            index_incident_record(db, incident.id, commit=True)
+        except Exception:
+            db.rollback()
         if incident.latitude and incident.longitude:
             invalidate_route_cache(float(incident.latitude), float(incident.longitude))
     except ValueError as exc:
@@ -834,6 +851,10 @@ def admin_delete_incident(
         )
         db.delete(incident)
         db.commit()
+        try:
+            delete_source_chunks(db, "incidents", incident_id, commit=True)
+        except Exception:
+            db.rollback()
     except SQLAlchemyError:
         db.rollback()
         return error_response(503, "DATABASE_UNAVAILABLE", "Database is unavailable for incident deletion.")
@@ -971,6 +992,12 @@ def admin_escalate_incident_to_event(
         )
 
         db.commit()
+        try:
+            index_incident_record(db, incident.id, commit=False)
+            index_event_record(db, event_id, commit=False)
+            db.commit()
+        except Exception:
+            db.rollback()
 
     except SQLAlchemyError:
         db.rollback()

@@ -15,6 +15,7 @@ from app.schemas.reports import CitizenReportCreate, CitizenReportResponse
 from app.services.citizen_report_service import build_report_response, create_citizen_report
 from app.api.routes_translation import get_translation_service
 from app.services.translation_service import TranslationService
+from app.services.rag_indexer_service import index_citizen_report_record, index_event_record
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
 
@@ -187,6 +188,14 @@ def submit_congestion_report(
         )
         db.commit()
         db.refresh(report)
+        try:
+            index_citizen_report_record(db, str(report.id), commit=False)
+            matched_event_id = response_payload.get("matched_event_id") or response_payload.get("event_id")
+            if matched_event_id:
+                index_event_record(db, str(matched_event_id), commit=False)
+            db.commit()
+        except Exception:
+            db.rollback()
     except ValueError as exc:
         db.rollback()
         return error_response(404, "EVENT_NOT_FOUND", str(exc), {"event_id": payload.event_id})
@@ -195,4 +204,6 @@ def submit_congestion_report(
         return error_response(503, "DATABASE_UNAVAILABLE", "Database is unavailable for report submission.")
 
     return CitizenReportResponse.model_validate(build_report_response(report))
+
+
 

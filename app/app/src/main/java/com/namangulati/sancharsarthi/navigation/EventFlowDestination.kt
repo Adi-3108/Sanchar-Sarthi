@@ -11,6 +11,7 @@ import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material.icons.outlined.TipsAndUpdates
+import androidx.compose.material.icons.outlined.SupportAgent
 import androidx.compose.ui.graphics.vector.ImageVector
 
 enum class EventFlowDestination(
@@ -26,5 +27,6 @@ enum class EventFlowDestination(
     ModelInsights(label = "Model Insights", icon = Icons.Outlined.BarChart),
     Explorer(label = "Explorer", icon = Icons.Outlined.Explore),
     Simulation(label = "Simulation", icon = Icons.Outlined.Science),
-    PostEventLearning(label = "Post-Event Learning", icon = Icons.Outlined.TipsAndUpdates)
+    PostEventLearning(label = "Post-Event Learning", icon = Icons.Outlined.TipsAndUpdates),
+    ControlRoom(label = "Control Room", icon = Icons.Outlined.SupportAgent)
 }

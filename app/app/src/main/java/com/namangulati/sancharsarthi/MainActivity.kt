@@ -1,20 +1,27 @@
 package com.namangulati.sancharsarthi
 
 import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.namangulati.sancharsarthi.design.EventFlowTheme
+import com.namangulati.sancharsarthi.feature.foundation.PlatformFoundationViewModel
+import com.namangulati.sancharsarthi.navigation.EventFlowApp
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         enableEdgeToEdge()
-        setContentView(R.layout.activity_main)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+        setContent {
+            EventFlowTheme {
+                val viewModel: PlatformFoundationViewModel = viewModel(
+                    factory = PlatformFoundationViewModel.Factory,
+                )
+                EventFlowApp(viewModel = viewModel)
+            }
         }
     }
 }
+

@@ -270,6 +270,7 @@ function altRoutes(incident: FoundationIncident): string[] {
 import { useUIStore } from "@/lib/stores/useUIStore";
 
 export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mode; initialPanel?: Panel }) {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const router = useRouter();
   const { user, ready } = useFirebaseAuthState();
@@ -316,6 +317,7 @@ export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mod
       setReportDraft(emptyDraft);
       setPanel("overview");
       await syncData();
+      router.push(mode === "control" ? "/control-room" : mode === "admin" ? "/admin" : "/user");
     }
   });
 
@@ -326,6 +328,7 @@ export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mod
       setOfficialDraft({ ...emptyDraft, incident_type: "road_accident", severity: "high" });
       setPanel("overview");
       await syncData();
+      router.push(mode === "control" ? "/control-room" : mode === "admin" ? "/admin" : "/user");
     }
   });
 
@@ -481,22 +484,26 @@ export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mod
           </section>
 
           {panel === "report" ? (
-            <IncidentForm
-              labels={labels}
-              draft={reportDraft}
-              setDraft={setReportDraft}
-              locationMessage={locationMessage}
-              setLocationMessage={setLocationMessage}
-              pending={reportMutation.isPending}
-              success={reportMutation.isSuccess ? labels.reportDone : null}
-              error={reportMutation.isError ? errorText(reportMutation.error) : null}
-              disabled={!user}
-              submitLabel={labels.submit}
-              onSubmit={(event) => {
-                event.preventDefault();
-                reportMutation.mutate(cleanDraft(reportDraft));
-              }}
-            />
+            !user ? (
+              <AuthPanel preferredRole="citizen" title={labels.citizenTitle} note={labels.citizenNote} />
+            ) : (
+              <IncidentForm
+                labels={labels}
+                draft={reportDraft}
+                setDraft={setReportDraft}
+                locationMessage={locationMessage}
+                setLocationMessage={setLocationMessage}
+                pending={reportMutation.isPending}
+                success={reportMutation.isSuccess ? labels.reportDone : null}
+                error={reportMutation.isError ? errorText(reportMutation.error) : null}
+                disabled={false}
+                submitLabel={labels.submit}
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  reportMutation.mutate(cleanDraft(reportDraft));
+                }}
+              />
+            )
           ) : null}
 
           {panel === "official" && canManage ? (
@@ -529,7 +536,7 @@ export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mod
 
         <aside className="flex flex-col gap-5">
           <DetailPanel incident={selectedIncident} labels={labels} />
-          <RoutePanel incident={selectedIncident} labels={labels} routeData={routeQuery.data} onForceReload={handleForceReload} isReloading={isReloadingRoute} userRole={hasAccess ? session.accessLevel : null} />
+          <RoutePanel incident={selectedIncident} labels={labels} routeData={routeQuery.data} routeError={routeQuery.error} onForceReload={handleForceReload} isReloading={isReloadingRoute} userRole={hasAccess ? session.accessLevel : null} />
           <StationPanel data={data} labels={labels} selectedIncidentId={selectedIncident?.id ?? null} onSelectIncident={setSelectedIncidentId} />
         </aside>
       </div>
@@ -609,13 +616,14 @@ function MapPanel({ data, bounds, labels, selectedIncidentId, onSelectIncident, 
                   <p>{labels.reports}</p>
                   <p>{labels.hotspot}</p>
                 </div>
-                {activeRoutes?.routes?.filter(r => r.incidentId !== selectedIncidentId).map((route, i) => (
+                {/* Instantly show the selected incident's route from the cached activeRoutes */}
+                {activeRoutes?.routes?.filter(r => r.incidentId === selectedIncidentId).map((route, i) => (
                   <RouteLayer 
                     key={`active-route-${route.incidentId}-${i}`}
                     routes={[{
                       id: `active-route-${route.incidentId}`,
                       label: "Active Diversion",
-                      kind: "logistics", // Light blue color for inactive routes
+                      kind: "diversion", // Show as selected (Yellow/dark blue)
                       polyline: route.polyline as any
                     }]} 
                     project={project} 
@@ -700,7 +708,7 @@ function DetailPanel({ incident, labels }: { incident: FoundationIncident | null
   );
 }
 
-function RoutePanel({ incident, labels, routeData, onForceReload, isReloading, userRole }: { incident: FoundationIncident | null; labels: Labels; routeData?: MapRouteResponse | null; onForceReload?: () => void; isReloading?: boolean; userRole?: string | null }) {
+function RoutePanel({ incident, labels, routeData, routeError, onForceReload, isReloading, userRole }: { incident: FoundationIncident | null; labels: Labels; routeData?: MapRouteResponse | null; routeError?: any; onForceReload?: () => void; isReloading?: boolean; userRole?: string | null }) {
   const routes = incident ? altRoutes(incident) : [];
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -708,8 +716,12 @@ function RoutePanel({ incident, labels, routeData, onForceReload, isReloading, u
       {!incident ? <p className="mt-4 text-sm text-slate-500">Select an incident to inspect alternate routes.</p> : (
         <div className="mt-4 grid gap-3">
           {routes.map((route, index) => <div key={`${incident.id}-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">{route}</div>)}
-          
-          {!routeData ? <p className="text-sm text-slate-500">Calculating live route via MapmyIndia...</p> : (
+          {routeError && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+              Error: {String((routeError as any)?.message || routeError)}
+            </div>
+          )}
+          {!routeData && !routeError ? <p className="text-sm text-slate-500">Calculating live route via MapmyIndia...</p> : routeData && (
             <>
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
                 <strong className="text-slate-900">Live Alternate Route Available</strong>

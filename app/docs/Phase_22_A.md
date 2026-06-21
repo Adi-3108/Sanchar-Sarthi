@@ -156,7 +156,7 @@ android/
       design/
 ```
 
-Recommended namespace: `com.sancharsarthi.eventflow`
+Recommended namespace: `com.namangulati.sancharsarthi`
 
 Reason:
 

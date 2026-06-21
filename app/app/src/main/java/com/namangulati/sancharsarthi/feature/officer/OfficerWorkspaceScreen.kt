@@ -20,14 +20,17 @@ import com.namangulati.sancharsarthi.design.PlatformSectionCard
 import com.namangulati.sancharsarthi.feature.foundation.PlatformFoundationUiState
 import kotlinx.coroutines.launch
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OfficerWorkspaceScreen(
     state: PlatformFoundationUiState,
+    viewModel: OfficerWorkspaceViewModel = viewModel()
 ) {
-    var assignments by remember { mutableStateOf<OfficerAssignmentsResponse?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val assignments by viewModel.assignments.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
 
     var selectedEventId by remember { mutableStateOf<String?>(null) }
     
@@ -39,19 +42,9 @@ fun OfficerWorkspaceScreen(
     var crowdIncrease by remember { mutableStateOf(true) }
     var rainWaterlogging by remember { mutableStateOf(false) }
 
-    var isSubmitting by remember { mutableStateOf(false) }
-    var submitResult by remember { mutableStateOf<com.namangulati.sancharsarthi.data.remote.LiveUpdateResponseDto?>(null) }
-    var submitError by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(Unit) {
-        try {
-            assignments = RetrofitClient.officerApi.getAssignments()
-        } catch (e: Exception) {
-            errorMessage = e.localizedMessage
-        } finally {
-            isLoading = false
-        }
-    }
+    val isSubmitting by viewModel.isSubmitting.collectAsState()
+    val submitResult by viewModel.submitResult.collectAsState()
+    val submitError by viewModel.submitError.collectAsState()
 
     LaunchedEffect(assignments) {
         val firstEvent = assignments?.assigned_events?.firstOrNull()?.id
@@ -281,34 +274,21 @@ fun OfficerWorkspaceScreen(
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
-                    val coroutineScope = rememberCoroutineScope()
                     Button(
                         onClick = {
                             val eventId = selectedEventId ?: return@Button
-                            isSubmitting = true
-                            submitError = null
-                            submitResult = null
-                            coroutineScope.launch {
-                                try {
-                                    val response = RetrofitClient.officerApi.submitLiveUpdate(
-                                        eventId = eventId,
-                                        request = LiveUpdateRequestDto(
-                                            current_congestion_level = congestion,
-                                            field_update = fieldUpdate,
-                                            road_closure_active = roadClosure,
-                                            officer_shortage = officerShortage,
-                                            crowd_increase = crowdIncrease,
-                                            rain_waterlogging = rainWaterlogging,
-                                            new_nearby_incident = false
-                                        )
-                                    )
-                                    submitResult = response
-                                } catch (e: Exception) {
-                                    submitError = e.localizedMessage ?: "Unknown error occurred"
-                                } finally {
-                                    isSubmitting = false
-                                }
-                            }
+                            viewModel.submitLiveUpdate(
+                                eventId = eventId,
+                                request = LiveUpdateRequestDto(
+                                    current_congestion_level = congestion,
+                                    field_update = fieldUpdate,
+                                    road_closure_active = roadClosure,
+                                    officer_shortage = officerShortage,
+                                    crowd_increase = crowdIncrease,
+                                    rain_waterlogging = rainWaterlogging,
+                                    new_nearby_incident = false
+                                )
+                            )
                         },
                         enabled = !isSubmitting,
                         modifier = Modifier.fillMaxWidth(),

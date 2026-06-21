@@ -32,11 +32,14 @@ import com.namangulati.sancharsarthi.core.report.IncidentResponse
 import com.namangulati.sancharsarthi.feature.foundation.PlatformFoundationUiState
 import kotlinx.coroutines.launch
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CitizenExperienceScreen(
     state: PlatformFoundationUiState,
     onReportSuccess: () -> Unit = {},
+    viewModel: CitizenExperienceViewModel = viewModel()
 ) {
     var title by remember { mutableStateOf("") }
     var incidentType by remember { mutableStateOf("Roadblock") }
@@ -49,32 +52,14 @@ fun CitizenExperienceScreen(
     var descriptionLanguage by remember { mutableStateOf("Auto-detect") }
     var description by remember { mutableStateOf("") }
     
-    var isSubmitting by remember { mutableStateOf(false) }
-    var feedbackMsg by remember { mutableStateOf("") }
+    val isSubmitting by viewModel.isSubmitting.collectAsState()
+    val feedbackMsg by viewModel.feedbackMsg.collectAsState()
     
-    var reportedIncidents by remember { mutableStateOf<List<IncidentResponse>>(emptyList()) }
-    var isIncidentsLoading by remember { mutableStateOf(true) }
+    val reportedIncidents by viewModel.reportedIncidents.collectAsState()
+    val isIncidentsLoading by viewModel.isIncidentsLoading.collectAsState()
 
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-
-    fun fetchIncidents() {
-        scope.launch {
-            try {
-                isIncidentsLoading = true
-                val response = RetrofitClient.foundationApi.getIncidents()
-                reportedIncidents = response.incidents.filter { it.status in listOf("reported", "pending_verification", "rejected") }
-            } catch (e: Exception) {
-                // Silently fail or show error
-            } finally {
-                isIncidentsLoading = false
-            }
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        fetchIncidents()
-    }
 
     @SuppressLint("MissingPermission")
     fun fetchLocation() {
@@ -85,12 +70,12 @@ fun CitizenExperienceScreen(
             if (location != null) {
                 latitude = location.latitude.toString()
                 longitude = location.longitude.toString()
-                feedbackMsg = "Location updated successfully!"
+                viewModel.setFeedback("Location updated successfully!")
             } else {
-                feedbackMsg = "Could not fetch location. Ensure GPS is on."
+                viewModel.setFeedback("Could not fetch location. Ensure GPS is on.")
             }
         } catch (e: Exception) {
-            feedbackMsg = "Error fetching location: ${e.message}"
+            viewModel.setFeedback("Error fetching location: ${e.message}")
         }
     }
 
@@ -100,7 +85,7 @@ fun CitizenExperienceScreen(
             if (isGranted) {
                 fetchLocation()
             } else {
-                feedbackMsg = "Location permission denied."
+                viewModel.setFeedback("Location permission denied.")
             }
         }
     )
@@ -246,14 +231,13 @@ fun CitizenExperienceScreen(
                     Button(
                         onClick = {
                             if (title.isBlank() || description.isBlank()) {
-                                feedbackMsg = "Title and description are required."
+                                viewModel.setFeedback("Title and description are required.")
                                 return@Button
                             }
                             val lat = latitude.toDoubleOrNull() ?: 0.0
                             val lng = longitude.toDoubleOrNull() ?: 0.0
                             
-                            isSubmitting = true
-                            feedbackMsg = ""
+                            viewModel.clearFeedback()
                             
                             val request = FoundationIncidentCreateRequest(
                                 incident_type = incidentType.lowercase(),
@@ -268,19 +252,10 @@ fun CitizenExperienceScreen(
                                 language = if (descriptionLanguage.lowercase().contains("auto")) "auto" else descriptionLanguage.lowercase()
                             )
                             
-                            scope.launch {
-                                try {
-                                    RetrofitClient.reportApi.createIncidentReport(request)
-                                    feedbackMsg = "Incident reported successfully!"
-                                    title = ""
-                                    description = ""
-                                    onReportSuccess()
-                                    fetchIncidents() // Refresh list
-                                } catch (e: Exception) {
-                                    feedbackMsg = "Failed to submit: ${e.message}"
-                                } finally {
-                                    isSubmitting = false
-                                }
+                            viewModel.submitReport(request) {
+                                title = ""
+                                description = ""
+                                onReportSuccess()
                             }
                         },
                         shape = RoundedCornerShape(8.dp),
@@ -335,14 +310,7 @@ fun CitizenExperienceScreen(
                 CitizenIncidentCard(
                     incident = incident,
                     onVote = { voteVal ->
-                        scope.launch {
-                            try {
-                                RetrofitClient.foundationApi.voteIncident(incident.id, mapOf("vote_value" to voteVal))
-                                fetchIncidents() // Refresh votes
-                            } catch (e: Exception) {
-                                // Handled
-                            }
-                        }
+                        viewModel.voteIncident(incident.id, voteVal)
                     }
                 )
                 Spacer(modifier = Modifier.height(12.dp))

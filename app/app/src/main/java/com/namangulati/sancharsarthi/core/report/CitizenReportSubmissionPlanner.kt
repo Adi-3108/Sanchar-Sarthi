@@ -1,6 +1,8 @@
 package com.namangulati.sancharsarthi.core.report
 
 import java.util.Locale
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 object CitizenReportSubmissionPlanner {
     private const val PUBLIC_RATE_LIMIT_SUMMARY = "10 public congestion reports per 60 seconds per client source bucket"
@@ -121,50 +123,10 @@ object CitizenReportSubmissionPlanner {
     }
 
     private fun foundationJson(request: FoundationIncidentCreateRequest): String {
-        return buildJson(
-            "incident_type" to request.incident_type,
-            "title" to request.title,
-            "description" to request.description,
-            "severity" to request.severity,
-            "location_name" to request.location_name,
-            "latitude" to request.latitude,
-            "longitude" to request.longitude,
-            "locality" to request.locality,
-            "ward" to request.ward,
-            "language" to request.language,
-        )
+        return Json.encodeToString(request)
     }
 
     private fun congestionJson(request: CitizenReportCreateRequest): String {
-        return buildJson(
-            "report_source" to request.report_source,
-            "report_type" to request.report_type,
-            "latitude" to request.latitude,
-            "longitude" to request.longitude,
-            "severity" to request.severity,
-            "description" to request.description,
-            "language" to request.language,
-            "event_id" to request.event_id,
-        )
-    }
-
-    private fun buildJson(vararg entries: Pair<String, Any?>): String {
-        return entries.joinToString(prefix = "{", postfix = "}") { (key, value) ->
-            val renderedValue = when (value) {
-                null -> "null"
-                is Number, is Boolean -> value.toString()
-                else -> "\"${escapeJson(value.toString())}\""
-            }
-            "\"$key\":$renderedValue"
-        }
-    }
-
-    private fun escapeJson(value: String): String {
-        return value
-            .replace("\\", "\\\\")
-            .replace("\"", "\\\"")
-            .replace("\n", "\\n")
-            .replace("\r", "\\r")
-            .replace("\t", "\\t")
+        return Json.encodeToString(request)
     }
 }

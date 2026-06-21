@@ -51,6 +51,7 @@ data class FoundationIncidentCreateRequest(
     val language: String = "auto",
 )
 
+@Serializable
 data class CitizenReportCreateRequest(
     val report_source: String = "citizen",
     val report_type: String,

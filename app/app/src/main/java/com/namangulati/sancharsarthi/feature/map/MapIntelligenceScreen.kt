@@ -150,8 +150,12 @@ fun MapIntelligenceScreen(
                         Spacer(modifier = Modifier.height(12.dp))
                         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
                             Column(modifier = Modifier.padding(12.dp).fillMaxWidth()) {
-                                AutoTranslatedText("Signed in: namanhere23@gmail.com", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                AutoTranslatedText("Selected UI role: Admin", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                val email = when (val result = state.sessionBootstrapResult) {
+                                    is com.namangulati.sancharsarthi.core.session.SessionBootstrapResult.Authorized -> result.session.email
+                                    is com.namangulati.sancharsarthi.core.session.SessionBootstrapResult.Blocked -> result.fallbackSession.email
+                                } ?: "Not signed in"
+                                AutoTranslatedText("Signed in: $email", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                AutoTranslatedText("Selected UI role: ${state.selectedAccessLevel.displayName}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                         Spacer(modifier = Modifier.height(12.dp))

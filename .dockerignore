@@ -1,0 +1,56 @@
+# ── Version control ────────────────────────────────────────────────────────────
+.git/
+.gitignore
+
+# ── Python artifacts ───────────────────────────────────────────────────────────
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# ── Local databases ────────────────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Secrets — never bake into image ────────────────────────────────────────────
+.env
+*.pem
+*.key
+
+# ── Frontend — not needed in backend image ─────────────────────────────────────
+frontend/
+node_modules/
+.next/
+out/
+
+# ── IDE and OS ─────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Docs and planning ──────────────────────────────────────────────────────────
+docs/
+plan/
+future/
+*.md
+
+# ── App directory (Android/Kotlin) — not part of backend ──────────────────────
+app/
+
+# ── Misc ───────────────────────────────────────────────────────────────────────
+pytest.ini
+package.json

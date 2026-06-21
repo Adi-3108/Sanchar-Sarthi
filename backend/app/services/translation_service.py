@@ -1,6 +1,9 @@
 import json
 from dataclasses import dataclass
-from google.cloud import translate_v2 as translate
+try:
+    from google.cloud import translate_v2 as translate
+except ImportError:
+    translate = None
 from google.oauth2 import service_account
 from app.core.config import Settings
 from app.core.translation_budget import TranslationBudgetGuard
@@ -22,6 +25,8 @@ class TranslationService:
         self.client = self._build_client()
 
     def _build_client(self):
+        if translate is None:
+            return None
         if not self.settings.google_translate_enabled:
             return None
         if not self.settings.google_application_credentials_json:

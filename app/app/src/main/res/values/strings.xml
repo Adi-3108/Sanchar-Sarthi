@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Sanchar Sarthi</string>
+    <string name="android_foundation_title">Sanchar Sarthi x EventFlow AI</string>
+    <string name="android_foundation_subtitle">Android field foundation aligned to the current public reporting, officer, and command-intelligence platform.</string>
 </resources>

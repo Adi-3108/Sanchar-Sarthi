@@ -4,6 +4,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { getCurrentFirebaseToken, loginWithFirebase, logoutFirebase, registerWithFirebase, resendVerificationEmail, useFirebaseAuthState } from "@/lib/auth";
+import { getCurrentAccess } from "@/lib/api";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import { type AccessLevel, useSessionStore } from "@/lib/stores/useSessionStore";
 
@@ -34,11 +35,18 @@ function errorText(error: unknown): string {
   return "Firebase sign-in failed.";
 }
 
+function normalizeBackendRole(role: string): Exclude<AccessLevel, "public_citizen"> {
+  if (role === "admin") return "admin";
+  if (role === "control_room" || role === "control_room_officer") return "control_room";
+  if (role === "police_officer") return "police_officer";
+  return "citizen";
+}
+
 function resolveInteractiveRole(
   accessLevel: AccessLevel,
   preferredRole: Exclude<AccessLevel, "public_citizen">
 ): Exclude<AccessLevel, "public_citizen"> {
-  return accessLevel === "public_citizen" ? preferredRole : accessLevel;
+  return accessLevel === "public_citizen" ? preferredRole : accessLevel as Exclude<AccessLevel, "public_citizen">;
 }
 
 export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
@@ -47,14 +55,15 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
   const { user, ready } = useFirebaseAuthState();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<Exclude<AccessLevel, "public_citizen">>(
-    resolveInteractiveRole(session.accessLevel, preferredRole)
-  );
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [isUnverified, setIsUnverified] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
+  const [loginSuccess, setLoginSuccess] = useState(false);
+  const [role, setRole] = useState<Exclude<AccessLevel, "public_citizen">>(
+    resolveInteractiveRole(session.accessLevel, preferredRole)
+  );
 
   useEffect(() => {
     const resolvedRole = resolveInteractiveRole(session.accessLevel, preferredRole);
@@ -88,8 +97,9 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
       if (cancelled) {
         return;
       }
+      const access = await getCurrentAccess(idToken);
       session.setFirebaseSession({
-        accessLevel: resolveInteractiveRole(session.accessLevel, role),
+        accessLevel: normalizeBackendRole(access.role),
         firebaseIdToken: idToken,
         firebaseUid: user.uid,
         email: user.email
@@ -99,7 +109,7 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
     return () => {
       cancelled = true;
     };
-  }, [ready, role, session, user]);
+  }, [ready, session, user]);
 
   async function handleResendVerification() {
     setPending(true);
@@ -133,12 +143,14 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
       }
 
       const result = await loginWithFirebase(email, password);
+      const access = await getCurrentAccess(result.idToken);
       session.setFirebaseSession({
-        accessLevel: role,
+        accessLevel: normalizeBackendRole(access.role),
         firebaseIdToken: result.idToken,
         firebaseUid: result.uid,
         email: result.email
       });
+      session.setLoginSuccess(true);
       await queryClient.invalidateQueries();
     } catch (caught) {
       if (caught instanceof Error && caught.message === "UNVERIFIED_EMAIL") {
@@ -153,11 +165,11 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
   async function handleLogout() {
     await logoutFirebase();
     session.clearSession();
-    setRole(preferredRole);
+    setLoginSuccess(false);
     await queryClient.invalidateQueries();
   }
 
-  const visibleRole = session.accessLevel === "public_citizen" && user ? role : session.accessLevel;
+  const visibleRole = session.accessLevel;
 
   return (
     <section className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel">
@@ -175,6 +187,16 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
         </div>
       ) : user ? (
         <div className="mt-5 space-y-3">
+          {loginSuccess && (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-7 text-emerald-800 shadow-sm animate-in fade-in zoom-in-95">
+              <p className="font-semibold flex items-center gap-2">
+                <svg className="h-5 w-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Login Successful!
+              </p>
+            </div>
+          )}
           <div className="rounded-2xl border border-line/70 bg-bg/60 p-4 text-sm leading-7 text-copy">
             <p>Signed in: {user.email ?? user.uid}</p>
             <p>Selected UI role: {roleLabels[visibleRole]}</p>
@@ -208,19 +230,6 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
               required
               className="w-full rounded-2xl border border-line bg-bg/80 px-4 py-3 text-copy outline-none transition focus:border-accent"
             />
-          </label>
-          <label className="text-sm text-muted">
-            <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-accentSoft">UI role hint</span>
-            <select
-              value={role}
-              onChange={(event) => setRole(event.target.value as Exclude<AccessLevel, "public_citizen">)}
-              className="w-full rounded-2xl border border-line bg-bg/80 px-4 py-3 text-copy outline-none transition focus:border-accent"
-            >
-              <option value="admin">Admin</option>
-              <option value="control_room">Control room</option>
-              <option value="police_officer">Police officer</option>
-              <option value="citizen">Citizen</option>
-            </select>
           </label>
           <button
             type="submit"

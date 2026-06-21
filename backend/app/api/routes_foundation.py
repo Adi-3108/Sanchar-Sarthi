@@ -12,7 +12,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.roles import canonical_role
-from app.core.security import AuthContext, require_role
+from app.core.security import AuthContext, get_auth_context, require_role
 from app.db.session import get_db
 from app.orm.incident import INCIDENT_STATUSES, Incident
 from app.orm.incident_prediction import IncidentPrediction
@@ -27,6 +27,15 @@ from app.api.routes_translation import get_translation_service
 from app.services.translation_service import TranslationService
 
 router = APIRouter(prefix="/api/foundation", tags=["foundation"])
+
+
+class CurrentAccessResponse(BaseModel):
+    role: str
+
+
+@router.get("/access", response_model=CurrentAccessResponse)
+def current_access(auth: AuthContext = Depends(get_auth_context)) -> CurrentAccessResponse:
+    return CurrentAccessResponse(role=auth.role)
 
 
 class StationResponse(BaseModel):

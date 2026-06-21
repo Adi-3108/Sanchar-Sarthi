@@ -222,13 +222,6 @@ fun EventFlowApp(viewModel: PlatformFoundationViewModel) {
                                         expanded = false 
                                     }
                                 )
-                                androidx.compose.material3.DropdownMenuItem(
-                                    text = { Text("हिंदी (Hindi)") },
-                                    onClick = { 
-                                        com.namangulati.sancharsarthi.core.translation.TranslationManager.setLanguage(com.google.mlkit.nl.translate.TranslateLanguage.HINDI)
-                                        expanded = false 
-                                    }
-                                )
                             }
                         }
                     )

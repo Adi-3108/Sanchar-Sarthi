@@ -173,15 +173,25 @@ flowchart LR
     ControlRoom[Control Room]
     Officer[Police Officer]
     Admin[Administrator]
+
+    Web[Web App]
     Android[Android App]
+    API[API / Backend]
 
     Citizen --> Web
-    ControlRoom --> Web
-    Officer --> Web
-    Admin --> Web
-    Android --> API
+    Citizen --> Android
 
-    Web[Next.js Web Platform] --> API[FastAPI Backend]
+    ControlRoom --> Web
+    ControlRoom --> Android
+
+    Officer --> Web
+    Officer --> Android
+
+    Admin --> Web
+    Admin --> Android
+
+    Web --> API
+    Android --> API
 
     API --> Auth[Firebase Auth]
     API --> DB[(PostgreSQL or SQLite)]

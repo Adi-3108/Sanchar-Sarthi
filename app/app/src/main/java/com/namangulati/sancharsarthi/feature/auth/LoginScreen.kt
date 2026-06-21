@@ -153,49 +153,8 @@ fun LoginScreen(
                     )
                 )
 
-                // Role Dropdown
-                var dropdownExpanded by remember { mutableStateOf(false) }
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    ExposedDropdownMenuBox(
-                        expanded = dropdownExpanded,
-                        onExpandedChange = { dropdownExpanded = !dropdownExpanded }
-                    ) {
-                        OutlinedTextField(
-                            value = state.selectedRole.displayName,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { AutoTranslatedText("UI role hint") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                                focusedBorderColor = MaterialTheme.colorScheme.primary
-                            )
-                        )
-                        ExposedDropdownMenu(
-                            expanded = dropdownExpanded,
-                            onDismissRequest = { dropdownExpanded = false }
-                        ) {
-                            com.namangulati.sancharsarthi.core.session.AccessLevel.entries
-                                .filter { it != com.namangulati.sancharsarthi.core.session.AccessLevel.PublicCitizen }
-                                .forEach { role ->
-                                    DropdownMenuItem(
-                                        text = { AutoTranslatedText(role.displayName) },
-                                        onClick = {
-                                            onRoleChange(role)
-                                            dropdownExpanded = false
-                                        }
-                                    )
-                                }
-                        }
-                    }
-                }
-
+                // Role Dropdown removed to enforce backend-driven RBAC
+                // The role is now fetched securely from /api/auth/me after successful login
                 // Error Message / Resend Verification State
                 if (state.error != null) {
                     val messageColor = if (state.resendSuccess) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error

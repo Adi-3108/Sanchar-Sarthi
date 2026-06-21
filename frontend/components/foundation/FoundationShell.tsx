@@ -560,11 +560,13 @@ function IncidentList({ title, incidents, labels, canVote, canManage, selectedIn
               <Info label={labels.station} value={incident.assigned_station_name ?? "Pending assignment"} />
               <Info label={labels.confidence} value={`${Math.round(incident.confidence_score * 100)}%`} />
             </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm disabled:opacity-50" disabled={!canVote} onClick={() => onVote(incident.id, "true")} type="button">{labels.voteTrue} ({incident.true_vote_count})</button>
-              <button className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm disabled:opacity-50" disabled={!canVote} onClick={() => onVote(incident.id, "false")} type="button">{labels.voteFalse} ({incident.false_vote_count})</button>
-              <button className="rounded-2xl border border-blue-200 bg-blue-100 px-3 py-2 text-sm font-semibold text-blue-800" onClick={() => onSelect(incident.id)} type="button">{labels.viewRoutes}</button>
-            </div>
+            {!canManage ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm disabled:opacity-50" disabled={!canVote} onClick={() => onVote(incident.id, "true")} type="button">{labels.voteTrue} ({incident.true_vote_count})</button>
+                <button className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm disabled:opacity-50" disabled={!canVote} onClick={() => onVote(incident.id, "false")} type="button">{labels.voteFalse} ({incident.false_vote_count})</button>
+                <button className="rounded-2xl border border-blue-200 bg-blue-100 px-3 py-2 text-sm font-semibold text-blue-800" onClick={() => onSelect(incident.id)} type="button">{labels.viewRoutes}</button>
+              </div>
+            ) : null}
             {canManage ? (
               <div className="mt-3 flex flex-wrap gap-2">
                 {["reported"].includes(incident.status) && <MiniAction label={labels.approve} onClick={() => onStatusChange(incident.id, { status: "pending_verification" })} />}

@@ -113,7 +113,16 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins(self) -> list[str]:
-        return [origin.strip() for origin in self.frontend_origin.split(",") if origin.strip()]
+        origins = [origin.strip() for origin in self.frontend_origin.split(",") if origin.strip()]
+        loopback_aliases = {
+            "http://localhost:3000": "http://127.0.0.1:3000",
+            "http://127.0.0.1:3000": "http://localhost:3000",
+        }
+        for origin in tuple(origins):
+            alias = loopback_aliases.get(origin)
+            if alias and alias not in origins:
+                origins.append(alias)
+        return origins
 
     @property
     def resolved_raw_data_path(self) -> Path:

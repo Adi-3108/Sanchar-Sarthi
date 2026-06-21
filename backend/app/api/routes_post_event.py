@@ -15,6 +15,7 @@ from app.services.post_event_report_service import (
     generate_post_event_report,
     serialize_post_event_report,
 )
+from app.services.rag_indexer_service import index_post_event_report_record
 
 router = APIRouter(prefix="/api/events", tags=["post_event"])
 
@@ -114,6 +115,10 @@ def generate_post_event_report_route(
         )
         db.commit()
         db.refresh(record)
+        try:
+            index_post_event_report_record(db, str(record.id), commit=True)
+        except Exception:
+            db.rollback()
     except ValueError as exc:
         db.rollback()
         return error_response(404, "EVENT_NOT_FOUND", str(exc), {"event_id": event_id})
@@ -122,3 +127,4 @@ def generate_post_event_report_route(
         return error_response(503, "DATABASE_UNAVAILABLE", "Database is unavailable for post-event learning.")
 
     return PostEventReportResponse.model_validate(serialize_post_event_report(record))
+

@@ -24,6 +24,7 @@ from app.services.hotspot_service import (
     list_hotspots,
     rebuild_hotspots,
 )
+from app.services.rag_indexer_service import reindex_all_hotspots
 
 
 class AnalyticsBreakdownItem(BaseModel):
@@ -282,6 +283,10 @@ def rebuild_hotspot_clusters(
             min_samples=min_samples,
         )
         db.commit()
+        try:
+            reindex_all_hotspots(db, commit=True)
+        except Exception:
+            db.rollback()
     except ValueError as exc:
         db.rollback()
         return error_response(400, "VALIDATION_ERROR", str(exc))

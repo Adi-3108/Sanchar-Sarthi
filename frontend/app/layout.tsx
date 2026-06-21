@@ -7,6 +7,7 @@ import GoogleTranslate from "@/components/GoogleTranslate";
 
 import { TopNav } from "@/components/layout/TopNav";
 import { GlobalSidebar } from "@/components/layout/GlobalSidebar";
+import { ChatPanel } from "@/components/rag/ChatPanel";
 
 import "./globals.css";
 
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
             <TopNav />
             <GlobalSidebar />
             {children}
+            <ChatPanel />
           </AppProviders>
         </LanguageProvider>
       </body>

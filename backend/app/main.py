@@ -1,4 +1,4 @@
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,6 +15,7 @@ from app.api.routes_live_updates import router as live_updates_router
 from app.api.routes_map import router as map_router
 from app.api.routes_officer import router as officer_router
 from app.api.routes_post_event import router as post_event_router
+from app.api.routes_rag import router as rag_router
 from app.api.routes_recommendations import router as recommendations_router
 from app.api.routes_reports import router as reports_router
 from app.api.routes_translation import router as translation_router
@@ -23,6 +24,7 @@ from app.api import routes_analytics_corridor
 from app.core.config import get_settings
 from app.core.firebase import initialize_firebase
 from app.db.base import import_model_modules
+from app.services.rag_indexer_service import periodic_live_update_index_loop
 
 settings = get_settings()
 
@@ -34,9 +36,15 @@ import asyncio
 async def lifespan(_: FastAPI):
     import_model_modules()
     initialize_firebase(settings)
-    task = asyncio.create_task(_fetch_routes_loop())
+    tasks = [asyncio.create_task(_fetch_routes_loop())]
+    if settings.rag_enabled:
+        tasks.append(asyncio.create_task(periodic_live_update_index_loop()))
     yield
-    task.cancel()
+    for task in tasks:
+        task.cancel()
+    for task in tasks:
+        with suppress(asyncio.CancelledError):
+            await task
 
 
 app = FastAPI(
@@ -66,6 +74,7 @@ app.include_router(live_updates_router)
 app.include_router(map_router)
 app.include_router(officer_router)
 app.include_router(post_event_router)
+app.include_router(rag_router)
 app.include_router(recommendations_router)
 app.include_router(reports_router)
 app.include_router(translation_router)

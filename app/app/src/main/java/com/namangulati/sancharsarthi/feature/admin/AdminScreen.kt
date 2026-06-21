@@ -186,24 +186,48 @@ fun AdminScreen(
             }
         }
 
-        // 4. Incident management
+        // 4. Active incidents
         item {
             Column {
                 AutoTranslatedText("Incident management", style = MaterialTheme.typography.labelMedium, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(4.dp))
-                AutoTranslatedText("Admin incident controls", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                AutoTranslatedText("Active incidents", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             }
         }
         
-        val activeIncidents = uiState.overview?.incidents?.filter { it.status != "resolved" && it.status != "archived" && it.status != "rejected" }?.take(8) ?: emptyList()
+        val activeIncidents = uiState.overview?.incidents?.filter { it.status == "active" || it.status == "escalated" || it.status == "resolved" }?.take(8) ?: emptyList()
         items(activeIncidents) { incident ->
             IncidentCard(
                 incident = incident,
                 isEscalating = uiState.actionLoading,
                 onActivate = { viewModel.transitionIncidentStatus(incident.id, "active") },
                 onResolve = { viewModel.transitionIncidentStatus(incident.id, "resolved") },
-                onArchive = { viewModel.transitionIncidentStatus(incident.id, "archived") },
-                onDelete = { viewModel.deleteIncident(incident.id) },
+                onReject = { viewModel.transitionIncidentStatus(incident.id, "rejected") },
+                onEscalate = { viewModel.escalateIncident(incident.id) }
+            )
+        }
+
+        // 4b. User reported incidents
+        item {
+            Column {
+                Spacer(modifier = Modifier.height(16.dp))
+                AutoTranslatedText("User reported incidents", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            }
+        }
+
+        val userReportedIncidents = uiState.overview?.incidents?.filter { it.status == "pending_verification" || it.status == "reported" }?.take(8) ?: emptyList()
+        if (userReportedIncidents.isEmpty()) {
+            item {
+                Text("No user reported incidents currently.", color = Color.Gray)
+            }
+        }
+        items(userReportedIncidents) { incident ->
+            IncidentCard(
+                incident = incident,
+                isEscalating = uiState.actionLoading,
+                onActivate = { viewModel.transitionIncidentStatus(incident.id, "active") },
+                onResolve = { viewModel.transitionIncidentStatus(incident.id, "resolved") },
+                onReject = { viewModel.transitionIncidentStatus(incident.id, "rejected") },
                 onEscalate = { viewModel.escalateIncident(incident.id) }
             )
         }
@@ -310,8 +334,7 @@ fun IncidentCard(
     isEscalating: Boolean,
     onActivate: () -> Unit,
     onResolve: () -> Unit,
-    onArchive: () -> Unit,
-    onDelete: () -> Unit,
+    onReject: () -> Unit,
     onEscalate: () -> Unit
 ) {
     Card(
@@ -328,7 +351,7 @@ fun IncidentCard(
             ) {
                 Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                     AutoTranslatedText(incident.title, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
-                    AutoTranslatedText("${incident.location_name} · ${incident.status}", color = Color(0xFF475569), fontSize = 14.sp)
+                    AutoTranslatedText("${incident.location_name} · ${incident.status.replace("_", " ").capitalize()}", color = Color(0xFF475569), fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(4.dp))
                     AutoTranslatedText(incident.route_impact_summary ?: "Route impact under review.", color = Color(0xFF475569), fontSize = 14.sp)
                 }
@@ -336,6 +359,7 @@ fun IncidentCard(
                     modifier = Modifier
                         .background(Color.White, RoundedCornerShape(12.dp))
                         .padding(horizontal = 12.dp, vertical = 4.dp)
+                        .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
                 ) {
                     AutoTranslatedText(incident.severity, color = Color(0xFF334155), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
@@ -349,23 +373,63 @@ fun IncidentCard(
             ) {
                 Column {
                     Row {
-                        Text("ID: ", color = Color(0xFF475569), fontSize = 14.sp)
+                        Text("EVENT ID: ", color = Color(0xFF475569), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         Text(incident.id.take(12), color = Color(0xFF475569), fontSize = 12.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
                     }
-                    val force = incident.police_force_required ?: "-"
-                    Text("Force: $force", color = Color(0xFF475569), fontSize = 14.sp)
+                    Text("TIME", color = Color(0xFF475569), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
+                    Text(incident.created_at.take(16).replace("T", " "), color = Color(0xFF0F172A), fontSize = 13.sp)
                 }
                 Column {
-                    val conf = incident.confidence_score ?: 0.0
-                    Text("Confidence: ${(conf * 100).roundToInt()}%", color = Color(0xFF475569), fontSize = 14.sp)
-                    val barricades = incident.barricades_required ?: "-"
-                    Text("Barricades: $barricades", color = Color(0xFF475569), fontSize = 14.sp)
+                    Text("STATUS", color = Color(0xFF475569), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text(incident.status.replace("_", " ").capitalize(), color = Color(0xFF0F172A), fontSize = 13.sp)
+                    Text("STATION", color = Color(0xFF475569), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
+                    Text(incident.assigned_station_name ?: "-", color = Color(0xFF0F172A), fontSize = 13.sp)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("CONFIDENCE", color = Color(0xFF475569), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            val conf = incident.confidence_score
+            Text("${(conf * 100).roundToInt()}%", color = Color(0xFF0F172A), fontSize = 13.sp)
+
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Voting buttons (always disabled in Control Room per user request)
+            @OptIn(ExperimentalLayoutApi::class)
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { },
+                    enabled = false,
+                    shape = RoundedCornerShape(100.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(disabledContentColor = Color(0xFF94A3B8)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                ) {
+                    Text("Vote true (${incident.true_vote_count})", fontSize = 12.sp)
+                }
+                OutlinedButton(
+                    onClick = { },
+                    enabled = false,
+                    shape = RoundedCornerShape(100.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(disabledContentColor = Color(0xFF94A3B8)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                ) {
+                    Text("Vote false (${incident.false_vote_count})", fontSize = 12.sp)
+                }
+                Button(
+                    onClick = { },
+                    enabled = false,
+                    shape = RoundedCornerShape(100.dp),
+                    colors = ButtonDefaults.buttonColors(disabledContainerColor = Color(0xFFEFF6FF), disabledContentColor = Color(0xFF60A5FA))
+                ) {
+                    Text("View alternate routes", fontSize = 12.sp)
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            val canEscalate = listOf("reported", "pending_verification", "active").contains(incident.status)
 
             @OptIn(ExperimentalLayoutApi::class)
             FlowRow(
@@ -373,33 +437,27 @@ fun IncidentCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedButton(onClick = onActivate, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF334155))) {
-                    AutoTranslatedText("Activate")
-                }
-                OutlinedButton(onClick = onResolve, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF334155))) {
-                    AutoTranslatedText("Resolve")
-                }
-                OutlinedButton(onClick = onArchive, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF334155))) {
-                    AutoTranslatedText("Archive")
-                }
-                OutlinedButton(
-                    onClick = onDelete, 
-                    shape = RoundedCornerShape(12.dp), 
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFECDD3)),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFBE123C))
-                ) {
-                    AutoTranslatedText("Delete")
-                }
-            }
-            if (canEscalate) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = onEscalate,
-                    enabled = !isEscalating,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEFF6FF), contentColor = Color(0xFF1D4ED8))
-                ) {
-                    AutoTranslatedText(if (isEscalating) "Escalating…" else "⬆ Escalate to Event")
+                if (incident.status == "pending_verification" || incident.status == "reported") {
+                    OutlinedButton(onClick = onReject, shape = RoundedCornerShape(100.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF334155))) {
+                        AutoTranslatedText("Reject")
+                    }
+                    OutlinedButton(onClick = onActivate, shape = RoundedCornerShape(100.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF334155))) {
+                        AutoTranslatedText("Activate")
+                    }
+                } else if (incident.status == "active" || incident.status == "escalated") {
+                    OutlinedButton(onClick = onResolve, shape = RoundedCornerShape(100.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF334155))) {
+                        AutoTranslatedText("Resolve")
+                    }
+                    if (incident.status == "active") {
+                        Button(
+                            onClick = onEscalate,
+                            enabled = !isEscalating,
+                            shape = RoundedCornerShape(100.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEFF6FF), contentColor = Color(0xFF1D4ED8))
+                        ) {
+                            AutoTranslatedText(if (isEscalating) "Escalating…" else "Escalate to Event")
+                        }
+                    }
                 }
             }
         }

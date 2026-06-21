@@ -31,9 +31,9 @@ class AdminViewModel : ViewModel() {
             _uiState.update { it.copy(loading = true, error = null) }
             try {
                 val response = RetrofitClient.adminApi.getOverview()
-                _uiState.update { it.copy(loading = false, overview = response) }
+                _uiState.update { it.copy(loading = false, actionLoading = false, overview = response) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(loading = false, error = e.localizedMessage ?: "Failed to load overview") }
+                _uiState.update { it.copy(loading = false, actionLoading = false, error = e.localizedMessage ?: "Failed to load overview") }
             }
         }
     }

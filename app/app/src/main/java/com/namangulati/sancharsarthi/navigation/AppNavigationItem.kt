@@ -29,7 +29,7 @@ enum class AppNavigationItem(
 ) {
     // PORTALS
     CommandCenter("Command Center", Icons.Outlined.Dashboard, EventFlowDestination.Overview),
-    ControlRoom("Control Room", Icons.Outlined.SupportAgent, EventFlowDestination.Overview),
+    ControlRoom("Control Room", Icons.Outlined.SupportAgent, EventFlowDestination.ControlRoom),
     OfficerPortal("Officer Portal", Icons.Outlined.Security, EventFlowDestination.Officer),
     AdminPortal("Admin Portal", Icons.Outlined.AdminPanelSettings, EventFlowDestination.Admin),
     UserMode("User Mode", Icons.Outlined.Person, EventFlowDestination.Citizen),

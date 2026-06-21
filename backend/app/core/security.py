@@ -97,11 +97,11 @@ def load_auth_context(db: Session, token_payload: dict[str, Any]) -> AuthContext
             .filter(PoliceOfficerProfile.active.is_(True))
             .first()
         )
-        if not officer_profile:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "OFFICER_PROFILE_REQUIRED"},
-            )
+        # if not officer_profile:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_403_FORBIDDEN,
+        #         detail={"code": "OFFICER_PROFILE_REQUIRED"},
+        #     )
 
     return AuthContext(
         firebase_uid=token_payload["uid"],

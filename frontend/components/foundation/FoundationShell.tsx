@@ -272,7 +272,6 @@ import { useUIStore } from "@/lib/stores/useUIStore";
 export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mode; initialPanel?: Panel }) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const router = useRouter();
   const { user, ready } = useFirebaseAuthState();
   const { language } = useLanguage();
   const { sidebarOpen } = useUIStore();

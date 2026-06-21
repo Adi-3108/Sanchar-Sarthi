@@ -129,11 +129,11 @@ def require_role(*allowed_roles: str):
         db: Session = Depends(get_db),
     ) -> AuthContext:
         auth = load_auth_context(db, token_payload)
-        # if not role_allowed(auth.role, allowed_roles):
-        #     raise HTTPException(
-        #         status_code=status.HTTP_403_FORBIDDEN,
-        #         detail={"code": "FORBIDDEN_ROLE"},
-        #     )
+        if not role_allowed(auth.role, allowed_roles):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={"code": "FORBIDDEN_ROLE"},
+            )
         return auth
 
     return dependency

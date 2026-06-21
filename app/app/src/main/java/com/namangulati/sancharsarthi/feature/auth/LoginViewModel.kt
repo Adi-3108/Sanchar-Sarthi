@@ -66,10 +66,14 @@ class LoginViewModel(
                     return@launch
                 }
 
-                val result = firebaseAuthManager.login(email, password)
+                firebaseAuthManager.login(email, password)
                 
-                _uiState.update { it.copy(loading = false) }
-                onSuccess(_uiState.value.selectedRole)
+                // Fetch actual role from backend
+                val meResponse = com.namangulati.sancharsarthi.core.network.RetrofitClient.authApi.getMe()
+                val role = parseRole(meResponse.role)
+                
+                _uiState.update { it.copy(loading = false, selectedRole = role) }
+                onSuccess(role)
             } catch (e: Exception) {
                 if (e.message == "UNVERIFIED_EMAIL" || e.localizedMessage?.contains("UNVERIFIED_EMAIL") == true) {
                     _uiState.update { it.copy(loading = false, isUnverified = true, error = "Please verify your email address before signing in.") }
@@ -88,10 +92,26 @@ class LoginViewModel(
                 return@launch
             }
             _uiState.update { it.copy(loading = true) }
-            // Always return the default or currently selected role when restoring the session
-            // since we removed the backend officerLogin check.
-            _uiState.update { it.copy(loading = false) }
-            onResult(com.namangulati.sancharsarthi.core.session.AccessLevel.Admin)
+            try {
+                val meResponse = com.namangulati.sancharsarthi.core.network.RetrofitClient.authApi.getMe()
+                val role = parseRole(meResponse.role)
+                _uiState.update { it.copy(loading = false, selectedRole = role) }
+                onResult(role)
+            } catch (e: Exception) {
+                // If token is invalid or backend rejects it
+                _uiState.update { it.copy(loading = false) }
+                onResult(null)
+            }
+        }
+    }
+
+    private fun parseRole(backendRole: String): com.namangulati.sancharsarthi.core.session.AccessLevel {
+        return when (backendRole) {
+            "admin" -> com.namangulati.sancharsarthi.core.session.AccessLevel.Admin
+            "police_officer" -> com.namangulati.sancharsarthi.core.session.AccessLevel.PoliceOfficer
+            "control_room", "control_room_officer" -> com.namangulati.sancharsarthi.core.session.AccessLevel.ControlRoom
+            "citizen" -> com.namangulati.sancharsarthi.core.session.AccessLevel.Citizen
+            else -> com.namangulati.sancharsarthi.core.session.AccessLevel.PublicCitizen
         }
     }
 

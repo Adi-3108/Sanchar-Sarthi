@@ -5,6 +5,17 @@ export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://loc
   ""
 );
 
+export async function getCurrentAccess(idToken: string): Promise<{ role: string }> {
+  const response = await fetch(`${API_BASE_URL}/api/foundation/access`, {
+    headers: { Authorization: `Bearer ${idToken}` },
+    cache: "no-store"
+  });
+  if (!response.ok) {
+    throw new Error("Could not resolve your account role.");
+  }
+  return response.json() as Promise<{ role: string }>;
+}
+
 export type ModelArtifactStatus = "not_loaded" | "dependency_missing" | "loaded";
 
 export type HealthResponse = {

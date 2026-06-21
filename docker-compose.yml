@@ -1,0 +1,59 @@
+services:
+
+  # ── PostgreSQL ─────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: gridlock_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB:       ${POSTGRES_DB:-eventflow}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - gridlock_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-eventflow}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    # Postgres port is intentionally NOT exposed to the host.
+    # To connect from the VM directly (e.g. psql / DB GUI), uncomment below:
+    # ports:
+    #   - "5432:5432"
+
+  # ── Backend (FastAPI + ML models) ──────────────────────────────────────────
+  backend:
+    build:
+      context: .                        # repo root (so COPY can reach alembic.ini + CSV)
+      dockerfile: backend/Dockerfile
+    container_name: gridlock_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env                            # copy docker.env.example → .env before first run
+    environment:
+      # Override DATABASE_URL to use the internal docker service hostname 'db'
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-eventflow}
+      # Pass postgres connection details to entrypoint pg_isready check
+      DB_HOST: db
+      DB_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+    depends_on:
+      db:
+        condition: service_healthy      # wait until postgres passes its healthcheck
+    networks:
+      - gridlock_net
+
+# ── Volumes ────────────────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+    driver: local
+
+# ── Networks ───────────────────────────────────────────────────────────────────
+networks:
+  gridlock_net:
+    driver: bridge

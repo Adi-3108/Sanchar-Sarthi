@@ -34,6 +34,9 @@ from app.services.recommendation_orchestrator import (
     persist_recommendation_plan,
 )
 from app.services.weather_service import resolve_weather_adjustment
+from app.core.config import get_settings
+from app.core.translation_budget import TranslationBudgetGuard
+from app.services.translation_service import TranslationService
 
 
 def _dt(year: int, month: int, day: int, hour: int, minute: int = 0) -> datetime:
@@ -695,12 +698,13 @@ def _seed_predictions_and_recommendations(
     return prediction_records, recommendation_records
 
 
-def _seed_demo_reports(db: Session) -> int:
+def _seed_demo_reports(db: Session, translation_service: TranslationService) -> int:
     created_count = 0
     for blueprint in DEMO_REPORT_BLUEPRINTS:
         create_citizen_report(
             db,
             CitizenReportCreate.model_validate(blueprint),
+            translation_service,
             commit=False,
         )
         created_count += 1
@@ -910,10 +914,17 @@ def seed_demo_scenarios(db: Session, *, commit: bool = True) -> DemoSeedReport:
         officers_by_id=officers_by_id,
     )
 
+    settings = get_settings()
+    budget_guard = TranslationBudgetGuard(
+        daily_limit=settings.google_translate_daily_char_limit,
+        monthly_limit=settings.google_translate_monthly_char_limit,
+    )
+    translation_service = TranslationService(settings, budget_guard)
+
     # rebuild_hotspots(db, commit=False)
     # rebuild_event_dna_records(db, refresh_supporting_data=False, commit=False)
     prediction_by_event_id, _recommendation_by_event_id = _seed_predictions_and_recommendations(db, events_by_id)
-    report_count = _seed_demo_reports(db)
+    report_count = _seed_demo_reports(db, translation_service)
     live_update_count = _seed_demo_live_updates(db, prediction_by_event_id)
     generate_post_event_report(db, LEARNING_EVENT_ID, commit=False)
     scenario_count = _seed_demo_scenarios(db, prediction_by_event_id)

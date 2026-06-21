@@ -111,12 +111,12 @@ fun CitizenExperienceScreen(
             .verticalScroll(rememberScrollState())
             .padding(24.dp)
     ) {
-        Text("Report incident", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
+        Text("Report incident", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
         Spacer(modifier = Modifier.height(24.dp))
 
         Card(
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -125,18 +125,18 @@ fun CitizenExperienceScreen(
                     OutlinedTextField(
                         value = title,
                         onValueChange = { title = it },
-                        label = { Text("TITLE", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B)) },
+                        label = { Text("TITLE", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE2E8F0))
+                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant)
                     )
                     OutlinedTextField(
                         value = severity,
                         onValueChange = { severity = it },
-                        label = { Text("SEVERITY", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B)) },
+                        label = { Text("SEVERITY", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE2E8F0))
+                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant)
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -145,18 +145,18 @@ fun CitizenExperienceScreen(
                     OutlinedTextField(
                         value = incidentType,
                         onValueChange = { incidentType = it },
-                        label = { Text("INCIDENT TYPE", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B)) },
+                        label = { Text("INCIDENT TYPE", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE2E8F0))
+                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant)
                     )
                     OutlinedTextField(
                         value = locationName,
                         onValueChange = { locationName = it },
-                        label = { Text("LOCATION", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B)) },
+                        label = { Text("LOCATION", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE2E8F0))
+                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant)
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -165,18 +165,18 @@ fun CitizenExperienceScreen(
                     OutlinedTextField(
                         value = locality,
                         onValueChange = { locality = it },
-                        label = { Text("LOCALITY", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B)) },
+                        label = { Text("LOCALITY", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE2E8F0))
+                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant)
                     )
                     OutlinedTextField(
                         value = ward,
                         onValueChange = { ward = it },
-                        label = { Text("WARD", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B)) },
+                        label = { Text("WARD", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE2E8F0))
+                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant)
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -185,18 +185,18 @@ fun CitizenExperienceScreen(
                     OutlinedTextField(
                         value = latitude,
                         onValueChange = { latitude = it },
-                        label = { Text("LATITUDE", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B)) },
+                        label = { Text("LATITUDE", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE2E8F0))
+                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant)
                     )
                     OutlinedTextField(
                         value = longitude,
                         onValueChange = { longitude = it },
-                        label = { Text("LONGITUDE", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B)) },
+                        label = { Text("LONGITUDE", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE2E8F0))
+                        colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant)
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -204,21 +204,21 @@ fun CitizenExperienceScreen(
                 OutlinedTextField(
                     value = descriptionLanguage,
                     onValueChange = { descriptionLanguage = it },
-                    label = { Text("DESCRIPTION LANGUAGE", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B)) },
+                    label = { Text("DESCRIPTION LANGUAGE", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE2E8F0))
+                    colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("DESCRIPTION", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF64748B)) },
+                    label = { Text("DESCRIPTION", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 4,
                     maxLines = 6,
-                    colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFFE2E8F0))
+                    colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant)
                 )
                 Spacer(modifier = Modifier.height(24.dp))
 
@@ -237,8 +237,8 @@ fun CitizenExperienceScreen(
                             }
                         },
                         shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1E293B)),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                     ) {
                         Text("Use my location", fontWeight = FontWeight.Medium)
                     }
@@ -284,7 +284,7 @@ fun CitizenExperienceScreen(
                             }
                         },
                         shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         enabled = !isSubmitting
                     ) {
                         Text(if (isSubmitting) "Submitting..." else "Submit", fontWeight = FontWeight.Medium)
@@ -305,14 +305,14 @@ fun CitizenExperienceScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Bottom
         ) {
-            Text("User reported incidents", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
+            Text("User reported incidents", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(100.dp))
-                    .background(Color(0xFFF1F5F9))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .padding(horizontal = 12.dp, vertical = 4.dp)
             ) {
-                Text(reportedIncidents.size.toString(), color = Color(0xFF475569), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Text(reportedIncidents.size.toString(), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
@@ -324,11 +324,11 @@ fun CitizenExperienceScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
                     .padding(24.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No incidents here right now.", color = Color(0xFF64748B), fontSize = 14.sp)
+                Text("No incidents here right now.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
             }
         } else {
             reportedIncidents.forEach { incident ->
@@ -359,26 +359,26 @@ fun CitizenIncidentCard(
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(incident.title, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A), fontSize = 16.sp)
+                    Text(incident.title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp)
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(incident.location_name, color = Color(0xFF475569), fontSize = 13.sp)
+                    Text(incident.location_name, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                 }
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(100.dp))
-                        .background(Color.White)
+                        .background(MaterialTheme.colorScheme.surface)
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
                         incident.severity.uppercase(),
-                        color = Color(0xFF475569),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -391,8 +391,8 @@ fun CitizenIncidentCard(
                 OutlinedButton(
                     onClick = { onVote("true") },
                     shape = RoundedCornerShape(100.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1E293B)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Text("Vote true (${incident.true_vote_count})", fontSize = 13.sp)
@@ -400,8 +400,8 @@ fun CitizenIncidentCard(
                 OutlinedButton(
                     onClick = { onVote("false") },
                     shape = RoundedCornerShape(100.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1E293B)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Text("Vote false (${incident.false_vote_count})", fontSize = 13.sp)
@@ -410,3 +410,4 @@ fun CitizenIncidentCard(
         }
     }
 }
+

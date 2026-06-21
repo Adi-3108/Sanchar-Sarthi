@@ -105,7 +105,7 @@ fun HeaderSection(modelRuns: List<ModelRunResponse>) {
             AutoTranslatedText(
                 text = "This view tracks which prediction artifacts exist, what the latest recorded training run says, and when Sanchar Sarthi is still operating on explainable rule fallbacks.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF64748B)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(16.dp))
             Box(
@@ -119,7 +119,7 @@ fun HeaderSection(modelRuns: List<ModelRunResponse>) {
                 Column {
                     AutoTranslatedText("Latest recorded run", style = MaterialTheme.typography.labelSmall, color = Color(0xFF16A34A), fontWeight = FontWeight.SemiBold)
                     Spacer(modifier = Modifier.height(4.dp))
-                    AutoTranslatedText(latestRun?.created_at ?: "No runs yet", fontWeight = FontWeight.Bold, color = Color(0xFF0F172A), fontSize = 18.sp)
+                    AutoTranslatedText(latestRun?.created_at ?: "No runs yet", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp)
                 }
             }
         }
@@ -165,7 +165,7 @@ fun InterpretationGuideSection() {
 
 @Composable
 fun BulletText(text: String) {
-    AutoTranslatedText(text = text, style = MaterialTheme.typography.bodySmall, color = Color(0xFF64748B))
+    AutoTranslatedText(text = text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 @Composable
@@ -175,7 +175,7 @@ fun ModelDetailSection(title: String, description: String, status: String, run: 
         subtitle = "MODEL DETAILS"
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            AutoTranslatedText(text = description, style = MaterialTheme.typography.bodySmall, color = Color(0xFF64748B))
+            AutoTranslatedText(text = description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 StatusBadge(statusLabel(status), statusToneColor(status), statusToneBg(status))
@@ -189,8 +189,8 @@ fun ModelDetailSection(title: String, description: String, status: String, run: 
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFF8FAFC))
-                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.background)
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
                     .padding(12.dp)
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -263,14 +263,14 @@ fun MetricBox(label: String, value: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFFF1F5F9))
-            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
             .padding(8.dp)
     ) {
         Column {
-            Text(text = label.uppercase(), fontSize = 10.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+            Text(text = label.uppercase(), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = value, fontSize = 14.sp, color = Color(0xFF0F172A), fontWeight = FontWeight.SemiBold)
+            Text(text = value, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -291,8 +291,8 @@ fun StatusBadge(text: String, color: Color, bgColor: Color) {
 @Composable
 fun InfoRow(label: String, value: String) {
     Row(modifier = Modifier.fillMaxWidth()) {
-        Text(text = "$label: ", style = MaterialTheme.typography.bodySmall, color = Color(0xFF64748B), fontWeight = FontWeight.Medium)
-        Text(text = value, style = MaterialTheme.typography.bodySmall, color = Color(0xFF0F172A), fontWeight = FontWeight.SemiBold)
+        Text(text = "$label: ", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+        Text(text = value, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -324,3 +324,4 @@ fun formatNum(value: Double?): String {
     if (value == null || value.isNaN()) return "N/A"
     return String.format("%.2f", value)
 }
+

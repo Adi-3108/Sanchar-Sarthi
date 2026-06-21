@@ -68,7 +68,7 @@ fun SimulationScreen(
                         onClick = { viewModel.runSimulation() },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7), contentColor = Color.White),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                         enabled = !uiState.isLoading
                     ) {
                         AutoTranslatedText(if (uiState.isLoading) "Simulating..." else "Run Simulation")
@@ -90,15 +90,15 @@ fun SimulationScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                 ) {
                     Column(modifier = Modifier.padding(24.dp)) {
                         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                            AutoTranslatedText("SIMULATION SUMMARY", fontSize = 12.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+                            AutoTranslatedText("SIMULATION SUMMARY", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                             Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)), shape = RoundedCornerShape(8.dp)) {
                                 val eventIdStr = result.event_dna?.event_id ?: result.recommendations?.event_id ?: "SIM-UNKNOWN"
-                                AutoTranslatedText("Event ID: $eventIdStr", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontSize = 10.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                                AutoTranslatedText("Event ID: $eventIdStr", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                             }
                         }
                         Spacer(modifier = Modifier.height(16.dp))
@@ -124,18 +124,18 @@ fun SimulationScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Column(modifier = Modifier.padding(24.dp)) {
-                        AutoTranslatedText("ESTIMATED IMPACT", fontSize = 12.sp, color = Color(0xFF94A3B8), fontWeight = FontWeight.Bold)
+                        AutoTranslatedText("ESTIMATED IMPACT", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(8.dp))
-                        AutoTranslatedText("Operational disruption estimate", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        AutoTranslatedText("Operational disruption estimate", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                             Column {
-                                AutoTranslatedText("IMPACT SCORE", fontSize = 10.sp, color = Color(0xFF94A3B8), fontWeight = FontWeight.Bold)
-                                AutoTranslatedText(result.estimated_impact_score?.toString() ?: "0.0", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                AutoTranslatedText("IMPACT SCORE", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                                AutoTranslatedText(result.estimated_impact_score?.toString() ?: "0.0", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             }
                         }
                         Spacer(modifier = Modifier.height(16.dp))
@@ -162,8 +162,8 @@ fun SimField(modifier: Modifier = Modifier, label: String, value: String, single
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                unfocusedContainerColor = Color.White,
-                focusedContainerColor = Color.White,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
                 unfocusedBorderColor = Color(0xFFBAE6FD),
                 focusedBorderColor = Color(0xFF0284C7)
             )
@@ -176,13 +176,13 @@ fun MetricItemOutline(modifier: Modifier = Modifier, label: String, value: Strin
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            AutoTranslatedText(label, fontSize = 10.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+            AutoTranslatedText(label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(4.dp))
-            AutoTranslatedText(value, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
+            AutoTranslatedText(value, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
@@ -195,9 +195,9 @@ fun MetricItemDark(modifier: Modifier = Modifier, label: String, value: String) 
         colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A))
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            AutoTranslatedText(label, fontSize = 10.sp, color = Color(0xFF94A3B8), fontWeight = FontWeight.Bold)
+            AutoTranslatedText(label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(4.dp))
-            AutoTranslatedText(value, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            AutoTranslatedText(value, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
@@ -207,16 +207,16 @@ fun CounterfactualPanel(result: com.namangulati.sancharsarthi.core.network.Simul
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
-            AutoTranslatedText("COUNTERFACTUAL", fontSize = 12.sp, color = Color(0xFF94A3B8), fontWeight = FontWeight.Bold)
+            AutoTranslatedText("COUNTERFACTUAL", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-            AutoTranslatedText("Baseline vs event-adjusted impact", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            AutoTranslatedText("Baseline vs event-adjusted impact", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(16.dp))
             
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                AutoTranslatedText("ADDITIONAL DELTA", fontSize = 10.sp, color = Color(0xFF94A3B8), fontWeight = FontWeight.Bold)
+                AutoTranslatedText("ADDITIONAL DELTA", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                 AutoTranslatedText("+", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFDE047))
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -234,12 +234,12 @@ fun LogisticsPanel(result: com.namangulati.sancharsarthi.core.network.Simulation
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
             AutoTranslatedText("LOGISTICS IMPACT", fontSize = 12.sp, color = Color(0xFFF472B6), fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-            AutoTranslatedText(impact.impact_level ?: "routine monitoring", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            AutoTranslatedText(impact.impact_level ?: "routine monitoring", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(16.dp))
             
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -247,7 +247,7 @@ fun LogisticsPanel(result: com.namangulati.sancharsarthi.core.network.Simulation
                 MetricItemDark(modifier = Modifier.weight(1f), label = "AFFECTED RADIUS", value = " km")
             }
             Spacer(modifier = Modifier.height(16.dp))
-            AutoTranslatedText(impact.dispatch_recommendation ?: "Keep routine dispatch active.", fontSize = 14.sp, color = Color(0xFFCBD5E1))
+            AutoTranslatedText(impact.dispatch_recommendation ?: "Keep routine dispatch active.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -259,21 +259,21 @@ fun ActionConfidencePanel(result: com.namangulati.sancharsarthi.core.network.Sim
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
-            AutoTranslatedText("ACTION CONFIDENCE LEDGER", fontSize = 12.sp, color = Color(0xFF94A3B8), fontWeight = FontWeight.Bold)
+            AutoTranslatedText("ACTION CONFIDENCE LEDGER", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-            AutoTranslatedText("Why this plan should be trusted carefully", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            AutoTranslatedText("Why this plan should be trusted carefully", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(16.dp))
             
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 ledger.forEach { item ->
                     Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            AutoTranslatedText(item.input ?: "Unknown Input", fontSize = 10.sp, color = Color(0xFF94A3B8), fontWeight = FontWeight.Bold)
+                            AutoTranslatedText(item.input ?: "Unknown Input", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(4.dp))
-                            AutoTranslatedText(item.note ?: "No note", fontSize = 14.sp, color = Color(0xFFCBD5E1))
+                            AutoTranslatedText(item.note ?: "No note", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(modifier = Modifier.height(8.dp))
                             Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF1E3A8A)), shape = RoundedCornerShape(8.dp)) {
                                 AutoTranslatedText(" CONFIDENCE", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontSize = 10.sp, color = Color(0xFFDBEAFE), fontWeight = FontWeight.Bold)
@@ -292,12 +292,12 @@ fun ManpowerPanel(result: com.namangulati.sancharsarthi.core.network.SimulationR
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
             AutoTranslatedText("MANPOWER PLAN", fontSize = 12.sp, color = Color(0xFF38BDF8), fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-            AutoTranslatedText("Officer deployment posture", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            AutoTranslatedText("Officer deployment posture", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(16.dp))
             
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -305,7 +305,8 @@ fun ManpowerPanel(result: com.namangulati.sancharsarthi.core.network.SimulationR
                 MetricItemDark(modifier = Modifier.weight(1f), label = "RESERVE OFFICERS", value = manpower.reserve_officers?.toString() ?: "0")
             }
             Spacer(modifier = Modifier.height(16.dp))
-            AutoTranslatedText(manpower.note ?: "Recommended manpower is dataset-backed guidance.", fontSize = 14.sp, color = Color(0xFFCBD5E1))
+            AutoTranslatedText(manpower.note ?: "Recommended manpower is dataset-backed guidance.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
+

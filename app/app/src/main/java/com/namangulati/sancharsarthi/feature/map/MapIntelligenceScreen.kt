@@ -49,21 +49,21 @@ fun MapIntelligenceScreen(
     LazyColumn(
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier.fillMaxSize().background(Color(0xFFF8FAFC))
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
     ) {
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
-                    AutoTranslatedText("MAP INTELLIGENCE", fontSize = 12.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+                    AutoTranslatedText("MAP INTELLIGENCE", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(12.dp))
-                    AutoTranslatedText("Operational map for hotspots, reports, routes, and conflicts.", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
+                    AutoTranslatedText("Operational map for hotspots, reports, routes, and conflicts.", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(modifier = Modifier.height(16.dp))
-                    AutoTranslatedText("Primary geospatial layer is MapmyIndia / Mappls. Conflict overlays now come from the real multi-event analysis API, while representative report markers remain a safe demo overlay until a dedicated map feed is added.", fontSize = 14.sp, color = Color(0xFF475569))
+                    AutoTranslatedText("Primary geospatial layer is MapmyIndia / Mappls. Conflict overlays now come from the real multi-event analysis API, while representative report markers remain a safe demo overlay until a dedicated map feed is added.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -74,7 +74,7 @@ fun MapIntelligenceScreen(
                     .fillMaxWidth()
                     .height(400.dp)
                     .clip(RoundedCornerShape(24.dp))
-                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(24.dp))
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp))
             ) {
                 AndroidView(
                     factory = { ctx ->
@@ -142,37 +142,37 @@ fun MapIntelligenceScreen(
 
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Card(modifier = Modifier.weight(1f), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White), border = BorderStroke(1.dp, Color(0xFFE2E8F0))) {
+                Card(modifier = Modifier.weight(1f), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
                     Column(modifier = Modifier.padding(20.dp)) {
-                        AutoTranslatedText("Map access sign-in", fontWeight = FontWeight.Bold, color = Color(0xFF0F172A), fontSize = 16.sp)
+                        AutoTranslatedText("Map access sign-in", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp)
                         Spacer(modifier = Modifier.height(8.dp))
-                        AutoTranslatedText("Hotspots, routing, geocode, and multi-event coordination are protected internal tools even though the map shell itself can still load.", fontSize = 13.sp, color = Color(0xFF475569))
+                        AutoTranslatedText("Hotspots, routing, geocode, and multi-event coordination are protected internal tools even though the map shell itself can still load.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(12.dp))
-                        Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)), border = BorderStroke(1.dp, Color(0xFFE2E8F0))) {
+                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
                             Column(modifier = Modifier.padding(12.dp).fillMaxWidth()) {
-                                AutoTranslatedText("Signed in: namanhere23@gmail.com", fontSize = 12.sp, color = Color(0xFF475569))
-                                AutoTranslatedText("Selected UI role: Admin", fontSize = 12.sp, color = Color(0xFF475569))
+                                AutoTranslatedText("Signed in: namanhere23@gmail.com", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                AutoTranslatedText("Selected UI role: Admin", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                         OutlinedButton(
                             onClick = { /* Sign out logic */ },
                             shape = RoundedCornerShape(100.dp),
-                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF475569))
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
                         ) {
                             AutoTranslatedText("Sign out", fontSize = 13.sp)
                         }
                     }
                 }
-                Card(modifier = Modifier.weight(1f), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White), border = BorderStroke(1.dp, Color(0xFFE2E8F0))) {
+                Card(modifier = Modifier.weight(1f), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
                     Column(modifier = Modifier.padding(20.dp)) {
-                        AutoTranslatedText("PROVIDER", fontSize = 11.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+                        AutoTranslatedText("PROVIDER", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(8.dp))
-                        AutoTranslatedText(uiState.mapConfig?.activeProvider ?: "Checking provider", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF0F172A))
+                        AutoTranslatedText(uiState.mapConfig?.activeProvider ?: "Checking provider", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                         Spacer(modifier = Modifier.height(8.dp))
-                        AutoTranslatedText("Map key available: ${if (uiState.mapConfig?.mapKeyAvailable == true) "yes" else "no"}", fontSize = 13.sp, color = Color(0xFF475569))
-                        AutoTranslatedText("Routing status: ${uiState.routeData?.provider ?: "demo overlay"}", fontSize = 13.sp, color = Color(0xFF475569))
+                        AutoTranslatedText("Map key available: ${if (uiState.mapConfig?.mapKeyAvailable == true) "yes" else "no"}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        AutoTranslatedText("Routing status: ${uiState.routeData?.provider ?: "demo overlay"}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -180,9 +180,9 @@ fun MapIntelligenceScreen(
 
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Card(modifier = Modifier.weight(1f), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White), border = BorderStroke(1.dp, Color(0xFFE2E8F0))) {
+                Card(modifier = Modifier.weight(1f), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
                     Column(modifier = Modifier.padding(20.dp)) {
-                        AutoTranslatedText("GEOCODE SEARCH", fontSize = 11.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+                        AutoTranslatedText("GEOCODE SEARCH", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(12.dp))
                         OutlinedTextField(
                             value = uiState.geocodeQuery,
@@ -196,10 +196,10 @@ fun MapIntelligenceScreen(
                             AutoTranslatedText(if(uiState.isGeocoding) "Searching..." else "Search address")
                         }
                         Spacer(modifier = Modifier.height(12.dp))
-                        AutoTranslatedText("Search results will appear as map markers when provider geocoding is available.", fontSize = 13.sp, color = Color(0xFF475569))
+                        AutoTranslatedText("Search results will appear as map markers when provider geocoding is available.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         uiState.geocodeCandidates.forEach { candidate ->
                             Spacer(modifier = Modifier.height(8.dp))
-                            Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F5F9))) {
+                            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
                                 Column(modifier = Modifier.padding(12.dp).fillMaxWidth()) {
                                     AutoTranslatedText(candidate.label, fontWeight = FontWeight.Bold)
                                     AutoTranslatedText("${candidate.coordinate.getOrNull(1)}, ${candidate.coordinate.getOrNull(0)} · ${candidate.confidence}", fontSize = 12.sp)
@@ -208,9 +208,9 @@ fun MapIntelligenceScreen(
                         }
                     }
                 }
-                Card(modifier = Modifier.weight(1f), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White), border = BorderStroke(1.dp, Color(0xFFE2E8F0))) {
+                Card(modifier = Modifier.weight(1f), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
                     Column(modifier = Modifier.padding(20.dp)) {
-                        AutoTranslatedText("OVERLAY COUNTS", fontSize = 11.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+                        AutoTranslatedText("OVERLAY COUNTS", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(12.dp))
                         val counts = listOf(
                             "Hotspots" to uiState.hotspots.size.toString(),
@@ -220,8 +220,8 @@ fun MapIntelligenceScreen(
                         )
                         counts.forEach { (label, count) ->
                             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                                AutoTranslatedText(label, color = Color(0xFF475569))
-                                AutoTranslatedText(count, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
+                                AutoTranslatedText(label, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                AutoTranslatedText(count, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             }
                         }
                     }
@@ -234,11 +234,11 @@ fun MapIntelligenceScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                 ) {
                     Column(modifier = Modifier.padding(24.dp)) {
-                        AutoTranslatedText("MULTI-EVENT ANALYSIS", fontSize = 11.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+                        AutoTranslatedText("MULTI-EVENT ANALYSIS", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(16.dp))
                         OutlinedTextField(
                             value = uiState.eventIdsInput,
@@ -259,36 +259,36 @@ fun MapIntelligenceScreen(
                         Button(
                             onClick = { viewModel.runMultiEventAnalysis() },
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1D4ED8), contentColor = Color.White),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             AutoTranslatedText(if(uiState.isAnalyzing) "Analyzing..." else "Run analysis")
                         }
                         Spacer(modifier = Modifier.height(12.dp))
-                        AutoTranslatedText("This feeds the conflict layer from the real multi-event backend analysis instead of a synthetic overlay.", fontSize = 13.sp, color = Color(0xFF475569))
+                        AutoTranslatedText("This feeds the conflict layer from the real multi-event backend analysis instead of a synthetic overlay.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 
                 Card(
                     modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 200.dp),
                     shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF64748B)) // Grey empty state background
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant) // Grey empty state background
                 ) {
                     val analysis = uiState.multiEventAnalysis
                     if (analysis != null) {
                         Column(modifier = Modifier.padding(24.dp)) {
-                            AutoTranslatedText("Analysis Status: ${analysis.status}", fontWeight = FontWeight.Bold, color = Color.White)
+                            AutoTranslatedText("Analysis Status: ${analysis.status}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             Spacer(modifier = Modifier.height(12.dp))
                             analysis.officer_allocation.forEach { alloc ->
-                                AutoTranslatedText("Event: ${alloc.event_id}", color = Color.White)
-                                AutoTranslatedText("Officers needed: ${alloc.recommended_officers}", color = Color.White)
-                                AutoTranslatedText("Rationale: ${alloc.rationale}", color = Color(0xFFE2E8F0), fontSize = 12.sp)
+                                AutoTranslatedText("Event: ${alloc.event_id}", color = MaterialTheme.colorScheme.onSurface)
+                                AutoTranslatedText("Officers needed: ${alloc.recommended_officers}", color = MaterialTheme.colorScheme.onSurface)
+                                AutoTranslatedText("Rationale: ${alloc.rationale}", color = MaterialTheme.colorScheme.outlineVariant, fontSize = 12.sp)
                                 Spacer(modifier = Modifier.height(8.dp))
                             }
                         }
                     } else {
                         Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
-                            AutoTranslatedText("No multi-event coordination analysis has been generated yet.", color = Color(0xFFCBD5E1), fontSize = 14.sp)
+                            AutoTranslatedText("No multi-event coordination analysis has been generated yet.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                         }
                     }
                 }
@@ -297,7 +297,7 @@ fun MapIntelligenceScreen(
         
         if (uiState.hotspots.isNotEmpty()) {
             item {
-                AutoTranslatedText("Hotspots", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A), modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
+                AutoTranslatedText("Hotspots", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
             }
             items(uiState.hotspots.chunked(3)) { rowHotspots ->
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -332,43 +332,44 @@ fun HotspotCard(hotspot: HotspotResponseItem, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)), // Dark background like the screenshot
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), // Dark background like the screenshot
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                AutoTranslatedText("HOTSPOT", fontSize = 10.sp, color = Color(0xFF94A3B8), fontWeight = FontWeight.Bold)
+                AutoTranslatedText("HOTSPOT", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                 AutoTranslatedText(severityText.uppercase(), fontSize = 10.sp, color = severityColor, fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(4.dp))
-            AutoTranslatedText(hotspot.location_cluster_id, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            AutoTranslatedText(hotspot.location_cluster_id, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(16.dp))
             
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
-                    AutoTranslatedText("Events", fontSize = 12.sp, color = Color(0xFF94A3B8))
-                    AutoTranslatedText(hotspot.cluster_event_count.toString(), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    AutoTranslatedText("Events", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    AutoTranslatedText(hotspot.cluster_event_count.toString(), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    AutoTranslatedText("Risk score", fontSize = 12.sp, color = Color(0xFF94A3B8))
-                    AutoTranslatedText(hotspot.cluster_risk_score.toInt().toString(), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    AutoTranslatedText("Risk score", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    AutoTranslatedText(hotspot.cluster_risk_score.toInt().toString(), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
             
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                AutoTranslatedText("Top cause", fontSize = 12.sp, color = Color(0xFF64748B))
-                AutoTranslatedText(hotspot.cluster_top_event_cause ?: "unknown", fontSize = 12.sp, color = Color.White)
+                AutoTranslatedText("Top cause", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                AutoTranslatedText(hotspot.cluster_top_event_cause ?: "unknown", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
             }
             Spacer(modifier = Modifier.height(4.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                AutoTranslatedText("Road closure", fontSize = 12.sp, color = Color(0xFF64748B))
-                AutoTranslatedText("0%", fontSize = 12.sp, color = Color.White)
+                AutoTranslatedText("Road closure", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                AutoTranslatedText("0%", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
             }
             Spacer(modifier = Modifier.height(4.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                AutoTranslatedText("Peak hour", fontSize = 12.sp, color = Color(0xFF64748B))
-                AutoTranslatedText("0%", fontSize = 12.sp, color = Color.White)
+                AutoTranslatedText("Peak hour", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                AutoTranslatedText("0%", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
             }
         }
     }
 }
+

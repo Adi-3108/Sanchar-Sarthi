@@ -91,7 +91,7 @@ fun AdminScreen(
                     AutoTranslatedText(
                         text = "Police station",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color(0xFF64748B),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
@@ -107,8 +107,8 @@ fun AdminScreen(
                             modifier = Modifier.menuAnchor().fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedContainerColor = Color.White,
-                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
                                 unfocusedBorderColor = Color(0xFFCBD5E1),
                                 focusedBorderColor = Color(0xFF60A5FA)
                             )
@@ -137,7 +137,7 @@ fun AdminScreen(
                 Button(
                     onClick = { viewModel.createOfficer() },
                     enabled = !uiState.actionLoading,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1D4ED8)),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     AutoTranslatedText("Create officer")
@@ -156,7 +156,7 @@ fun AdminScreen(
                 Button(
                     onClick = { viewModel.createControlRoomUser() },
                     enabled = !uiState.actionLoading,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1D4ED8)),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     AutoTranslatedText("Create control room user")
@@ -173,14 +173,14 @@ fun AdminScreen(
                             .fillMaxWidth()
                             .padding(vertical = 4.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFFF8FAFC))
-                            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.background)
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
                             .padding(16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         AutoTranslatedText(status, color = Color(0xFF334155), fontWeight = FontWeight.Medium)
-                        Text(text = count.toString(), fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
+                        Text(text = count.toString(), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
             }
@@ -189,7 +189,7 @@ fun AdminScreen(
         // 4. Active incidents
         item {
             Column {
-                AutoTranslatedText("Incident management", style = MaterialTheme.typography.labelMedium, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+                AutoTranslatedText("Incident management", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(4.dp))
                 AutoTranslatedText("Active incidents", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             }
@@ -241,16 +241,16 @@ fun AdminScreen(
                             .fillMaxWidth()
                             .padding(vertical = 4.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFFF8FAFC))
-                            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.background)
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
                             .padding(16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-                            AutoTranslatedText(station.name, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
-                            AutoTranslatedText("${station.locality} · ${station.station_code}", color = Color(0xFF475569), fontSize = 12.sp)
-                            AutoTranslatedText(station.contact_number ?: "Contact unavailable", color = Color(0xFF475569), fontSize = 12.sp)
+                            AutoTranslatedText(station.name, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            AutoTranslatedText("${station.locality} · ${station.station_code}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                            AutoTranslatedText(station.contact_number ?: "Contact unavailable", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                         }
                         OutlinedButton(
                             onClick = { viewModel.toggleStation(station.id, station.active) },
@@ -273,15 +273,15 @@ fun AdminScreen(
                             .fillMaxWidth()
                             .padding(vertical = 4.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFFF8FAFC))
-                            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.background)
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
                             .padding(16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-                            AutoTranslatedText(user.display_name ?: user.auth_provider_uid ?: "Unknown", fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
-                            AutoTranslatedText(user.role, color = Color(0xFF475569), fontSize = 12.sp)
+                            AutoTranslatedText(user.display_name ?: user.auth_provider_uid ?: "Unknown", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            AutoTranslatedText(user.role, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                         }
                         OutlinedButton(
                             onClick = { viewModel.toggleUser(user.id, user.is_active) },
@@ -308,7 +308,7 @@ fun Field(label: String, value: String, isPassword: Boolean = false, onChange: (
         AutoTranslatedText(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = Color(0xFF64748B),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 4.dp)
         )
@@ -319,8 +319,8 @@ fun Field(label: String, value: String, isPassword: Boolean = false, onChange: (
             shape = RoundedCornerShape(12.dp),
             visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
             colors = OutlinedTextFieldDefaults.colors(
-                unfocusedContainerColor = Color.White,
-                focusedContainerColor = Color.White,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
                 unfocusedBorderColor = Color(0xFFCBD5E1),
                 focusedBorderColor = Color(0xFF60A5FA)
             )
@@ -340,8 +340,8 @@ fun IncidentCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -350,16 +350,16 @@ fun IncidentCard(
                 verticalAlignment = Alignment.Top
             ) {
                 Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-                    AutoTranslatedText(incident.title, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
-                    AutoTranslatedText("${incident.location_name} · ${incident.status.replace("_", " ").capitalize()}", color = Color(0xFF475569), fontSize = 14.sp)
+                    AutoTranslatedText(incident.title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    AutoTranslatedText("${incident.location_name} · ${incident.status.replace("_", " ").capitalize()}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(4.dp))
-                    AutoTranslatedText(incident.route_impact_summary ?: "Route impact under review.", color = Color(0xFF475569), fontSize = 14.sp)
+                    AutoTranslatedText(incident.route_impact_summary ?: "Route impact under review.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                 }
                 Box(
                     modifier = Modifier
                         .background(Color.White, RoundedCornerShape(12.dp))
                         .padding(horizontal = 12.dp, vertical = 4.dp)
-                        .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
                 ) {
                     AutoTranslatedText(incident.severity, color = Color(0xFF334155), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
@@ -373,24 +373,24 @@ fun IncidentCard(
             ) {
                 Column {
                     Row {
-                        Text("EVENT ID: ", color = Color(0xFF475569), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        Text(incident.id.take(12), color = Color(0xFF475569), fontSize = 12.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                        Text("EVENT ID: ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text(incident.id.take(12), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
                     }
-                    Text("TIME", color = Color(0xFF475569), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
-                    Text(incident.created_at.take(16).replace("T", " "), color = Color(0xFF0F172A), fontSize = 13.sp)
+                    Text("TIME", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
+                    Text(incident.created_at.take(16).replace("T", " "), color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
                 }
                 Column {
-                    Text("STATUS", color = Color(0xFF475569), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    Text(incident.status.replace("_", " ").capitalize(), color = Color(0xFF0F172A), fontSize = 13.sp)
-                    Text("STATION", color = Color(0xFF475569), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
-                    Text(incident.assigned_station_name ?: "-", color = Color(0xFF0F172A), fontSize = 13.sp)
+                    Text("STATUS", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text(incident.status.replace("_", " ").capitalize(), color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
+                    Text("STATION", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
+                    Text(incident.assigned_station_name ?: "-", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
                 }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            Text("CONFIDENCE", color = Color(0xFF475569), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Text("CONFIDENCE", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             val conf = incident.confidence_score
-            Text("${(conf * 100).roundToInt()}%", color = Color(0xFF0F172A), fontSize = 13.sp)
+            Text("${(conf * 100).roundToInt()}%", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
 
             Spacer(modifier = Modifier.height(16.dp))
             
@@ -406,7 +406,7 @@ fun IncidentCard(
                     enabled = false,
                     shape = RoundedCornerShape(100.dp),
                     colors = ButtonDefaults.outlinedButtonColors(disabledContentColor = Color(0xFF94A3B8)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                 ) {
                     Text("Vote true (${incident.true_vote_count})", fontSize = 12.sp)
                 }
@@ -415,7 +415,7 @@ fun IncidentCard(
                     enabled = false,
                     shape = RoundedCornerShape(100.dp),
                     colors = ButtonDefaults.outlinedButtonColors(disabledContentColor = Color(0xFF94A3B8)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                 ) {
                     Text("Vote false (${incident.false_vote_count})", fontSize = 12.sp)
                 }
@@ -473,8 +473,8 @@ fun AdminSectionCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
             modifier = Modifier
@@ -484,7 +484,7 @@ fun AdminSectionCard(
             AutoTranslatedText(
                 text = subtitle.uppercase(),
                 style = MaterialTheme.typography.labelSmall,
-                color = Color(0xFF64748B),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -492,10 +492,11 @@ fun AdminSectionCard(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F172A)
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(20.dp))
             content()
         }
     }
 }
+

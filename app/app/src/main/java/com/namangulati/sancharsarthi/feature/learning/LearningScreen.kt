@@ -48,8 +48,8 @@ fun LearningScreen(
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedContainerColor = Color.White,
-                            focusedContainerColor = Color.White
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                            focusedContainerColor = MaterialTheme.colorScheme.surface
                         )
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -58,7 +58,7 @@ fun LearningScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         enabled = !uiState.isLoading,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7))
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
                         AutoTranslatedText(if (uiState.isLoading) "Generating..." else "Generate After-Action Report")
                     }
@@ -83,10 +83,10 @@ fun LearningScreen(
                     Column(modifier = Modifier.padding(24.dp)) {
                         AutoTranslatedText("POST-EVENT LEARNING", fontSize = 12.sp, color = Color(0xFF10B981), fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(8.dp))
-                        AutoTranslatedText("After-action report", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        AutoTranslatedText("After-action report", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxWidth()) {
-                            AutoTranslatedText(result.event_summary ?: "No summary available.", color = Color(0xFFCBD5E1), fontSize = 14.sp, modifier = Modifier.weight(1f))
+                            AutoTranslatedText(result.event_summary ?: "No summary available.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp, modifier = Modifier.weight(1f))
                             Spacer(modifier = Modifier.width(16.dp))
                             Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF064E3B)), shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Color(0xFF34D399))) {
                                 AutoTranslatedText((result.final_status ?: "CLOSED").uppercase(), modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), fontSize = 12.sp, color = Color(0xFF6EE7B7), fontWeight = FontWeight.Bold)
@@ -133,8 +133,8 @@ fun LearningScreen(
                 ) {
                     Column(modifier = Modifier.padding(24.dp)) {
                         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                            AutoTranslatedText("STRUCTURED LEARNING SNAPSHOT", fontSize = 12.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
-                            AutoTranslatedText("Stored in post_event_reports.report_json", fontSize = 10.sp, color = Color(0xFF475569))
+                            AutoTranslatedText("STRUCTURED LEARNING SNAPSHOT", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                            AutoTranslatedText("Stored in post_event_reports.report_json", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                         
@@ -168,9 +168,9 @@ fun MetricBox(modifier: Modifier = Modifier, label: String, value: String) {
         border = BorderStroke(1.dp, Color(0xFF1E293B))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            AutoTranslatedText(label, fontSize = 10.sp, color = Color(0xFF475569), fontWeight = FontWeight.Bold)
+            AutoTranslatedText(label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-            AutoTranslatedText(value, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            AutoTranslatedText(value, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
@@ -180,12 +180,12 @@ fun SummaryCard(label: String, text: String?) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            AutoTranslatedText(label, fontSize = 10.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+            AutoTranslatedText(label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(12.dp))
-            AutoTranslatedText(text ?: "N/A", fontSize = 14.sp, color = Color.White)
+            AutoTranslatedText(text ?: "N/A", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
@@ -201,7 +201,7 @@ fun HighlightCard(label: String, text: String?, borderColor: Color, labelColor: 
         Column(modifier = Modifier.padding(20.dp)) {
             AutoTranslatedText(label, fontSize = 10.sp, color = labelColor, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(12.dp))
-            AutoTranslatedText(text ?: "N/A", fontSize = 14.sp, color = Color.White)
+            AutoTranslatedText(text ?: "N/A", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
@@ -214,9 +214,10 @@ fun SnapshotBox(modifier: Modifier = Modifier, label: String, value: String) {
         colors = CardDefaults.cardColors(containerColor = Color(0xFF020617))
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            AutoTranslatedText(label, fontSize = 9.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+            AutoTranslatedText(label, fontSize = 9.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-            AutoTranslatedText(value, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            AutoTranslatedText(value, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
+

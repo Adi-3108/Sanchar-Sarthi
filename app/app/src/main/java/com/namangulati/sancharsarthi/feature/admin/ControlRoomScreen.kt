@@ -56,7 +56,7 @@ fun ControlRoomScreen(viewModel: AdminViewModel = viewModel()) {
         // Active incidents
         item {
             Column {
-                AutoTranslatedText("Incident management", style = MaterialTheme.typography.labelMedium, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+                AutoTranslatedText("Incident management", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(4.dp))
                 AutoTranslatedText("Active incidents", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             }
@@ -105,3 +105,4 @@ fun ControlRoomScreen(viewModel: AdminViewModel = viewModel()) {
         }
     }
 }
+

@@ -128,7 +128,7 @@ fun MapPanel(
                 .fillMaxWidth()
                 .height(300.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
         ) {
             AndroidView(
                 factory = { context ->
@@ -219,7 +219,7 @@ fun MapPanel(
                 modifier = Modifier
                     .padding(12.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White.copy(alpha = 0.9f))
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
                     .padding(8.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -261,8 +261,8 @@ fun StationPanel(stations: List<StationResponse>, incidents: List<IncidentRespon
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFFF8FAFC))
-                            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.background)
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
                             .padding(12.dp)
                     ) {
                         AutoTranslatedText(text = station.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
@@ -275,8 +275,8 @@ fun StationPanel(stations: List<StationResponse>, incidents: List<IncidentRespon
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(16.dp))
-                                        .background(Color.White)
-                                        .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
+                                        .background(MaterialTheme.colorScheme.surface)
+                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
                                         .padding(horizontal = 8.dp, vertical = 4.dp)
                                 ) {
                                     AutoTranslatedText(text = incident.title.take(15) + if(incident.title.length > 15) "..." else "", style = MaterialTheme.typography.labelSmall, color = Color(0xFF334155))
@@ -336,8 +336,8 @@ fun IncidentCard(incident: IncidentResponse) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             // Title row + severity badge
@@ -350,7 +350,7 @@ fun IncidentCard(incident: IncidentResponse) {
                     text = incident.title,
                     fontWeight = FontWeight.SemiBold,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Color(0xFF0F172A),
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -377,9 +377,9 @@ fun IncidentCard(incident: IncidentResponse) {
                 AutoTranslatedText(
                     text = incident.location_name,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF64748B)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text(text = " · ", color = Color(0xFF94A3B8), fontSize = 12.sp)
+                Text(text = " · ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(100.dp))
@@ -401,12 +401,12 @@ fun IncidentCard(incident: IncidentResponse) {
                 AutoTranslatedText(
                     text = incident.route_impact_summary,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF64748B)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             Spacer(modifier = Modifier.height(10.dp))
-            androidx.compose.material3.Divider(color = Color(0xFFE2E8F0), thickness = 1.dp)
+            androidx.compose.material3.Divider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
             Spacer(modifier = Modifier.height(10.dp))
 
             // Details grid: ID, Confidence, Force, Barricades
@@ -416,13 +416,13 @@ fun IncidentCard(incident: IncidentResponse) {
                         text = "ID",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF94A3B8),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         letterSpacing = 0.5.sp
                     )
                     Text(
                         text = incident.id.take(16) + "…",
                         fontSize = 11.sp,
-                        color = Color(0xFF475569),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -431,13 +431,13 @@ fun IncidentCard(incident: IncidentResponse) {
                         text = "CONFIDENCE",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF94A3B8),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         letterSpacing = 0.5.sp
                     )
                     Text(
                         text = "${(incident.confidence_score * 100).toInt()}%",
                         fontSize = 11.sp,
-                        color = Color(0xFF475569),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -451,13 +451,13 @@ fun IncidentCard(incident: IncidentResponse) {
                         text = "FORCE",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF94A3B8),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         letterSpacing = 0.5.sp
                     )
                     Text(
                         text = incident.police_force_required?.toString() ?: "-",
                         fontSize = 11.sp,
-                        color = Color(0xFF475569),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -466,13 +466,13 @@ fun IncidentCard(incident: IncidentResponse) {
                         text = "BARRICADES",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF94A3B8),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         letterSpacing = 0.5.sp
                     )
                     Text(
                         text = incident.barricades_required?.toString() ?: "-",
                         fontSize = 11.sp,
-                        color = Color(0xFF475569),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -492,8 +492,8 @@ fun CommandCenterHeader(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
             AutoTranslatedText(
@@ -507,7 +507,7 @@ fun CommandCenterHeader(
                 text = "Predictive traffic command twin for event-driven congestion.",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F172A),
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
             
@@ -516,8 +516,8 @@ fun CommandCenterHeader(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val buttonColors = ButtonDefaults.outlinedButtonColors(containerColor = Color(0xFFF1F5F9), contentColor = Color(0xFF334155))
-                OutlinedButton(onClick = onNavigateToModelInsights, shape = RoundedCornerShape(100.dp), colors = buttonColors, border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))) {
+                val buttonColors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = Color(0xFF334155))
+                OutlinedButton(onClick = onNavigateToModelInsights, shape = RoundedCornerShape(100.dp), colors = buttonColors, border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
                     AutoTranslatedText("Open model insights", fontSize = 13.sp)
                 }
                 OutlinedButton(onClick = onNavigateToSubmitReport, shape = RoundedCornerShape(100.dp), colors = ButtonDefaults.outlinedButtonColors(containerColor = Color(0xFFECFEFF), contentColor = Color(0xFF0891B2)), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCFFAFE))) {
@@ -541,7 +541,7 @@ fun CommandCenterHeader(
                 Column {
                     AutoTranslatedText("SYSTEM STATE", style = MaterialTheme.typography.labelSmall, color = Color(0xFF3B82F6), fontWeight = FontWeight.SemiBold)
                     Spacer(modifier = Modifier.height(4.dp))
-                    AutoTranslatedText("Operational shell ready", fontWeight = FontWeight.Bold, color = Color(0xFF0F172A), fontSize = 18.sp)
+                    AutoTranslatedText("Operational shell ready", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp)
                 }
             }
         }
@@ -581,7 +581,8 @@ fun SystemStateGrid(metrics: SystemStateMetrics) {
 @Composable
 fun MetricItem(label: String, value: String, modifier: Modifier = Modifier, valueColor: Color = Color.Black) {
     Row(modifier = modifier) {
-        AutoTranslatedText(text = "$label: ", color = Color(0xFF64748B), fontSize = 15.sp)
+        AutoTranslatedText(text = "$label: ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 15.sp)
         AutoTranslatedText(text = value, color = valueColor, fontWeight = FontWeight.Bold, fontSize = 15.sp)
     }
 }
+

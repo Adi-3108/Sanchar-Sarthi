@@ -34,13 +34,13 @@ fun ExplorerScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
-                    AutoTranslatedText("EXPLORER", fontSize = 12.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+                    AutoTranslatedText("EXPLORER", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(12.dp))
-                    AutoTranslatedText("Dataset-backed hotspot and event dossier explorer.", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
+                    AutoTranslatedText("Dataset-backed hotspot and event dossier explorer.", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
             }
         }
@@ -50,11 +50,11 @@ fun ExplorerScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F5F9)),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                 ) {
                     Column(modifier = Modifier.padding(24.dp)) {
-                        AutoTranslatedText("DATASET", fontSize = 12.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+                        AutoTranslatedText("DATASET", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(16.dp))
                         if (uiState.isSummaryLoading) {
                             CircularProgressIndicator(modifier = Modifier.padding(8.dp))
@@ -75,11 +75,11 @@ fun ExplorerScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
-                    AutoTranslatedText("OPEN DOSSIER", fontSize = 12.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+                    AutoTranslatedText("OPEN DOSSIER", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
                         value = uiState.eventIdInput,
@@ -94,7 +94,7 @@ fun ExplorerScreen(
                         onClick = { viewModel.fetchEventDossier() },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1D4ED8), contentColor = Color.White)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
                     ) {
                         AutoTranslatedText(if (uiState.isEventLoading) "Opening..." else "Open event")
                     }
@@ -117,17 +117,17 @@ fun ExplorerScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                 ) {
                     Column(modifier = Modifier.padding(24.dp)) {
-                        AutoTranslatedText("HOTSPOT CLUSTERS", fontSize = 12.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+                        AutoTranslatedText("HOTSPOT CLUSTERS", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(8.dp))
                         
                         if (uiState.isHotspotsLoading) {
                             CircularProgressIndicator()
                         } else if (uiState.hotspots.isEmpty()) {
-                            AutoTranslatedText("No hotspots match the selected filter.", color = Color(0xFF64748B), fontSize = 14.sp)
+                            AutoTranslatedText("No hotspots match the selected filter.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                         } else {
                             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                                 uiState.hotspots.forEach { hotspot ->
@@ -150,11 +150,11 @@ fun EventDnaPanel(detail: EventDetailResponse) {
         colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A))
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
-            AutoTranslatedText("EVENT DNA", fontSize = 12.sp, color = Color(0xFF94A3B8), fontWeight = FontWeight.Bold)
+            AutoTranslatedText("EVENT DNA", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-            AutoTranslatedText("Operational fingerprint", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            AutoTranslatedText("Operational fingerprint", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(8.dp))
-            AutoTranslatedText(detail.event_dna?.dna_summary ?: "No fingerprint available.", fontSize = 14.sp, color = Color(0xFFCBD5E1))
+            AutoTranslatedText(detail.event_dna?.dna_summary ?: "No fingerprint available.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             
             Spacer(modifier = Modifier.height(24.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -171,7 +171,7 @@ fun EventDnaPanel(detail: EventDetailResponse) {
             DarkInfoCard(label = "HISTORICAL PATTERN", text = detail.event_dna?.historical_pattern ?: "N/A")
             
             Spacer(modifier = Modifier.height(24.dp))
-            AutoTranslatedText("RISK INDICATORS", fontSize = 12.sp, color = Color(0xFF94A3B8), fontWeight = FontWeight.Bold)
+            AutoTranslatedText("RISK INDICATORS", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(12.dp))
             
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -187,12 +187,12 @@ fun DarkMetricCard(modifier: Modifier = Modifier, label: String, value: String) 
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            AutoTranslatedText(label, fontSize = 10.sp, color = Color(0xFF94A3B8), fontWeight = FontWeight.Bold)
+            AutoTranslatedText(label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-            AutoTranslatedText(value, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            AutoTranslatedText(value, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
@@ -202,12 +202,12 @@ fun DarkInfoCard(label: String, text: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            AutoTranslatedText(label, fontSize = 10.sp, color = Color(0xFF94A3B8), fontWeight = FontWeight.Bold)
+            AutoTranslatedText(label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-            AutoTranslatedText(text, fontSize = 13.sp, color = Color(0xFFCBD5E1))
+            AutoTranslatedText(text, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -220,31 +220,31 @@ fun SimilarEventsPanel(detail: EventDetailResponse) {
         colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A))
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
-            AutoTranslatedText("SIMILAR EVENT MEMORY", fontSize = 12.sp, color = Color(0xFF94A3B8), fontWeight = FontWeight.Bold)
+            AutoTranslatedText("SIMILAR EVENT MEMORY", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-            AutoTranslatedText("Historical operational matches", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            AutoTranslatedText("Historical operational matches", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(16.dp))
             
             if (detail.similar_events.isNullOrEmpty()) {
-                AutoTranslatedText("No similar events found.", color = Color(0xFF94A3B8), fontSize = 14.sp)
+                AutoTranslatedText("No similar events found.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     detail.similar_events.forEach { sim ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                                    AutoTranslatedText(sim.event_id ?: "Unknown", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                    AutoTranslatedText(sim.event_id ?: "Unknown", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                                     val simScore = ((sim.similarity ?: 0.0) * 100).toInt()
                                     Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF4C1D95)), shape = RoundedCornerShape(8.dp)) {
                                         AutoTranslatedText("${simScore} SIMILARITY", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontSize = 10.sp, color = Color(0xFFDDD6FE), fontWeight = FontWeight.Bold)
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
-                                AutoTranslatedText(sim.event_cause_clean ?: "Unknown event", fontSize = 13.sp, color = Color(0xFFCBD5E1))
+                                AutoTranslatedText(sim.event_cause_clean ?: "Unknown event", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -288,7 +288,7 @@ fun RecommendationPanel(detail: EventDetailResponse) {
                 onClick = { },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7), contentColor = Color.White)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
             ) {
                 AutoTranslatedText("Generate")
             }
@@ -309,27 +309,27 @@ fun LiveEscalationTimeline(detail: EventDetailResponse) {
         Column(modifier = Modifier.padding(24.dp)) {
             AutoTranslatedText("LIVE ESCALATION TIMELINE", fontSize = 12.sp, color = Color(0xFFD8B4FE), fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-            AutoTranslatedText("Field updates and adaptive actions", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            AutoTranslatedText("Field updates and adaptive actions", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(16.dp))
             
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B))
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    AutoTranslatedText("CONTROL ROOM", fontSize = 10.sp, color = Color(0xFF94A3B8), fontWeight = FontWeight.Bold)
+                    AutoTranslatedText("CONTROL ROOM", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(8.dp))
-                    AutoTranslatedText("Warning congestion update", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    AutoTranslatedText("Warning congestion update", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(modifier = Modifier.height(8.dp))
-                    AutoTranslatedText("Field team reports crowd spillover and slow movement.", fontSize = 14.sp, color = Color(0xFFCBD5E1))
+                    AutoTranslatedText("Field team reports crowd spillover and slow movement.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     
                     Spacer(modifier = Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF065F46)), shape = RoundedCornerShape(16.dp)) {
                             AutoTranslatedText("STABLE", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontSize = 10.sp, color = Color(0xFFD1FAE5), fontWeight = FontWeight.Bold)
                         }
-                        AutoTranslatedText("20 JUN 2026, 6:14 AM", fontSize = 12.sp, color = Color(0xFF94A3B8))
+                        AutoTranslatedText("20 JUN 2026, 6:14 AM", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -341,13 +341,13 @@ fun MetricItem(label: String, value: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
-        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            AutoTranslatedText(label.uppercase(), fontSize = 10.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+            AutoTranslatedText(label.uppercase(), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(4.dp))
-            AutoTranslatedText(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
+            AutoTranslatedText(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
@@ -357,26 +357,27 @@ fun HotspotCard(hotspot: HotspotResponseItem) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
-        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 Column {
-                    AutoTranslatedText("CLUSTER", fontSize = 10.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+                    AutoTranslatedText("CLUSTER", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                     AutoTranslatedText(hotspot.location_cluster_id, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                AutoTranslatedText("Events", fontSize = 13.sp, color = Color(0xFF64748B))
-                AutoTranslatedText(hotspot.cluster_event_count.toString(), fontSize = 13.sp, color = Color(0xFF0F172A))
+                AutoTranslatedText("Events", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                AutoTranslatedText(hotspot.cluster_event_count.toString(), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                AutoTranslatedText("Risk", fontSize = 13.sp, color = Color(0xFF64748B))
-                AutoTranslatedText("", fontSize = 13.sp, color = Color(0xFF0F172A))
+                AutoTranslatedText("Risk", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                AutoTranslatedText("", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
             }
         }
     }
 }
+

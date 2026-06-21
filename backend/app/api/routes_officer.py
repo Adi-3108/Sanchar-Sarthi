@@ -20,6 +20,15 @@ from app.orm.police_officer_profile import PoliceOfficerProfile
 router = APIRouter(prefix="/api/officer", tags=["officer"])
 
 
+class OfficerLoginResponse(BaseModel):
+    role: str
+    firebase_uid: str
+    officer_id: str | None = None
+    police_station: str | None = None
+    assigned_corridors: list[str] = []
+    assigned_zones: list[str] = []
+
+
 class OfficerAssignedEventResponse(BaseModel):
     id: str
     event_cause_clean: str | None = None
@@ -114,6 +123,29 @@ def _load_profile(db: Session, auth: AuthContext) -> PoliceOfficerProfile | None
         select(PoliceOfficerProfile)
         .where(PoliceOfficerProfile.user_account_id == coerce_uuid(auth.user_account_id))
         .where(PoliceOfficerProfile.active.is_(True))
+    )
+
+
+@router.post("/login", response_model=OfficerLoginResponse)
+def login_officer(
+    auth: AuthContext = Depends(require_officer_access),
+    db: Session = Depends(get_db),
+):
+    profile = _load_profile(db, auth)
+    if profile is None:
+        return error_response(
+            403,
+            "OFFICER_PROFILE_REQUIRED",
+            "Active officer profile is required to login as an officer.",
+        )
+
+    return OfficerLoginResponse(
+        role=auth.role,
+        firebase_uid=auth.firebase_uid,
+        officer_id=profile.officer_id,
+        police_station=profile.police_station,
+        assigned_corridors=list(profile.assigned_corridors_json or []),
+        assigned_zones=list(profile.assigned_zones_json or []),
     )
 
 

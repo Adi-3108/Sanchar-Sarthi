@@ -945,6 +945,10 @@ export function createOfficer(payload: CreateOfficerRequest, init?: RequestInit)
   return apiPost<CreateOfficerResponse>("/api/admin/officers", payload, init);
 }
 
+export function createControlRoomUser(payload: CreateControlRoomRequest, init?: RequestInit): Promise<CreateControlRoomResponse> {
+  return apiPost<CreateControlRoomResponse>("/api/admin/control-room-users", payload, init);
+}
+
 export function getOfficerAssignments(init?: RequestInit): Promise<OfficerAssignmentsResponse> {
   return apiGet<OfficerAssignmentsResponse>("/api/officer/assignments", init);
 }

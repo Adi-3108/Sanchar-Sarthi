@@ -1186,3 +1186,11 @@ export function getCommandCenterSummary(init?: RequestInit): Promise<CommandCent
   return apiGet<CommandCenterSummary>("/api/command-center/summary", init);
 }
 
+export type UserStatsResponse = {
+  incidents_reported: number;
+  incidents_voted: number;
+};
+
+export function getUserStats(init?: RequestInit): Promise<UserStatsResponse> {
+  return apiGet<UserStatsResponse>("/api/foundation/me/stats", init);
+}

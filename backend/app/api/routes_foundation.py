@@ -39,6 +39,36 @@ def current_access(auth: AuthContext = Depends(get_auth_context)) -> CurrentAcce
     return CurrentAccessResponse(role=auth.role)
 
 
+class UserStatsResponse(BaseModel):
+    incidents_reported: int
+    incidents_voted: int
+
+
+@router.get("/me/stats", response_model=UserStatsResponse)
+def get_user_stats(
+    auth: AuthContext = Depends(get_auth_context),
+    db: Session = Depends(get_db),
+) -> UserStatsResponse:
+    from uuid import UUID as _UUID
+    try:
+        user_uuid = _UUID(auth.user_account_id)
+    except (TypeError, ValueError):
+        return UserStatsResponse(incidents_reported=0, incidents_voted=0)
+
+    incidents_reported = db.scalar(
+        select(func.count()).select_from(Incident).where(Incident.reported_by_user_id == user_uuid)
+    ) or 0
+
+    incidents_voted = db.scalar(
+        select(func.count()).select_from(IncidentVote).where(IncidentVote.voter_user_id == user_uuid)
+    ) or 0
+
+    return UserStatsResponse(
+        incidents_reported=incidents_reported,
+        incidents_voted=incidents_voted,
+    )
+
+
 class StationResponse(BaseModel):
     id: str
     station_code: str
@@ -495,7 +525,7 @@ def get_foundation_incident(incident_id: str, db: Session = Depends(get_db)):
 def vote_incident(
     incident_id: str,
     payload: VoteRequest,
-    auth: AuthContext = Depends(require_role("citizen", "admin")),
+    auth: AuthContext = Depends(require_role("citizen")),
     db: Session = Depends(get_db),
 ):
     incident = db.get(Incident, incident_id)

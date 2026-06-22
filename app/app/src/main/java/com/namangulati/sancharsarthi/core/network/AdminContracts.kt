@@ -8,11 +8,11 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class CreateOfficerRequest(
     val email: String,
-    val password: String? = null,
-    val badge_number: String? = null,
-    val display_name: String? = null,
+    val password: String = "",
+    val officer_id: String = "",
+    val display_name: String = "",
     val rank: String? = null,
-    val police_station: String? = null,
+    val police_station: String = "",
     val assigned_corridors: List<String> = emptyList(),
     val assigned_zones: List<String> = emptyList()
 )

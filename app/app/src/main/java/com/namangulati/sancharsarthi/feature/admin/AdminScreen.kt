@@ -80,9 +80,9 @@ fun AdminScreen(
         item {
             AdminSectionCard("Officer access", "Create registered police officer") {
                 Field("Officer email", uiState.officerForm.email) { viewModel.updateOfficerForm("email", it) }
-                Field("Password", uiState.officerForm.password ?: "", true) { viewModel.updateOfficerForm("password", it) }
-                Field("Officer ID", uiState.officerForm.badge_number ?: "") { viewModel.updateOfficerForm("badge_number", it) }
-                Field("Display name", uiState.officerForm.display_name ?: "") { viewModel.updateOfficerForm("display_name", it) }
+                Field("Password", uiState.officerForm.password, true) { viewModel.updateOfficerForm("password", it) }
+                Field("Officer ID", uiState.officerForm.officer_id) { viewModel.updateOfficerForm("officer_id", it) }
+                Field("Display name", uiState.officerForm.display_name) { viewModel.updateOfficerForm("display_name", it) }
                 Field("Rank", uiState.officerForm.rank ?: "") { viewModel.updateOfficerForm("rank", it) }
                 
                 // Station Dropdown

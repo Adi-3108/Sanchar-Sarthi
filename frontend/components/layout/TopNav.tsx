@@ -9,6 +9,8 @@ import { useState, useEffect } from "react";
 import { useLanguage } from "@/components/LanguageContext";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { t } from "@/lib/i18n";
+import { useQuery } from "@tanstack/react-query";
+import { getUserStats } from "@/lib/api";
 
 type NavLink = {
   name: string;
@@ -64,6 +66,14 @@ export function TopNav() {
   const { language } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  const statsQuery = useQuery({
+    queryKey: ["user-stats"],
+    queryFn: getUserStats,
+    enabled: mounted && currentRole !== "public_citizen",
+    staleTime: 60_000,
+    retry: false,
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -201,13 +211,16 @@ export function TopNav() {
                     <div className="mb-4 space-y-3">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted">Incidents reported</span>
-                        <span className="font-semibold text-copy">0</span>
+                        <span className="font-semibold text-copy">
+                          {statsQuery.isLoading ? "…" : (statsQuery.data?.incidents_reported ?? 0)}
+                        </span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted">Incidents voted</span>
-                        <span className="font-semibold text-copy">0</span>
+                        <span className="font-semibold text-copy">
+                          {statsQuery.isLoading ? "…" : (statsQuery.data?.incidents_voted ?? 0)}
+                        </span>
                       </div>
-                      <p className="text-xs text-accent/70 italic mt-2 text-center border-t border-line/50 pt-3">Activity tracking coming soon</p>
                     </div>
                     <button
                       onClick={handleLogout}

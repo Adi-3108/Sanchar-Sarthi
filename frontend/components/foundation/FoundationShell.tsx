@@ -538,8 +538,8 @@ export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mod
           ) : null}
 
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(300px,0.9fr)]">
-            <IncidentList title={labels.active} incidents={activeIncidents} labels={labels} canVote={Boolean(user)} canManage={canManage} selectedIncidentId={selectedIncident?.id ?? null} onSelect={setSelectedIncidentId} onVote={(incidentId, voteValue) => voteMutation.mutate({ incidentId, voteValue })} onStatusChange={(incidentId, payload) => statusMutation.mutate({ incidentId, payload })} />
-            <IncidentList title={labels.reports} incidents={reportedIncidents} labels={labels} canVote={Boolean(user)} canManage={canManage} selectedIncidentId={selectedIncident?.id ?? null} onSelect={setSelectedIncidentId} onVote={(incidentId, voteValue) => voteMutation.mutate({ incidentId, voteValue })} onStatusChange={(incidentId, payload) => statusMutation.mutate({ incidentId, payload })} compact />
+            <IncidentList title={labels.active} incidents={activeIncidents} labels={labels} canVote={user?.role === "citizen"} canManage={canManage} selectedIncidentId={selectedIncident?.id ?? null} onSelect={setSelectedIncidentId} onVote={(incidentId, voteValue) => voteMutation.mutate({ incidentId, voteValue })} onStatusChange={(incidentId, payload) => statusMutation.mutate({ incidentId, payload })} />
+            <IncidentList title={labels.reports} incidents={reportedIncidents} labels={labels} canVote={user?.role === "citizen"} canManage={canManage} selectedIncidentId={selectedIncident?.id ?? null} onSelect={setSelectedIncidentId} onVote={(incidentId, voteValue) => voteMutation.mutate({ incidentId, voteValue })} onStatusChange={(incidentId, payload) => statusMutation.mutate({ incidentId, payload })} compact />
           </div>
 
           <MapPanel data={data} bounds={bounds} labels={labels} selectedIncidentId={selectedIncident?.id ?? null} onSelectIncident={setSelectedIncidentId} config={configQuery.data} routeData={routeQuery.data} activeRoutes={activeRoutesQuery.data} />

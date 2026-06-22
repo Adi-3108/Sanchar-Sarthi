@@ -124,7 +124,7 @@ def _load_profile(db: Session, auth: AuthContext) -> PoliceOfficerProfile | None
         .where(PoliceOfficerProfile.user_account_id == coerce_uuid(auth.user_account_id))
         .where(PoliceOfficerProfile.active.is_(True))
     )
-    return None
+    return profile
 
 
 @router.post("/login", response_model=OfficerLoginResponse)

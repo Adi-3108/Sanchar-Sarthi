@@ -44,7 +44,7 @@ class AdminViewModel : ViewModel() {
             val updated = when (field) {
                 "email" -> current.copy(email = value as String)
                 "password" -> current.copy(password = value as String)
-                "badge_number" -> current.copy(badge_number = value as String)
+                "officer_id" -> current.copy(officer_id = value as String)
                 "display_name" -> current.copy(display_name = value as String)
                 "rank" -> current.copy(rank = value as String)
                 "police_station" -> current.copy(police_station = value as String)

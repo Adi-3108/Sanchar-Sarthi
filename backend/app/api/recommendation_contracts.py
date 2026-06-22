@@ -109,4 +109,4 @@ class EventPlanRequest(BaseModel):
     weather_condition: str | None = Field(default=None, pattern="^(clear|cloudy|light_rain|rain|heavy_rain)$")
     rain_mm: float | None = Field(default=None, ge=0, le=500)
     visibility_m: float | None = Field(default=None, ge=0, le=20000)
-    use_live_weather: bool = False
+    use_live_weather: bool = True

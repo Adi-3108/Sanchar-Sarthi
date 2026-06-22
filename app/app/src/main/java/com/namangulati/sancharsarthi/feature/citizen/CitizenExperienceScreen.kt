@@ -237,6 +237,11 @@ fun CitizenExperienceScreen(
                             val lat = latitude.toDoubleOrNull() ?: 0.0
                             val lng = longitude.toDoubleOrNull() ?: 0.0
                             
+                            if (lat < 12.5 || lat > 13.3 || lng < 77.0 || lng > 78.0) {
+                                viewModel.setFeedback("Error: The selected location is outside Bangalore. Sanchar Sarthi is currently active only in Bangalore.")
+                                return@Button
+                            }
+                            
                             viewModel.clearFeedback()
                             
                             val request = FoundationIncidentCreateRequest(

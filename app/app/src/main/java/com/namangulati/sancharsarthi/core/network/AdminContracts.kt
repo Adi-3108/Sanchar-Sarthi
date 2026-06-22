@@ -19,8 +19,10 @@ data class CreateOfficerRequest(
 
 @Serializable
 data class CreateOfficerResponse(
-    val firebase_uid: String,
-    val officer_id: String
+    val status: String,
+    val officer_id: String,
+    val role: String,
+    val active: Boolean
 )
 
 @Serializable
@@ -32,8 +34,10 @@ data class CreateControlRoomRequest(
 
 @Serializable
 data class CreateControlRoomResponse(
+    val status: String,
     val firebase_uid: String,
-    val user_id: String
+    val role: String,
+    val active: Boolean
 )
 
 @Serializable

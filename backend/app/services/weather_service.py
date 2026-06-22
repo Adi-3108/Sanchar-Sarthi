@@ -191,7 +191,7 @@ def resolve_weather_adjustment(
     weather_condition: str | None = None,
     rain_mm: float | None = None,
     visibility_m: float | None = None,
-    use_live_weather: bool = False,
+    use_live_weather: bool = True,
     source_context: str = "simulation",
     settings: Settings | None = None,
 ) -> dict[str, Any]:

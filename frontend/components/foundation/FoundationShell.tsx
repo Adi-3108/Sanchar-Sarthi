@@ -416,7 +416,7 @@ export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mod
   }, []);
 
   const requiredRole = mode === "admin" ? "admin" : mode === "control" ? "control_room" : null;
-  const hasAccess = !requiredRole || (mounted && session.accessLevel === requiredRole);
+  const hasAccess = !requiredRole || (mounted && (session.accessLevel === requiredRole || (requiredRole === "control_room" && session.accessLevel === "admin")));
 
   if (protectedMode && ready && (!user || !hasAccess)) {
     return (
@@ -499,6 +499,12 @@ export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mod
                 submitLabel={labels.submit}
                 onSubmit={(event) => {
                   event.preventDefault();
+                  const lat = reportDraft.latitude;
+                  const lng = reportDraft.longitude;
+                  if (lat < 12.5 || lat > 13.3 || lng < 77.0 || lng > 78.0) {
+                    window.alert("Error: The selected location is outside Bangalore. Sanchar Sarthi is currently active only in Bangalore.");
+                    return;
+                  }
                   reportMutation.mutate(cleanDraft(reportDraft));
                 }}
               />
@@ -520,6 +526,12 @@ export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mod
               submitLabel={labels.official}
               onSubmit={(event) => {
                 event.preventDefault();
+                const lat = officialDraft.latitude;
+                const lng = officialDraft.longitude;
+                if (lat < 12.5 || lat > 13.3 || lng < 77.0 || lng > 78.0) {
+                  window.alert("Error: The selected location is outside Bangalore. Sanchar Sarthi is currently active only in Bangalore.");
+                  return;
+                }
                 officialMutation.mutate(cleanDraft(officialDraft));
               }}
             />

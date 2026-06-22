@@ -305,15 +305,14 @@ fun MapIntelligenceScreen(
             item {
                 AutoTranslatedText("Hotspots", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
             }
-            items(uiState.hotspots.chunked(3)) { rowHotspots ->
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    for (hotspot in rowHotspots) {
-                        HotspotCard(hotspot = hotspot, modifier = Modifier.weight(1f))
-                    }
-                    if (rowHotspots.size < 3) {
-                        repeat(3 - rowHotspots.size) {
-                            Spacer(modifier = Modifier.weight(1f))
-                        }
+            item {
+                androidx.compose.foundation.lazy.LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
+                    items(uiState.hotspots) { hotspot ->
+                        HotspotCard(hotspot = hotspot, modifier = Modifier.width(280.dp))
                     }
                 }
             }

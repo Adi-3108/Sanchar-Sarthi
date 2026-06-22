@@ -209,7 +209,7 @@ class EventSimulationRequest(BaseModel):
     weather_condition: Literal["clear", "cloudy", "light_rain", "rain", "heavy_rain"] | None = None
     rain_mm: float | None = Field(default=None, ge=0, le=500)
     visibility_m: float | None = Field(default=None, ge=0, le=20000)
-    use_live_weather: bool = False
+    use_live_weather: bool = True
     available_officers: int | None = Field(default=None, ge=0)
     description: str | None = Field(default=None, max_length=2000)
     veh_type: str | None = Field(default=None, max_length=64)

@@ -1,4 +1,4 @@
-﻿package com.namangulati.sancharsarthi.feature.simulation
+package com.namangulati.sancharsarthi.feature.simulation
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -27,7 +27,7 @@ data class SimulationUiState(
     val weatherCondition: String = "clear",
     val rainMm: String = "0",
     val visibilityM: String = "5000",
-    val useLiveWeather: Boolean = false,
+    val useLiveWeather: Boolean = true,
     val description: String = "Planned crowd movement with expected parking spillover near the junction.",
     val vehType: String = "car",
 

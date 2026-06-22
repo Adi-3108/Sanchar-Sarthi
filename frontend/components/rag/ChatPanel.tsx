@@ -122,41 +122,44 @@ export function ChatPanel() {
       <button
         type="button"
         onClick={togglePanel}
-        className="fixed bottom-5 right-5 z-50 rounded-full border border-cyan-400/40 bg-slate-950/90 px-5 py-3 text-sm font-semibold uppercase tracking-[0.24em] text-cyan-200 shadow-[0_20px_60px_rgba(15,23,42,0.45)] backdrop-blur transition hover:border-cyan-300 hover:text-white"
+        className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full border border-blue-200 bg-white/95 text-blue-600 shadow-lg backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-700 hover:shadow-xl active:scale-95 active:translate-y-0"
+        aria-label="Ask Sanchar Sarthi Copilot"
       >
-        Ask Sanchar Sarthi
+        <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12h.01M15 12h.01M12 2a3 3 0 00-3 3v1H6a2 2 0 00-2 2v6a2 2 0 002 2h2v4a1 1 0 001 1h6a1 1 0 001-1v-4h2a2 2 0 002-2V8a2 2 0 00-2-2h-3V5a3 3 0 00-3-3z" />
+        </svg>
       </button>
     );
   }
 
   return (
-    <aside className="fixed bottom-5 right-5 z-50 flex h-[min(760px,82vh)] w-[min(440px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-[28px] border border-slate-800 bg-slate-950/96 text-slate-100 shadow-[0_35px_100px_rgba(2,6,23,0.65)] backdrop-blur">
-      <header className="border-b border-slate-800 px-5 py-4">
+    <aside className="fixed bottom-5 right-5 z-50 flex h-[min(760px,82vh)] w-[min(440px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white/95 text-slate-900 shadow-2xl backdrop-blur-md">
+      <header className="border-b border-slate-100 bg-slate-50/50 px-5 py-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-300">Grounded RAG Copilot</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">Traffic command assistant</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-300">{accessNote(session.accessLevel)}</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-blue-600">Grounded RAG Copilot</p>
+            <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-900">Traffic command assistant</h2>
+            <p className="mt-1 text-xs leading-relaxed text-slate-600">{accessNote(session.accessLevel)}</p>
           </div>
           <button
             type="button"
             onClick={closePanel}
-            className="rounded-full border border-slate-700 px-3 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-300 transition hover:border-slate-500 hover:text-white"
+            className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500 shadow-sm transition hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50 active:scale-95"
           >
             Close
           </button>
         </div>
-        <div className="mt-4 flex flex-wrap gap-2 text-xs uppercase tracking-[0.18em] text-slate-400">
-          <span className="rounded-full border border-slate-800 bg-slate-900/70 px-3 py-2">Role {session.accessLevel.replace(/_/g, " ")}</span>
-          {currentEventId ? <span className="rounded-full border border-slate-800 bg-slate-900/70 px-3 py-2">Event {currentEventId}</span> : null}
-          {sessionId ? <span className="rounded-full border border-slate-800 bg-slate-900/70 px-3 py-2">Session active</span> : null}
+        <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+          <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 shadow-sm">Role {session.accessLevel.replace(/_/g, " ")}</span>
+          {currentEventId ? <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 shadow-sm">Event {currentEventId}</span> : null}
+          {sessionId ? <span className="rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700 px-2.5 py-1 shadow-sm">Session active</span> : null}
         </div>
       </header>
 
       <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
         {!messages.length ? (
-          <section className="rounded-3xl border border-dashed border-slate-800 bg-slate-900/50 p-4">
-            <p className="text-sm leading-7 text-slate-300">
+          <section className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-5">
+            <p className="text-sm font-medium leading-relaxed text-slate-600">
               Ask for active incidents, similar event memory, recommendations, hotspot risk, or public-safe summaries.
             </p>
             <div className="mt-4">
@@ -170,8 +173,8 @@ export function ChatPanel() {
         ))}
       </div>
 
-      <footer className="border-t border-slate-800 px-5 py-4">
-        {error ? <p className="mb-3 text-sm text-rose-300">{error}</p> : null}
+      <footer className="border-t border-slate-100 bg-slate-50/50 px-5 py-4">
+        {error ? <p className="mb-3 text-sm font-medium text-rose-600">{error}</p> : null}
         <form onSubmit={handleSubmit} className="space-y-3">
           <textarea
             value={draft}
@@ -182,23 +185,23 @@ export function ChatPanel() {
                 void submitDraft(draft);
               }
             }}
-            rows={3}
-            placeholder={currentEventId ? `Ask about ${currentEventId}` : "Ask about current traffic, hotspots, incidents, or response plans"}
-            className="w-full rounded-3xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-400"
+            rows={2}
+            placeholder={currentEventId ? `Ask about ${currentEventId}...` : "Ask about current traffic, hotspots, or response plans..."}
+            className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-inner outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
           />
           <div className="flex items-center justify-between gap-3">
             <button
               type="button"
               onClick={() => void clearConversation()}
               disabled={isStreaming && !messages.length}
-              className="rounded-full border border-slate-700 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-300 transition hover:border-slate-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Clear
             </button>
             <button
               type="submit"
               disabled={isHydrating || isStreaming || !draft.trim()}
-              className="rounded-full bg-cyan-400 px-5 py-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-full bg-blue-600 px-5 py-2 text-[10px] font-bold uppercase tracking-widest text-white shadow-sm shadow-blue-500/30 transition-all hover:-translate-y-0.5 hover:bg-blue-500 hover:shadow-md active:scale-95 disabled:hover:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isStreaming ? "Streaming..." : "Send"}
             </button>

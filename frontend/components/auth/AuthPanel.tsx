@@ -7,6 +7,8 @@ import { getCurrentFirebaseToken, loginWithFirebase, logoutFirebase, registerWit
 import { getCurrentAccess } from "@/lib/api";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import { type AccessLevel, useSessionStore } from "@/lib/stores/useSessionStore";
+import { handleError, errorText as getErrorText } from "@/lib/errorHandler";
+import { toast } from "sonner";
 
 const roleLabels: Record<AccessLevel, string> = {
   admin: "Admin",
@@ -22,18 +24,7 @@ type AuthPanelProps = {
   note: string;
 };
 
-function errorText(error: unknown): string {
-  if (error instanceof Error) {
-    if (error.message === "UNVERIFIED_EMAIL") {
-      return "Please verify your email address before signing in.";
-    }
-    if (error.message.includes("auth/invalid-credential") || error.message.includes("auth/user-not-found") || error.message.includes("auth/wrong-password")) {
-      return "Account not found or invalid credentials. Would you like to sign up?";
-    }
-    return error.message;
-  }
-  return "Firebase sign-in failed.";
-}
+
 
 function normalizeBackendRole(role: string): Exclude<AccessLevel, "public_citizen"> {
   if (role === "admin") return "admin";
@@ -117,9 +108,9 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
     try {
       await resendVerificationEmail(email, password);
       setResendSuccess(true);
-      setError("A new verification link has been sent to your email. Please check your inbox.");
+      toast.success("A new verification link has been sent to your email. Please check your inbox.");
     } catch (caught) {
-      setError(errorText(caught));
+      handleError(caught, "Failed to resend verification email.");
     } finally {
       setPending(false);
     }
@@ -136,7 +127,7 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
       if (isSignUp) {
         await registerWithFirebase(email, password);
         setIsUnverified(true);
-        setError("Account created! A verification link has been sent to your email. Please verify before signing in.");
+        toast.success("Account created! A verification link has been sent to your email. Please verify before signing in.");
         setIsSignUp(false);
         setPending(false);
         return;
@@ -155,8 +146,15 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
     } catch (caught) {
       if (caught instanceof Error && caught.message === "UNVERIFIED_EMAIL") {
         setIsUnverified(true);
+        setError("Please verify your email address before signing in.");
+      } else {
+        const txt = getErrorText(caught);
+        if (txt.includes("Would you like to sign up")) {
+            setError(txt);
+        } else {
+            handleError(caught, "Firebase sign-in failed.");
+        }
       }
-      setError(errorText(caught));
     } finally {
       setPending(false);
     }
@@ -173,7 +171,7 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
 
   return (
     <section className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel">
-      <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Firebase access</p>
+      <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Secure authentication</p>
       <h2 className="mt-2 text-2xl font-semibold">{title}</h2>
       <p className="mt-3 text-sm leading-7 text-muted">{note}</p>
 
@@ -199,7 +197,7 @@ export function AuthPanel({ preferredRole, title, note }: AuthPanelProps) {
           )}
           <div className="rounded-2xl border border-line/70 bg-bg/60 p-4 text-sm leading-7 text-copy">
             <p>Signed in: {user.email ?? user.uid}</p>
-            <p>Selected UI role: {roleLabels[visibleRole]}</p>
+            <p>Role: {roleLabels[visibleRole]}</p>
           </div>
           <button
             type="button"

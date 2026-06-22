@@ -29,7 +29,7 @@ export function PostEventReportView({ report, className }: PostEventReportViewPr
   if (!report) {
     return (
       <section
-        className={`rounded-[28px] border border-dashed border-slate-700/80 bg-slate-950/60 p-6 text-sm text-slate-400 ${
+        className={`rounded-[28px] border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500 ${
           className ?? ""
         }`}
       >
@@ -40,17 +40,17 @@ export function PostEventReportView({ report, className }: PostEventReportViewPr
 
   return (
     <section
-      className={`rounded-[28px] border border-slate-800/80 bg-slate-950/85 p-6 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ${
+      className={`rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm ${
         className ?? ""
       }`}
     >
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-[11px] uppercase tracking-[0.24em] text-emerald-300/80">Post-event learning</p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-100">After-action report</h2>
-          <p className="mt-3 text-sm leading-7 text-slate-300">{report.event_summary}</p>
+          <h2 className="mt-2 text-2xl font-semibold text-slate-900">After-action report</h2>
+          <p className="mt-3 text-sm leading-7 text-slate-600">{report.event_summary}</p>
         </div>
-        <div className="rounded-full border border-emerald-300/30 bg-emerald-400/10 px-4 py-2 text-xs uppercase tracking-[0.18em] text-emerald-100">
+        <div className="rounded-full border border-emerald-200 bg-emerald-400/10 px-4 py-2 text-xs uppercase tracking-[0.18em] text-emerald-100">
           {report.final_status ?? "review generated"}
         </div>
       </div>
@@ -74,7 +74,7 @@ export function PostEventReportView({ report, className }: PostEventReportViewPr
         <NarrativeCard title="Future recommendations" body={report.future_recommendations} tone="cyan" />
       </div>
 
-      <div className="mt-6 rounded-3xl border border-slate-800/70 bg-slate-900/70 p-4">
+      <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-4">
         <div className="flex items-center justify-between gap-4">
           <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Structured learning snapshot</p>
           <p className="text-xs text-slate-500">Stored in `post_event_reports.report_json`</p>
@@ -92,9 +92,9 @@ export function PostEventReportView({ report, className }: PostEventReportViewPr
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <article className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-4">
+    <article className="rounded-2xl border border-slate-200 bg-white p-4">
       <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-2 text-lg font-semibold text-slate-100">{value}</p>
+      <p className="mt-2 text-lg font-semibold text-slate-900">{value}</p>
     </article>
   );
 }
@@ -113,12 +113,12 @@ function NarrativeCard({
       ? "border-emerald-400/20 bg-emerald-400/10"
       : tone === "cyan"
         ? "border-cyan-400/20 bg-cyan-400/10"
-        : "border-slate-800/70 bg-slate-900/70";
+        : "border-slate-200 bg-white";
 
   return (
     <article className={`rounded-3xl border p-4 ${toneClass}`}>
       <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{title}</p>
-      <p className="mt-3 text-sm leading-7 text-slate-200">{body}</p>
+      <p className="mt-3 text-sm leading-7 text-slate-700">{body}</p>
     </article>
   );
 }

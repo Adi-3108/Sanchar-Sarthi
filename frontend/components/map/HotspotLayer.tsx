@@ -242,7 +242,7 @@ export function HotspotLayer({
   if (hotspots.length === 0) {
     return (
       <div
-        className={`rounded-[28px] border border-dashed border-slate-700/80 bg-slate-950/50 p-8 text-sm text-slate-400 ${
+        className={`rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm font-medium text-slate-500 shadow-sm ${
           className ?? ""
         }`}
       >

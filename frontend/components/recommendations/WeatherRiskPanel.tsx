@@ -15,7 +15,7 @@ export function WeatherRiskPanel({ weatherRisk, className }: WeatherRiskPanelPro
   if (!weatherRisk) {
     return (
       <section
-        className={`rounded-[28px] border border-dashed border-slate-700/80 bg-slate-950/60 p-6 text-sm text-slate-400 ${
+        className={`rounded-[28px] border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500 ${
           className ?? ""
         }`}
       >
@@ -26,16 +26,16 @@ export function WeatherRiskPanel({ weatherRisk, className }: WeatherRiskPanelPro
 
   return (
     <section
-      className={`flex flex-col h-full rounded-[28px] border border-slate-800/80 bg-slate-950/85 p-6 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ${
+      className={`flex flex-col h-full rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm ${
         className ?? ""
       }`}
     >
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-300/80">Weather Risk</p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-100">Rain, visibility, and waterlogging posture</h2>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-blue-600">Weather Risk</p>
+          <h2 className="mt-2 text-2xl font-semibold text-slate-900">Rain, visibility, and waterlogging posture</h2>
         </div>
-        <p className="text-3xl font-semibold text-slate-100">{weatherRisk.weather_factor.toFixed(2)}x</p>
+        <p className="text-3xl font-semibold text-slate-900">{weatherRisk.weather_factor.toFixed(2)}x</p>
       </div>
 
       <div className="mt-6 grid gap-4 grid-cols-2">
@@ -53,42 +53,42 @@ export function WeatherRiskPanel({ weatherRisk, className }: WeatherRiskPanelPro
           weatherRisk.reason_codes.map((reason) => (
             <span
               key={reason}
-              className="rounded-full border border-slate-700/80 bg-slate-950/80 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-slate-300"
+              className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-slate-600"
             >
               {formatCondition(reason)}
             </span>
           ))
         ) : (
-          <span className="rounded-full border border-slate-800/80 bg-slate-950/70 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-slate-500">
+          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-slate-500">
             Neutral weather modifier
           </span>
         )}
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
-        <article className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-4">
+        <article className="rounded-2xl border border-slate-200 bg-white p-4">
           <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Source</p>
-          <p className="mt-2 text-sm leading-6 text-slate-200">
+          <p className="mt-2 text-sm leading-6 text-slate-700">
             {formatCondition(weatherRisk.source)}
             {weatherRisk.provider ? ` via ${formatCondition(weatherRisk.provider)}` : ""}
           </p>
         </article>
-        <article className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-4">
+        <article className="rounded-2xl border border-slate-200 bg-white p-4">
           <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Low visibility</p>
-          <p className="mt-2 text-sm leading-6 text-slate-200">{weatherRisk.low_visibility ? "Yes" : "No"}</p>
+          <p className="mt-2 text-sm leading-6 text-slate-700">{weatherRisk.low_visibility ? "Yes" : "No"}</p>
         </article>
       </div>
 
-      <p className="mt-auto pt-5 text-sm leading-7 text-slate-300">{weatherRisk.note}</p>
+      <p className="mt-auto pt-5 text-sm leading-7 text-slate-600">{weatherRisk.note}</p>
     </section>
   );
 }
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <article className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-4">
+    <article className="rounded-2xl border border-slate-200 bg-white p-4">
       <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-2 text-lg font-semibold text-slate-100">{value}</p>
+      <p className="mt-2 text-lg font-semibold text-slate-900">{value}</p>
     </article>
   );
 }

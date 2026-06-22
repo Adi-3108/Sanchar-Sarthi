@@ -53,7 +53,7 @@ export function ImpactScorePanel({
   if (estimatedImpactScore === null || estimatedImpactScore === undefined) {
     return (
       <section
-        className={`rounded-[28px] border border-dashed border-slate-700/80 bg-slate-950/60 p-6 text-sm text-slate-400 ${
+        className={`rounded-[28px] border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500 ${
           className ?? ""
         }`}
       >
@@ -64,15 +64,15 @@ export function ImpactScorePanel({
 
   return (
     <section
-      className={`flex flex-col h-full rounded-[28px] border border-slate-800/80 bg-slate-950/85 p-6 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ${
+      className={`flex flex-col h-full rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm ${
         className ?? ""
       }`}
     >
       <div className="flex flex-col gap-4">
         <div className="max-w-3xl">
           <p className="text-[11px] uppercase tracking-[0.24em] text-fuchsia-300/80">Estimated Impact</p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-100">Operational disruption estimate</h2>
-          <p className="mt-3 text-sm leading-7 text-slate-300">
+          <h2 className="mt-2 text-2xl font-semibold text-slate-900">Operational disruption estimate</h2>
+          <p className="mt-3 text-sm leading-7 text-slate-600">
             Dataset-backed impact combines urgency, closure likelihood, hotspot risk, similar-event memory,
             and controlled vehicle-type adjustment.
           </p>
@@ -87,10 +87,10 @@ export function ImpactScorePanel({
       </div>
 
       <div className="mt-6 grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
-        <article className="rounded-3xl border border-slate-800/70 bg-slate-900/70 p-5">
+        <article className="rounded-3xl border border-slate-200 bg-white p-5">
           <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Impact score</p>
-          <p className="mt-3 text-4xl font-semibold text-slate-100">{formatNumber(estimatedImpactScore)}</p>
-          <p className="mt-3 text-sm text-slate-400">
+          <p className="mt-3 text-4xl font-semibold text-slate-900">{formatNumber(estimatedImpactScore)}</p>
+          <p className="mt-3 text-sm text-slate-500">
             Estimated radius {formatNumber(impactRadiusKm)} km
           </p>
         </article>
@@ -103,15 +103,15 @@ export function ImpactScorePanel({
         </div>
       </div>
 
-      <div className="mt-6 rounded-3xl border border-slate-800/70 bg-slate-900/70 p-4">
+      <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-4">
         <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Vehicle note</p>
-        <p className="mt-2 text-sm leading-7 text-slate-300">
+        <p className="mt-2 text-sm leading-7 text-slate-600">
           {vehicleImpactNote ?? "Vehicle impact factor was not available for this scenario."}
         </p>
       </div>
 
       <div className="mt-auto pt-6">
-        <div className="rounded-3xl border border-slate-800/70 bg-slate-900/70 p-4">
+        <div className="rounded-3xl border border-slate-200 bg-white p-4">
           <div className="flex items-center justify-between gap-4">
           <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Reason codes</p>
           <p className="text-xs text-slate-500">Dataset-backed scoring signals</p>
@@ -121,13 +121,13 @@ export function ImpactScorePanel({
             scoreReasonCodes.map((reasonCode) => (
               <span
                 key={reasonCode}
-                className="rounded-full border border-slate-700/80 bg-slate-950/80 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-slate-300"
+                className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-slate-600"
               >
                 {reasonCode.replaceAll("_", " ")}
               </span>
             ))
           ) : (
-            <span className="text-sm text-slate-400">No reason codes were available.</span>
+            <span className="text-sm text-slate-500">No reason codes were available.</span>
           )}
         </div>
       </div>
@@ -138,9 +138,9 @@ export function ImpactScorePanel({
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <article className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-4">
+    <article className="rounded-2xl border border-slate-200 bg-white p-4">
       <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-2 text-lg font-semibold text-slate-100">{value}</p>
+      <p className="mt-2 text-lg font-semibold text-slate-900">{value}</p>
     </article>
   );
 }

@@ -112,22 +112,22 @@ export function ReportForm() {
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
       <form
         onSubmit={handleSubmit}
-        className="rounded-[28px] border border-slate-800/80 bg-slate-950/85 p-6 shadow-[0_18px_40px_rgba(2,6,23,0.35)]"
+        className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm"
       >
-        <div className="flex flex-col gap-4 border-b border-slate-800/80 pb-5 md:flex-row md:items-start md:justify-between">
+        <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-300/80">Sanchar Sarthi</p>
-            <h1 className="mt-2 text-3xl font-semibold text-slate-100">{labels.reportIssue}</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">{labels.publicNote}</p>
+            <p className="text-[11px] uppercase tracking-[0.24em] text-blue-600">Sanchar Sarthi</p>
+            <h1 className="mt-2 text-3xl font-semibold text-slate-900">{labels.reportIssue}</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">{labels.publicNote}</p>
           </div>
-          <label className="min-w-40 text-sm text-slate-300">
+          <label className="min-w-40 text-sm text-slate-600">
             <span className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-slate-500">
               {labels.language}
             </span>
             <select
               value={reportLanguage}
               onChange={(event) => setReportLanguage(event.target.value)}
-              className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 outline-none transition focus:border-cyan-300"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-slate-900 outline-none transition focus:border-blue-400"
             >
               {descriptionLanguageOptions.map((item) => (
                 <option key={item.value} value={item.value}>
@@ -139,14 +139,14 @@ export function ReportForm() {
         </div>
 
         <div className="mt-6 grid gap-5 md:grid-cols-2">
-          <label className="text-sm text-slate-300">
+          <label className="text-sm text-slate-600">
             <span className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-slate-500">
               Source
             </span>
             <select
               value={reportSource}
               onChange={(event) => setReportSource(event.target.value as CitizenReportSource)}
-              className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-slate-100 outline-none transition focus:border-cyan-300"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-slate-900 outline-none transition focus:border-blue-400"
             >
               {reportSources.map((item) => (
                 <option key={item.value} value={item.value}>
@@ -156,14 +156,14 @@ export function ReportForm() {
             </select>
           </label>
 
-          <label className="text-sm text-slate-300">
+          <label className="text-sm text-slate-600">
             <span className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-slate-500">
               {labels.issueType}
             </span>
             <select
               value={reportType}
               onChange={(event) => setReportType(event.target.value)}
-              className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-slate-100 outline-none transition focus:border-cyan-300"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-slate-900 outline-none transition focus:border-blue-400"
             >
               {reportTypes.map((item) => (
                 <option key={item.value} value={item.value}>
@@ -173,14 +173,14 @@ export function ReportForm() {
             </select>
           </label>
 
-          <label className="text-sm text-slate-300">
+          <label className="text-sm text-slate-600">
             <span className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-slate-500">
               {labels.severity}
             </span>
             <select
               value={severity}
               onChange={(event) => setSeverity(event.target.value)}
-              className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-slate-100 outline-none transition focus:border-cyan-300"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-slate-900 outline-none transition focus:border-blue-400"
             >
               {severities.map((item) => (
                 <option key={item} value={item}>
@@ -191,7 +191,7 @@ export function ReportForm() {
           </label>
 
           <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-            <label className="text-sm text-slate-300">
+            <label className="text-sm text-slate-600">
               <span className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-slate-500">
                 {labels.latitude}
               </span>
@@ -199,10 +199,10 @@ export function ReportForm() {
                 value={latitude}
                 onChange={(event) => setLatitude(event.target.value)}
                 inputMode="decimal"
-                className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-slate-100 outline-none transition focus:border-cyan-300"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-slate-900 outline-none transition focus:border-blue-400"
               />
             </label>
-            <label className="text-sm text-slate-300">
+            <label className="text-sm text-slate-600">
               <span className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-slate-500">
                 {labels.longitude}
               </span>
@@ -210,22 +210,22 @@ export function ReportForm() {
                 value={longitude}
                 onChange={(event) => setLongitude(event.target.value)}
                 inputMode="decimal"
-                className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3 text-slate-100 outline-none transition focus:border-cyan-300"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-slate-900 outline-none transition focus:border-blue-400"
               />
             </label>
             <button
               type="button"
               onClick={useBrowserLocation}
-              className="self-end rounded-2xl border border-cyan-300/40 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:border-cyan-200 hover:bg-cyan-300/20"
+              className="self-end rounded-2xl border border-blue-600 bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:border-blue-500 hover:bg-blue-600"
             >
               {labels.useLocation}
             </button>
           </div>
         </div>
 
-        {locationMessage ? <p className="mt-3 text-sm text-slate-400">{locationMessage}</p> : null}
+        {locationMessage ? <p className="mt-3 text-sm text-slate-500">{locationMessage}</p> : null}
 
-        <label className="mt-6 block text-sm text-slate-300">
+        <label className="mt-6 block text-sm text-slate-600">
           <span className="mb-2 block text-[11px] uppercase tracking-[0.18em] text-slate-500">
             {labels.description}
           </span>
@@ -236,7 +236,7 @@ export function ReportForm() {
             maxLength={500}
             required
             rows={6}
-            className="w-full resize-none rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-cyan-300"
+            className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-600 focus:border-blue-400"
             placeholder="Road blocked near junction..."
           />
         </label>
@@ -245,12 +245,12 @@ export function ReportForm() {
           <button
             type="submit"
             disabled={mutation.isPending}
-            className="rounded-2xl border border-cyan-300/50 bg-cyan-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-2xl border border-blue-600 bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {mutation.isPending ? labels.submitting : labels.submit}
           </button>
           {mutation.isError ? (
-            <p className="text-sm leading-6 text-red-300">{errorText(mutation.error)}</p>
+            <p className="text-sm leading-6 text-rose-600">{errorText(mutation.error)}</p>
           ) : null}
         </div>
       </form>
@@ -269,16 +269,16 @@ function ReportResultPanel({
 }) {
   if (!result) {
     return (
-      <aside className="rounded-[28px] border border-slate-800/80 bg-slate-950/70 p-6 text-sm leading-7 text-slate-400">
+      <aside className="rounded-[28px] border border-slate-200 bg-white p-6 text-sm leading-7 text-slate-500">
         {labels.publicNote}
       </aside>
     );
   }
 
   return (
-    <aside className="rounded-[28px] border border-emerald-300/30 bg-emerald-300/10 p-6 shadow-[0_18px_40px_rgba(2,6,23,0.28)]">
-      <p className="text-[11px] uppercase tracking-[0.24em] text-emerald-200">{labels.accepted}</p>
-      <h2 className="mt-3 text-2xl font-semibold text-slate-100">{result.new_alert_level}</h2>
+    <aside className="rounded-[28px] border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
+      <p className="text-[11px] uppercase tracking-[0.24em] text-emerald-700">{labels.accepted}</p>
+      <h2 className="mt-3 text-2xl font-semibold text-slate-900">{result.new_alert_level}</h2>
       <div className="mt-6 grid gap-3">
         <Metric label={labels.confidence} value={confidencePercent(result.report_confidence)} />
         <Metric label={labels.alertLevel} value={result.new_alert_level} />
@@ -286,20 +286,20 @@ function ReportResultPanel({
         <Metric label="Impact delta" value={`+${result.impact_score_change.toFixed(1)}`} />
       </div>
       {result.translated_description ? (
-        <p className="mt-5 rounded-2xl border border-slate-700/70 bg-slate-950/70 p-4 text-sm leading-7 text-slate-300">
+        <p className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 text-sm leading-7 text-slate-600">
           {result.translated_description}
         </p>
       ) : null}
-      <p className="mt-5 text-sm leading-7 text-slate-200">{result.recommended_action}</p>
+      <p className="mt-5 text-sm leading-7 text-slate-700">{result.recommended_action}</p>
     </aside>
   );
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-4">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
       <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-2 text-sm font-semibold text-slate-100">{value}</p>
+      <p className="mt-2 text-sm font-semibold text-slate-900">{value}</p>
     </div>
   );
 }

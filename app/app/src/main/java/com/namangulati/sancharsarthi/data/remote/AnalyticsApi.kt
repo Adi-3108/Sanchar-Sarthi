@@ -48,7 +48,7 @@ interface AnalyticsApi {
     @POST("/api/events/{event_id}/post-event-report")
     suspend fun generatePostEventReport(@Path("event_id") eventId: String): PostEventLearningResponse
 
-    @POST("/api/analytics/multi-event-analysis")
+    @POST("/api/events/multi-event-analysis")
     suspend fun analyzeMultiEvent(
         @Body request: MultiEventAnalysisRequest
     ): MultiEventAnalysisResponse

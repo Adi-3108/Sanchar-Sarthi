@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.security import AuthContext
 from app.orm.event import Event
 from app.orm.officer_event_assignment import OfficerEventAssignment
+from app.orm.police_officer_profile import PoliceOfficerProfile
 
 
 def coerce_uuid(value: str | None) -> UUID | None:
@@ -24,4 +25,17 @@ def officer_has_event_access(
     auth: AuthContext,
     event: Event,
 ) -> bool:
-    return True
+    user_id = coerce_uuid(auth.user_id)
+    if not user_id:
+        return False
+
+    stmt = (
+        select(OfficerEventAssignment.id)
+        .join(OfficerEventAssignment.officer_profile)
+        .where(
+            OfficerEventAssignment.event_id == event.id,
+            OfficerEventAssignment.assignment_status == "active",
+            PoliceOfficerProfile.user_account_id == user_id,
+        )
+    )
+    return db.scalar(stmt) is not None

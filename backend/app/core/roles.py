@@ -7,7 +7,6 @@ ADMIN_ROLES = {"admin"}
 ROLE_ALIASES = {
     "public_viewer": "guest",
     "control_room": "control_room_officer",
-    "police_officer": "control_room_officer",
 }
 
 

@@ -157,7 +157,9 @@ fun MapPanel(
                             }
                         }, "AndroidInterface")
 
-                        loadUrl("file:///android_asset/mappls_map.html")
+                        val htmlData = context.assets.open("mappls_map.html").bufferedReader().use { it.readText() }
+                        val htmlWithKey = htmlData.replace("YOUR_API_KEY_HERE", com.namangulati.sancharsarthi.BuildConfig.MAPS_API_KEY)
+                        loadDataWithBaseURL("file:///android_asset/", htmlWithKey, "text/html", "UTF-8", null)
                     }
                 },
                 update = { webView ->

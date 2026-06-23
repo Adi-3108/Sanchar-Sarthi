@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import asyncio
 import json
@@ -13,7 +13,7 @@ from app.core.config import get_settings
 from app.core.roles import canonical_role
 
 try:  # pragma: no cover - optional provider dependency
-    import google.generativeai as genai
+    from google import genai
 except ModuleNotFoundError:  # pragma: no cover - optional provider dependency
     genai = None
 
@@ -172,47 +172,36 @@ def _extract_body(chunk: str) -> tuple[str | None, str]:
     return label, body
 
 
-def _fallback_intro(role: str, has_context: bool) -> str:
-    normalized_role = canonical_role(role)
-    if not has_context:
-        if normalized_role == "control_room_officer":
-            return "I could not find enough indexed operational context to answer that safely right now."
-        if normalized_role == "admin":
-            return "I could not find enough indexed platform context to answer that safely right now."
-        return "I could not find enough indexed public context to answer that safely right now."
-    if normalized_role == "control_room_officer":
-        return "Here is the strongest indexed operational context I found for that question."
-    if normalized_role == "admin":
-        return "Here is the strongest indexed platform context I found for that question."
-    return "Here is the strongest indexed public context I found for that question."
-
-
-def _fallback_tail(role: str) -> str:
-    normalized_role = canonical_role(role)
-    if normalized_role == "admin":
-        return "This answer is grounded only in the currently indexed admin and operational records."
-    if normalized_role == "control_room_officer":
-        return "This answer is grounded only in the currently indexed operational records."
-    return "This answer is grounded only in the currently indexed public records."
-
+def _format_fallback_chunk(body: str) -> str:
+    import re
+    title_match = re.search(r"Incident\s+([A-Za-z0-9-]+):\s*(.*?)\.\s*Type", body)
+    desc_match = re.search(r"Description:\s*(.*)", body)
+    loc_match = re.search(r"Location\s+(.*?)\.\s*(Confidence|Route impact|Description|station)", body)
+    
+    if title_match and desc_match:
+        title = title_match.group(2).strip()
+        desc = desc_match.group(1).strip()
+        loc = loc_match.group(1).strip() if loc_match else ""
+        
+        loc_str = f" ({loc})" if loc else ""
+        return f"- **{title}**{loc_str}\n  *Details:* {desc}"
+    
+    return f"- {body}"
 
 def _compose_fallback_answer(context_chunks: list[str], question: str, role: str) -> str:
     selected = _select_context_chunks(context_chunks, get_settings().rag_max_context_tokens)[:FALLBACK_CHUNK_LIMIT]
-    lines = [_fallback_intro(role, bool(selected))]
-    if question.strip():
-        lines.append("")
-        lines.append(f"Question understood as: {question.strip()}")
+    
+    lines = ["**Offline Fallback Mode**"]
+    lines.append("I am currently unable to reach the AI servers due to API key issues. However, I searched the live database directly and found these records:\n")
+    
     if selected:
-        lines.append("")
-        lines.append("Relevant indexed context:")
         for chunk in selected:
             label, body = _extract_body(chunk)
-            if label:
-                lines.append(f"- {body} [{label}]")
-            else:
-                lines.append(f"- {body}")
-    lines.append("")
-    lines.append(_fallback_tail(role))
+            lines.append(_format_fallback_chunk(body))
+            lines.append("")
+    else:
+        lines.append("*No relevant records found in the database.*")
+        
     return "\n".join(lines).strip()
 
 
@@ -260,11 +249,11 @@ async def _stream_openai_compatible(
 
 def _stream_gemini_sync(api_key: str, model: str, prompt: str) -> list[str]:
     if genai is None:
-        raise RuntimeError("google-generativeai dependency is not installed")
-    genai.configure(api_key=api_key)
-    model_client = genai.GenerativeModel(model)
+        raise RuntimeError("google-genai dependency is not installed")
+    client = genai.Client(api_key=api_key)
     chunks: list[str] = []
-    for chunk in model_client.generate_content(prompt, stream=True):
+    response = client.models.generate_content_stream(model=model, contents=prompt)
+    for chunk in response:
         text = getattr(chunk, "text", None)
         if isinstance(text, str) and text:
             chunks.append(text)

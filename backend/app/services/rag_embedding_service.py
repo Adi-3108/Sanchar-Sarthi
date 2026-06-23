@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import asyncio
 import hashlib
@@ -12,7 +12,7 @@ from app.core.config import get_settings
 from app.orm.rag_chunk import VECTOR_DIMENSIONS
 
 try:  # pragma: no cover - optional provider dependency
-    import google.generativeai as genai
+    from google import genai
 except ModuleNotFoundError:  # pragma: no cover - local fallback path
     genai = None
 
@@ -45,17 +45,17 @@ def _normalize_dimensions(values: list[float]) -> list[float]:
 
 def _embed_with_gemini(api_key: str, model: str, text: str) -> list[float]:
     if genai is None:
-        raise RuntimeError("google-generativeai dependency is not installed")
-    genai.configure(api_key=api_key)
-    response = genai.embed_content(
-        model=f"models/{model}" if not model.startswith("models/") else model,
-        content=text,
-        task_type="retrieval_document",
+        raise RuntimeError("google-genai dependency is not installed")
+    client = genai.Client(api_key=api_key)
+    
+    clean_model = model.replace("models/", "") if model.startswith("models/") else model
+    response = client.models.embed_content(
+        model=clean_model,
+        contents=text,
     )
-    embedding = response.get("embedding") if isinstance(response, dict) else None
-    if not embedding:
+    if not response.embeddings or not response.embeddings[0].values:
         raise RuntimeError("Gemini embedding response was empty")
-    return _normalize_dimensions(list(embedding))
+    return _normalize_dimensions(list(response.embeddings[0].values))
 
 
 def _embed_with_openai(api_key: str, model: str, text: str) -> list[float]:

@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import or_, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.roles import canonical_role
 from app.core.security import AuthContext
 from app.orm.event import Event
 from app.orm.officer_event_assignment import OfficerEventAssignment
@@ -25,7 +26,20 @@ def officer_has_event_access(
     auth: AuthContext,
     event: Event,
 ) -> bool:
-    user_id = coerce_uuid(auth.user_id)
+    role = canonical_role(auth.role)
+    if role in {"admin", "control_room_officer"}:
+        return True
+
+    if auth.police_station and getattr(event, "police_station", None) == auth.police_station:
+        return True
+
+    if auth.assigned_corridors and getattr(event, "corridor", None) in auth.assigned_corridors:
+        return True
+
+    if auth.assigned_zones and getattr(event, "zone", None) in auth.assigned_zones:
+        return True
+
+    user_id = coerce_uuid(auth.user_account_id)
     if not user_id:
         return False
 

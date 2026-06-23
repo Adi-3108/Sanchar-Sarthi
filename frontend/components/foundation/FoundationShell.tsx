@@ -679,7 +679,7 @@ function IncidentList({ title, incidents, isLoading = false, labels, canVote, ca
               ) : null}
             </div>
           </article>
-        ))}
+        ))
         )}
         {!isLoading && !incidents.length ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 py-12 text-center">

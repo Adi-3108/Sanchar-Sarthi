@@ -17,6 +17,7 @@ import {
 } from 'chart.js';
 import { TrendingUp, AlertCircle } from 'lucide-react';
 import { ApiError } from '@/lib/api';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -38,14 +39,7 @@ export default function CorridorRiskTimeline({ corridor, days = 7 }: CorridorRis
   const { data, isLoading, error } = useCorridorRiskTimeline(corridor, days);
 
   if (isLoading) {
-    return (
-      <div className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-6 shadow-panel">
-        <div className="flex items-center gap-2 text-muted">
-          <TrendingUp className="w-5 h-5 animate-pulse" />
-          <span>Loading risk timeline...</span>
-        </div>
-      </div>
-    );
+    return <Skeleton.ChartPanel />;
   }
 
   if (error) {

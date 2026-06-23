@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.namangulati.sancharsarthi.core.design.ShimmerBox
+import com.namangulati.sancharsarthi.core.design.SkeletonList
 import com.namangulati.sancharsarthi.core.network.HotspotResponseItem
 import com.namangulati.sancharsarthi.core.translation.AutoTranslatedText
 import com.namangulati.sancharsarthi.design.PlatformSectionCard
@@ -76,7 +78,10 @@ fun MapIntelligenceScreen(
                     .clip(RoundedCornerShape(24.dp))
                     .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp))
             ) {
-                AndroidView(
+                if (uiState.isLoading) {
+                    ShimmerBox(modifier = Modifier.matchParentSize(), cornerRadius = 24.dp)
+                } else {
+                    AndroidView(
                     factory = { ctx ->
                         WebView(ctx).apply {
                             layoutParams = android.view.ViewGroup.LayoutParams(
@@ -138,7 +143,8 @@ fun MapIntelligenceScreen(
                         }
                     },
                     modifier = Modifier.fillMaxSize()
-                )
+                    )
+                }
             }
         }
 
@@ -208,7 +214,7 @@ fun MapIntelligenceScreen(
                             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
                                 Column(modifier = Modifier.padding(12.dp).fillMaxWidth()) {
                                     AutoTranslatedText(candidate.label, fontWeight = FontWeight.Bold)
-                                    AutoTranslatedText("${candidate.coordinate.getOrNull(1)}, ${candidate.coordinate.getOrNull(0)} · ${candidate.confidence}", fontSize = 12.sp)
+                                    AutoTranslatedText("${candidate.coordinate.getOrNull(1)}, ${candidate.coordinate.getOrNull(0)} Â· ${candidate.confidence}", fontSize = 12.sp)
                                 }
                             }
                         }
@@ -291,6 +297,10 @@ fun MapIntelligenceScreen(
                                 AutoTranslatedText("Rationale: ${alloc.rationale}", color = MaterialTheme.colorScheme.outlineVariant, fontSize = 12.sp)
                                 Spacer(modifier = Modifier.height(8.dp))
                             }
+                        }
+                    } else if (uiState.isAnalyzing) {
+                        Column(modifier = Modifier.padding(24.dp)) {
+                            SkeletonList(count = 2)
                         }
                     } else {
                         Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {

@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.namangulati.sancharsarthi.core.design.SkeletonScreen
 import com.namangulati.sancharsarthi.core.translation.AutoTranslatedText
 import com.namangulati.sancharsarthi.feature.foundation.PlatformFoundationUiState
 import com.namangulati.sancharsarthi.feature.explorer.EventDnaPanel
@@ -82,7 +83,11 @@ fun SimulationScreen(
             }
         }
 
-        if (uiState.result != null) {
+        if (uiState.isLoading) {
+            item {
+                SkeletonScreen(cards = 3)
+            }
+        } else if (uiState.result != null) {
             val result = uiState.result!!
             
             // SIMULATION SUMMARY

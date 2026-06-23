@@ -12,6 +12,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.namangulati.sancharsarthi.core.design.SkeletonList
+import com.namangulati.sancharsarthi.core.design.SkeletonMetricGrid
 import com.namangulati.sancharsarthi.core.network.EventDetailResponse
 import com.namangulati.sancharsarthi.core.network.HotspotResponseItem
 import com.namangulati.sancharsarthi.core.translation.AutoTranslatedText
@@ -57,7 +59,7 @@ fun ExplorerScreen(
                         AutoTranslatedText("DATASET", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(16.dp))
                         if (uiState.isSummaryLoading) {
-                            CircularProgressIndicator(modifier = Modifier.padding(8.dp))
+                            SkeletonMetricGrid(count = 4)
                         } else if (uiState.summary != null) {
                             val summary = uiState.summary!!
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -125,7 +127,7 @@ fun ExplorerScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         
                         if (uiState.isHotspotsLoading) {
-                            CircularProgressIndicator()
+                            SkeletonList(count = 3)
                         } else if (uiState.hotspots.isEmpty()) {
                             AutoTranslatedText("No hotspots match the selected filter.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                         } else {

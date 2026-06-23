@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { onAuthStateChanged, type User } from "firebase/auth";
 
 import {
@@ -166,6 +167,7 @@ export default function ModelInsightsPage() {
   const modelRuns = modelRunsQuery.data?.model_runs ?? [];
   const modelRunMap = latestModelRunByName(modelRuns);
   const latestRecordedRun = [...modelRuns].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+  const modelSectionsLoading = healthQuery.isLoading || (authReady && Boolean(currentUser) && modelRunsQuery.isLoading);
   const accessNote = !authReady
     ? "Checking internal session..."
     : !isFirebaseConfigured
@@ -199,7 +201,7 @@ export default function ModelInsightsPage() {
               <div className="rounded-3xl border border-accent/30 bg-accent/10 px-5 py-4">
                 <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Latest recorded run</p>
                 <p className="mt-2 text-2xl font-semibold text-copy">
-                  {latestRecordedRun ? formatTimestamp(latestRecordedRun.created_at) : "No runs yet"}
+                  {modelRunsQuery.isLoading ? <Skeleton.Line width="w-44" height="h-7" className="bg-accent/20" /> : latestRecordedRun ? formatTimestamp(latestRecordedRun.created_at) : "No runs yet"}
                 </p>
               </div>
             </div>
@@ -211,7 +213,7 @@ export default function ModelInsightsPage() {
             <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">System health</p>
             <h2 className="mt-2 text-2xl font-semibold">Backend and artifact state</h2>
             <div className="mt-5 space-y-3 rounded-3xl border border-line/70 bg-bg/60 p-5 font-mono text-sm leading-7 text-copy">
-              {healthQuery.isLoading && <p>Checking backend heartbeat...</p>}
+              {healthQuery.isLoading ? <Skeleton.DataGrid count={6} cols={2} /> : null}
               {healthQuery.isError && (
                 <p className="text-danger">
                   {healthQuery.error instanceof Error ? healthQuery.error.message : "Backend unavailable."}
@@ -244,7 +246,9 @@ export default function ModelInsightsPage() {
         </section>
 
         <section className="grid gap-5">
-          {modelDefinitions.map((definition) => {
+          {modelSectionsLoading ? (
+            <Skeleton.ModelSection count={3} />
+          ) : modelDefinitions.map((definition) => {
             const healthStatus: ModelArtifactStatus =
               health?.models[definition.statusKey] ?? "not_loaded";
             const modelRun = modelRunMap[definition.key];
@@ -280,7 +284,7 @@ export default function ModelInsightsPage() {
                     <p>Artifact available: {modelRun ? (modelRun.artifact_available ? "Yes" : "No") : "Not recorded"}</p>
                     <p>Recorded at: {formatTimestamp(modelRun?.created_at)}</p>
                   </div>
-                  <div>{modelRunsQuery.isLoading ? <p className="text-sm text-muted">Loading model metrics...</p> : renderMetrics(definition.key, modelRun)}</div>
+                  <div>{modelRunsQuery.isLoading ? <Skeleton.Block height="h-32" /> : renderMetrics(definition.key, modelRun)}</div>
                 </div>
               </article>
             );

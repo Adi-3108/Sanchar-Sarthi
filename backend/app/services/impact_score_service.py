@@ -11,7 +11,7 @@ from app.ml.feature_pipeline import reliable_clearance_minutes
 from app.orm.event import Event
 from app.orm.hotspot_cluster import HotspotCluster
 from app.services.similar_event_service import SimilarEventMatch
-from app.services.weather_service import build_manual_weather_adjustment
+from app.services.weather_service import resolve_weather_adjustment
 
 DEFAULT_VEHICLE_IMPACT_MULTIPLIER: dict[str, float] = {
     "bmtc_bus": 1.42,
@@ -313,9 +313,10 @@ def build_impact_assessment(
 ) -> dict[str, object]:
     weather_adjustment = dict(
         weather_adjustment_override
-        or build_manual_weather_adjustment(
+        or resolve_weather_adjustment(
+            latitude=event.latitude,
+            longitude=event.longitude,
             weather_condition=weather_condition,
-            source="manual_simulation_selector" if weather_condition is not None else "phase10_default",
         )
     )
     multi_event_adjustment = build_multi_event_adjustment()

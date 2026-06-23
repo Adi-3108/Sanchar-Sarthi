@@ -7,7 +7,6 @@ export type RouteOverlay = {
   label: string;
   polyline: LngLat[];
   kind: "diversion" | "emergency" | "logistics";
-  fallbackReason?: string | null;
 };
 
 export type RouteLayerProps = {
@@ -56,7 +55,6 @@ export function RouteLayer({ routes, project }: RouteLayerProps) {
               points={points}
               fill="none"
               stroke={routeColor(route.kind)}
-              strokeDasharray={route.fallbackReason ? "4 3" : undefined}
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth="1.4"

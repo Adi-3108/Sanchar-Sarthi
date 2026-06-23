@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +27,10 @@ import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.clickable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
@@ -42,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.viewinterop.AndroidView
+import com.namangulati.sancharsarthi.core.design.SkeletonScreen
 import com.namangulati.sancharsarthi.core.report.IncidentResponse
 import com.namangulati.sancharsarthi.core.report.StationResponse
 import com.namangulati.sancharsarthi.core.translation.AutoTranslatedText
@@ -58,6 +62,9 @@ fun FoundationOverviewScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    var selectedIncidentId by remember { mutableStateOf<String?>(null) }
+    var selectedStationName by remember { mutableStateOf<String?>(null) }
+
     LazyColumn(
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -72,7 +79,7 @@ fun FoundationOverviewScreen(
 
         if (uiState.isLoading) {
             item {
-                CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+                SkeletonScreen(cards = 4)
             }
         } else if (uiState.error != null) {
             item {
@@ -95,18 +102,54 @@ fun FoundationOverviewScreen(
                 )
             }
             item {
-                StationPanel(stations = uiState.stations, incidents = uiState.activeIncidents + uiState.reportedIncidents)
+                StationPanel(
+                    stations = uiState.stations,
+                    incidents = uiState.activeIncidents + uiState.reportedIncidents,
+                    selectedStationName = selectedStationName,
+                    selectedIncidentId = selectedIncidentId,
+                    onStationClick = { stationName ->
+                        if (selectedStationName == stationName) {
+                            selectedStationName = null
+                            selectedIncidentId = null
+                        } else {
+                            selectedStationName = stationName
+                            selectedIncidentId = null
+                        }
+                    }
+                )
             }
             item {
                 IncidentListSection(
                     title = "Active incidents",
-                    incidents = uiState.activeIncidents
+                    incidents = uiState.activeIncidents,
+                    selectedIncidentId = selectedIncidentId,
+                    selectedStationName = selectedStationName,
+                    onIncidentClick = { incident ->
+                        if (selectedIncidentId == incident.id) {
+                            selectedIncidentId = null
+                            selectedStationName = null
+                        } else {
+                            selectedIncidentId = incident.id
+                            selectedStationName = incident.assigned_station_name
+                        }
+                    }
                 )
             }
             item {
                 IncidentListSection(
                     title = "User reported incidents",
-                    incidents = uiState.reportedIncidents
+                    incidents = uiState.reportedIncidents,
+                    selectedIncidentId = selectedIncidentId,
+                    selectedStationName = selectedStationName,
+                    onIncidentClick = { incident ->
+                        if (selectedIncidentId == incident.id) {
+                            selectedIncidentId = null
+                            selectedStationName = null
+                        } else {
+                            selectedIncidentId = incident.id
+                            selectedStationName = incident.assigned_station_name
+                        }
+                    }
                 )
             }
         }
@@ -196,20 +239,28 @@ fun MapPanel(
 
                     webView.evaluateJavascript("""
                         (function() {
+                            var markersData = $markersJson;
+                            var hotspotsData = $hotspotsJson;
+                            var routesData = $routesJson;
+                            
+                            var markersStr = JSON.stringify(markersData);
+                            var hotspotsStr = JSON.stringify(hotspotsData);
+                            var routesStr = JSON.stringify(routesData);
+                            
                             if (typeof loadIncidents === 'function') {
-                                loadIncidents('$markersJson');
+                                loadIncidents(markersStr);
                             } else {
-                                window.pendingMarkers = '$markersJson';
+                                window.pendingMarkers = markersStr;
                             }
                             if (typeof loadHotspots === 'function') {
-                                loadHotspots('$hotspotsJson');
+                                loadHotspots(hotspotsStr);
                             } else {
-                                window.pendingHotspots = '$hotspotsJson';
+                                window.pendingHotspots = hotspotsStr;
                             }
                             if (typeof loadRoutes === 'function') {
-                                loadRoutes('$routesJson');
+                                loadRoutes(routesStr);
                             } else {
-                                window.pendingRoutes = '$routesJson';
+                                window.pendingRoutes = routesStr;
                             }
                         })();
                     """.trimIndent(), null)
@@ -241,7 +292,13 @@ fun MapPanel(
 }
 
 @Composable
-fun StationPanel(stations: List<StationResponse>, incidents: List<IncidentResponse>) {
+fun StationPanel(
+    stations: List<StationResponse>,
+    incidents: List<IncidentResponse>,
+    selectedStationName: String?,
+    selectedIncidentId: String?,
+    onStationClick: (String) -> Unit
+) {
     val activeStations = stations.filter { station -> incidents.any { it.assigned_station_name == station.name } }
     
     PlatformSectionCard(
@@ -259,16 +316,22 @@ fun StationPanel(stations: List<StationResponse>, incidents: List<IncidentRespon
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 activeStations.forEach { station ->
                     val linked = incidents.filter { it.assigned_station_name == station.name }
+                    val isSelected = selectedStationName == station.name || (selectedIncidentId != null && incidents.find { it.id == selectedIncidentId }?.assigned_station_name == station.name)
+                    val borderColor = if (isSelected) Color(0xFF3B82F6) else MaterialTheme.colorScheme.outlineVariant
+                    val bgColor = if (isSelected) Color(0xFFEFF6FF) else MaterialTheme.colorScheme.background
+                    val borderWidth = if (isSelected) 2.dp else 1.dp
+
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.background)
-                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+                            .background(bgColor)
+                            .border(borderWidth, borderColor, RoundedCornerShape(12.dp))
+                            .clickable { onStationClick(station.name) }
                             .padding(12.dp)
                     ) {
                         AutoTranslatedText(text = station.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
-                        AutoTranslatedText(text = "${station.locality} • ${station.station_code}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        AutoTranslatedText(text = "${station.locality} â€¢ ${station.station_code}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         AutoTranslatedText(text = "Contact: ${station.contact_number ?: "Not available"}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         
                         Spacer(modifier = Modifier.height(8.dp))
@@ -293,7 +356,13 @@ fun StationPanel(stations: List<StationResponse>, incidents: List<IncidentRespon
 }
 
 @Composable
-fun IncidentListSection(title: String, incidents: List<IncidentResponse>) {
+fun IncidentListSection(
+    title: String,
+    incidents: List<IncidentResponse>,
+    selectedIncidentId: String?,
+    selectedStationName: String?,
+    onIncidentClick: (IncidentResponse) -> Unit
+) {
     PlatformSectionCard(
         title = title,
         subtitle = "Live data from server"
@@ -308,7 +377,12 @@ fun IncidentListSection(title: String, incidents: List<IncidentResponse>) {
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 incidents.forEach { incident ->
-                    IncidentCard(incident = incident)
+                    val isSelected = selectedIncidentId == incident.id || (selectedStationName != null && incident.assigned_station_name == selectedStationName)
+                    IncidentCard(
+                        incident = incident,
+                        isSelected = isSelected,
+                        onClick = { onIncidentClick(incident) }
+                    )
                 }
             }
         }
@@ -316,7 +390,11 @@ fun IncidentListSection(title: String, incidents: List<IncidentResponse>) {
 }
 
 @Composable
-fun IncidentCard(incident: IncidentResponse) {
+fun IncidentCard(
+    incident: IncidentResponse,
+    isSelected: Boolean = false,
+    onClick: (() -> Unit)? = null
+) {
     val statusColor = when (incident.status) {
         "active" -> Color(0xFF16A34A)
         "escalated" -> Color(0xFFDC2626)
@@ -335,11 +413,18 @@ fun IncidentCard(incident: IncidentResponse) {
         .split(" ")
         .joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
 
+    val borderColor = if (isSelected) Color(0xFF3B82F6) else MaterialTheme.colorScheme.outlineVariant
+    val bgColor = if (isSelected) Color(0xFFEFF6FF) else MaterialTheme.colorScheme.surfaceVariant
+    val borderWidth = if (isSelected) 2.dp else 1.dp
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        colors = CardDefaults.cardColors(containerColor = bgColor),
+        border = androidx.compose.foundation.BorderStroke(borderWidth, borderColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 0.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             // Title row + severity badge
@@ -381,7 +466,7 @@ fun IncidentCard(incident: IncidentResponse) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text(text = " · ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                Text(text = " Â· ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(100.dp))
@@ -422,7 +507,7 @@ fun IncidentCard(incident: IncidentResponse) {
                         letterSpacing = 0.5.sp
                     )
                     Text(
-                        text = incident.id.take(16) + "…",
+                        text = incident.id.take(16) + "â€¦",
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium

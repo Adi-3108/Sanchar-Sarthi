@@ -20,7 +20,11 @@ function reportMetric(report: PostEventReportResponse, key: string): string {
     return String(value);
   }
   if (typeof value === "string") {
-    return value;
+    return value
+      .replace(/[_]/g, " ")
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
   }
   return "n/a";
 }
@@ -29,7 +33,7 @@ export function PostEventReportView({ report, className }: PostEventReportViewPr
   if (!report) {
     return (
       <section
-        className={`rounded-[28px] border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500 ${
+        className={`rounded-[28px] border border-dashed border-line/70 bg-panel/85 p-6 text-sm text-muted ${
           className ?? ""
         }`}
       >
@@ -40,17 +44,17 @@ export function PostEventReportView({ report, className }: PostEventReportViewPr
 
   return (
     <section
-      className={`rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm ${
+      className={`rounded-[28px] border border-line/70 bg-panel/85 p-6 shadow-panel ${
         className ?? ""
       }`}
     >
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.24em] text-emerald-300/80">Post-event learning</p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-900">After-action report</h2>
-          <p className="mt-3 text-sm leading-7 text-slate-600">{report.event_summary}</p>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-accentSoft">Post-event learning</p>
+          <h2 className="mt-2 text-2xl font-semibold text-copy">After-action report</h2>
+          <p className="mt-3 text-sm leading-7 text-muted">{report.event_summary}</p>
         </div>
-        <div className="rounded-full border border-emerald-200 bg-emerald-400/10 px-4 py-2 text-xs uppercase tracking-[0.18em] text-emerald-100">
+        <div className="rounded-full border border-accent/30 bg-accent/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-accent">
           {report.final_status ?? "review generated"}
         </div>
       </div>
@@ -70,14 +74,14 @@ export function PostEventReportView({ report, className }: PostEventReportViewPr
       </div>
 
       <div className="mt-6 grid gap-5 xl:grid-cols-2">
-        <NarrativeCard title="Lessons learned" body={report.lessons_learned} tone="emerald" />
-        <NarrativeCard title="Future recommendations" body={report.future_recommendations} tone="cyan" />
+        <NarrativeCard title="Lessons learned" body={report.lessons_learned} tone="accent" />
+        <NarrativeCard title="Future recommendations" body={report.future_recommendations} tone="accent" />
       </div>
 
-      <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-4">
+      <div className="mt-6 rounded-3xl border border-line/70 bg-panelAlt/90 p-4">
         <div className="flex items-center justify-between gap-4">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Structured learning snapshot</p>
-          <p className="text-xs text-slate-500">Stored in `post_event_reports.report_json`</p>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted">Structured learning snapshot</p>
+          <p className="text-xs text-muted">Stored in `post_event_reports.report_json`</p>
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard label="High-confidence reports" value={reportMetric(report, "high_confidence_report_count")} />
@@ -92,9 +96,9 @@ export function PostEventReportView({ report, className }: PostEventReportViewPr
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4">
-      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-2 text-lg font-semibold text-slate-900">{value}</p>
+    <article className="rounded-2xl border border-line/70 bg-bg/80 p-4">
+      <p className="text-[11px] uppercase tracking-[0.18em] text-muted">{label}</p>
+      <p className="mt-2 text-lg font-semibold text-copy">{value}</p>
     </article>
   );
 }
@@ -106,19 +110,17 @@ function NarrativeCard({
 }: {
   title: string;
   body: string;
-  tone?: "slate" | "emerald" | "cyan";
+  tone?: "slate" | "accent";
 }) {
   const toneClass =
-    tone === "emerald"
-      ? "border-emerald-400/20 bg-emerald-400/10"
-      : tone === "cyan"
-        ? "border-cyan-400/20 bg-cyan-400/10"
-        : "border-slate-200 bg-white";
+    tone === "accent"
+      ? "border-accent/30 bg-accent/10"
+      : "border-line/70 bg-bg/80";
 
   return (
     <article className={`rounded-3xl border p-4 ${toneClass}`}>
-      <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{title}</p>
-      <p className="mt-3 text-sm leading-7 text-slate-700">{body}</p>
+      <p className="text-[11px] uppercase tracking-[0.2em] text-accentSoft">{title}</p>
+      <p className="mt-3 text-sm leading-7 text-copy">{body}</p>
     </article>
   );
 }

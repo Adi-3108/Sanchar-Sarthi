@@ -1,4 +1,4 @@
-﻿# EventFlow AI Implementation Plan README
+# EventFlow AI Implementation Plan README
 
 ## Executive Summary
 
@@ -58,7 +58,7 @@ EventFlow AI is a predictive traffic command twin for Bengaluru event-driven con
 
 ### Frontend Architecture
 
-Next.js 14+, TypeScript, Tailwind CSS, TanStack Query, Zustand, command-center UI, responsive citizen report page, MapmyIndia/Mappls primary adapter with OSM/MapLibre fallback.
+Next.js 14+, TypeScript, Tailwind CSS, TanStack Query, Zustand, command-center UI, responsive citizen report page, MapmyIndia/Mappls primary adapter.
 
 ### Backend Architecture
 
@@ -157,7 +157,7 @@ flowchart TD
 |---|---|---:|---:|---|---|
 | Dataset | Null/sparse fields | High | Medium | Defensive cleaning and fallback features | Demo seed fixtures |
 | ML | Closure imbalance | High | High | Class weights and PR-AUC/recall reporting | Rule fallback |
-| Maps | MapmyIndia credit/key/API issue | High | Medium | Provider adapter, 1000 INR credit budget, route caching, budget guardrails | OSM/MapLibre fallback |
+| Maps | MapmyIndia credit/key/API issue | High | Medium | Provider adapter, 1000 INR credit budget, route caching, budget guardrails | Mappls unavailable state |
 | Weather | API unavailable | Medium | Medium | Manual selector | Static demo weather |
 | Diversion | No road network | High | High | Simplified NetworkX graph | Predefined route overlays |
 | Reports | Fake/spam reports | Medium | Medium | Confidence scoring and rate limits | Field-officer-only mode |
@@ -181,7 +181,7 @@ flowchart TD
 | 11 | Allow reports while scoring confidence and preventing blind trust. | Phase 05, Phase 08, Phase 09 | Live escalation and report map markers |
 | 12 | Convert live updates into alert levels and adaptive actions. | Phase 11 | Post-event learning |
 | 13 | Detect simultaneous event conflicts across time, space, diversions, and manpower. | Phase 08, Phase 09 | Map conflict overlays and coordinated demo |
-| 14 | Render MapmyIndia/Mappls as primary provider using 1000 INR credits, with OSM fallback and operational overlays. | Phase 05, Phase 09, Phase 10, Phase 11, Phase 13 | Core visual demo |
+| 14 | Render MapmyIndia/Mappls as primary provider using 1000 INR credits, with Mappls unavailable state and operational overlays. | Phase 05, Phase 09, Phase 10, Phase 11, Phase 13 | Core visual demo |
 | 15 | Build primary web experience and connect all APIs to UI. | Phase 14 | Post-event dashboard and demo |
 | 16 | Generate after-action learning reports and future playbooks. | Phase 12, Phase 15 | Demo closing and learning loop |
 | 17 | Make judge demo deterministic and complete. | Phase 16 | Final deployment and rehearsal |

@@ -6,6 +6,7 @@ import { type FormEvent, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import AuthPanel from "@/components/auth/AuthPanel";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { getHotspots, getSummary, type HotspotResponseItem } from "@/lib/api";
 import { useFirebaseAuthState } from "@/lib/auth";
 import { useCommandStore } from "@/lib/stores/useCommandStore";
@@ -75,10 +76,16 @@ export default function ExplorerPage() {
             <article className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel">
               <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Dataset</p>
               <div className="mt-4 grid gap-3">
-                <Metric label="Total events" value={String(summaryQuery.data?.total_events ?? "n/a")} />
-                <Metric label="Planned" value={String(summaryQuery.data?.planned_events ?? "n/a")} />
-                <Metric label="Unplanned" value={String(summaryQuery.data?.unplanned_events ?? "n/a")} />
-                <Metric label="Hotspots" value={String(summaryQuery.data?.hotspot_count ?? "n/a")} />
+                {summaryQuery.isLoading ? (
+                  <Skeleton.DataGrid count={4} cols={2} />
+                ) : (
+                  <>
+                    <Metric label="Total events" value={String(summaryQuery.data?.total_events ?? "n/a")} />
+                    <Metric label="Planned" value={String(summaryQuery.data?.planned_events ?? "n/a")} />
+                    <Metric label="Unplanned" value={String(summaryQuery.data?.unplanned_events ?? "n/a")} />
+                    <Metric label="Hotspots" value={String(summaryQuery.data?.hotspot_count ?? "n/a")} />
+                  </>
+                )}
               </div>
             </article>
 
@@ -121,11 +128,11 @@ export default function ExplorerPage() {
               </label>
             </div>
 
-            {!authReady ? <p className="mt-6 text-sm text-muted">Restoring internal session...</p> : null}
+            {!authReady ? <Skeleton.Card rows={2} className="mt-6" /> : null}
             {authReady && !user ? (
               <p className="mt-6 text-sm leading-7 text-muted">Sign in to load protected analytics and hotspot overlays.</p>
             ) : null}
-            {hotspotsQuery.isLoading ? <p className="mt-6 text-sm text-muted">Loading hotspot clusters...</p> : null}
+            {hotspotsQuery.isLoading ? <Skeleton.HotspotGrid count={4} className="mt-6" /> : null}
             {hotspotsQuery.isError ? (
               <p className="mt-6 text-sm leading-7 text-danger">
                 Hotspot explorer needs an internal Firebase session because analytics endpoints are protected.

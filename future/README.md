@@ -108,7 +108,7 @@ All future phases must follow EventFlow AI standards:
 - **Dataset-honest wording:** Use "Dataset-backed", "Predicted", "Estimated", "Recommended", "Simulated"
 - **No paid APIs:** Only free/open-source services
 - **Backend-owned logic:** Frontend only renders/consumes APIs
-- **Map provider independence:** Support MapmyIndia primary + OSM fallback
+- **Map provider independence:** Support MapmyIndia primary + Mappls unavailable state
 - **Three-level access:** Admin/Control Room, Registered Officer, Public/Citizen
 - **Performance targets:** 
   - Prediction endpoint: <500ms

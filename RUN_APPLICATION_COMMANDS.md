@@ -58,7 +58,6 @@ FIREBASE_PRIVATE_KEY=
 
 MAP_PROVIDER=mapmyindia
 MAP_PRIMARY_PROVIDER=mapmyindia
-MAP_FALLBACK_PROVIDER=osm
 MAPMYINDIA_API_KEY=
 MAPMYINDIA_REST_KEY=
 MAPMYINDIA_CREDIT_BUDGET_INR=1000
@@ -66,7 +65,6 @@ MAPMYINDIA_DAILY_SOFT_LIMIT_INR=150
 MAPMYINDIA_ENABLE_ROUTING=true
 MAPMYINDIA_ENABLE_GEOCODING=true
 MAPMYINDIA_ENABLE_DISTANCE_MATRIX=false
-MAP_FALLBACK_ON_ERROR=true
 
 OPEN_METEO_ENABLED=true
 
@@ -83,7 +81,6 @@ NEXT_PUBLIC_FIREBASE_API_KEY=
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=
 NEXT_PUBLIC_MAP_PROVIDER=mapmyindia
-NEXT_PUBLIC_MAP_FALLBACK_PROVIDER=osm
 NEXT_PUBLIC_MAPMYINDIA_MAP_KEY=
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ```
@@ -91,7 +88,7 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 Notes:
 - Keep `DATABASE_URL=` blank for easiest local setup. The backend will fall back to local SQLite and create `eventflow_local.db` in the repo root.
 - If Firebase keys are blank, public pages still work, but protected admin, control-room, and officer login flows will not work.
-- If MapmyIndia keys are blank, the app should fall back to OSM or demo behavior where supported.
+- If MapmyIndia / Mappls keys are blank, map provider routes/geocode should return a clear unavailable state.
 - If you want Google Translate later, switch `GOOGLE_TRANSLATE_ENABLED=true` and add real Google Cloud credentials.
 
 ## 7. Run Database Migrations

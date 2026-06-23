@@ -1,17 +1,17 @@
-# PHASE 21 — "What-If" Simulator Comparison
+# PHASE 21 â€” "What-If" Simulator Comparison
 
 ## Phase Overview
 
-Build a side-by-side scenario comparison tool that allows judges and operators to run two simulation scenarios simultaneously — for example, "What if we deploy 3 officers vs 5 officers?" — and display the impact score difference. Uses two parallel API calls with different manpower inputs to demonstrate resource optimization.
+Build a side-by-side scenario comparison tool that allows judges and operators to run two simulation scenarios simultaneously â€” for example, "What if we deploy 3 officers vs 5 officers?" â€” and display the impact score difference. Uses two parallel API calls with different manpower inputs to demonstrate resource optimization.
 
-This phase is part of EventFlow AI, a predictive traffic command twin for Bengaluru event-driven congestion. The project uses ASTraM historical event data, FastAPI, Next.js, Supabase PostgreSQL free tier, explainable AI/rule-based planning, MapmyIndia/Mappls primary integration using available 1000 INR credits, OpenStreetMap fallback, and only free/open-source APIs or services.
+This phase is part of EventFlow AI, a predictive traffic command twin for Bengaluru event-driven congestion. The project uses ASTraM historical event data, FastAPI, Next.js, Supabase PostgreSQL free tier, explainable AI/rule-based planning, MapmyIndia/Mappls primary integration using available 1000 INR credits, Mappls-only map policy, and only free/open-source APIs or services.
 
 ---
 
 ## Why This Phase Exists
 
 - **Problem being solved:** Traffic operators and judges need to compare different resource deployment strategies before committing personnel and equipment.
-- **User need addressed:** Judges will ask "what's the difference between 3 vs 5 officers?" — this phase answers with visual side-by-side impact comparison.
+- **User need addressed:** Judges will ask "what's the difference between 3 vs 5 officers?" â€” this phase answers with visual side-by-side impact comparison.
 - **Business requirement satisfied:** Demonstrates decision support innovation, judge-friendly UX, and cost-benefit analysis capability for Flipkart Gridlock 2.0 evaluation.
 - **Why now:** This phase builds on completed simulation engine (Phase 9), adding comparative analytics that support evidence-based decision making.
 - **How it contributes:** It strengthens EventFlow AI as a decision support system by quantifying the marginal value of additional resources.
@@ -579,7 +579,7 @@ Ensure frontend uses existing SimulationRequest/Response schemas correctly.
 
 ## Technical Design Summary
 
-Build a frontend-only comparison tool that calls the existing simulation endpoint twice in parallel with different resource configurations. Compute impact delta, resource delta, and cost-benefit ratio in the frontend hook. Display side-by-side comparison with visual metrics and recommendation. Zero additional backend engineering required — purely frontend orchestration of existing API.
+Build a frontend-only comparison tool that calls the existing simulation endpoint twice in parallel with different resource configurations. Compute impact delta, resource delta, and cost-benefit ratio in the frontend hook. Display side-by-side comparison with visual metrics and recommendation. Zero additional backend engineering required â€” purely frontend orchestration of existing API.
 
 ---
 

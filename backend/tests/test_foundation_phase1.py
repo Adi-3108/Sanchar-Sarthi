@@ -61,7 +61,7 @@ def test_incident_lifecycle_rules():
     assert not can_transition_incident("resolved", "pending_verification")
 
 
-def test_vote_threshold_promotes_pending_incident():
+def test_citizen_vote_does_not_promote_pending_incident():
     from app.orm.incident import Incident
 
     incident = Incident(
@@ -79,4 +79,6 @@ def test_vote_threshold_promotes_pending_incident():
         confidence_score=0.8,
     )
     apply_incident_vote(incident, "true")
-    assert incident.status == "active"
+    assert incident.true_vote_count == 5
+    assert incident.confidence_score == 1
+    assert incident.status == "pending_verification"

@@ -43,21 +43,6 @@ export async function getMapConfig(): Promise<MapConfig> {
   return fetchMapConfig();
 }
 
-export function osmStyle() {
-  return {
-    version: 8,
-    sources: {
-      osm: {
-        type: "raster",
-        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-        tileSize: 256,
-        attribution: "OpenStreetMap contributors"
-      }
-    },
-    layers: [{ id: "osm", type: "raster", source: "osm" }]
-  } as const;
-}
-
 export function projectLngLat(
   coordinate: LngLat,
   bounds: MapBounds = BENGALURU_BOUNDS
@@ -88,11 +73,4 @@ export function severityFromScore(score: number): OperationalFeatureProperties["
     return "Medium";
   }
   return "Low";
-}
-
-export function fallbackReasonLabel(reason?: string | null): string {
-  if (!reason) {
-    return "primary provider active";
-  }
-  return reason.replaceAll("_", " ");
 }

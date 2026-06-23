@@ -1,17 +1,17 @@
-# PHASE 20 — Corridor Risk Timeline Chart
+# PHASE 20 â€” Corridor Risk Timeline Chart
 
 ## Phase Overview
 
-Create a visual line chart showing hourly risk scores across a week for selected corridors (ORR, Tumkur Road, etc.) — a "risk calendar" derived purely from historical event data. This provides judges and operators with an at-a-glance view of when and where congestion risk is highest.
+Create a visual line chart showing hourly risk scores across a week for selected corridors (ORR, Tumkur Road, etc.) â€” a "risk calendar" derived purely from historical event data. This provides judges and operators with an at-a-glance view of when and where congestion risk is highest.
 
-This phase is part of EventFlow AI, a predictive traffic command twin for Bengaluru event-driven congestion. The project uses ASTraM historical event data, FastAPI, Next.js, Supabase PostgreSQL free tier, explainable AI/rule-based planning, MapmyIndia/Mappls primary integration using available 1000 INR credits, OpenStreetMap fallback, and only free/open-source APIs or services.
+This phase is part of EventFlow AI, a predictive traffic command twin for Bengaluru event-driven congestion. The project uses ASTraM historical event data, FastAPI, Next.js, Supabase PostgreSQL free tier, explainable AI/rule-based planning, MapmyIndia/Mappls primary integration using available 1000 INR credits, Mappls-only map policy, and only free/open-source APIs or services.
 
 ---
 
 ## Why This Phase Exists
 
 - **Problem being solved:** Traffic operators and judges need a temporal view of corridor risk patterns to understand "when is this road most dangerous?"
-- **User need addressed:** Judges will ask "show me the risk pattern over time" — this phase answers with a visual, data-backed timeline chart.
+- **User need addressed:** Judges will ask "show me the risk pattern over time" â€” this phase answers with a visual, data-backed timeline chart.
 - **Business requirement satisfied:** Demonstrates data visualization innovation, judge-friendly UX, and actionable intelligence for Flipkart Gridlock 2.0 evaluation.
 - **Why now:** This phase builds on completed risk scoring and corridor classification phases, adding temporal analytics that support proactive planning.
 - **How it contributes:** It strengthens EventFlow AI as a visual intelligence system by showing risk trends across time, enabling pattern recognition and resource pre-positioning.
@@ -493,7 +493,7 @@ Ensure frontend CorridorRiskTimelineResponse matches backend schema.
 
 ## Technical Design Summary
 
-Build an analytics endpoint that aggregates historical events by hour and day of week for a selected corridor, computing average risk scores and event counts. Frontend renders results as interactive Chart.js line chart showing temporal risk patterns. Identify peak risk hours for operational planning. Zero additional data collection required — purely derived from existing event history.
+Build an analytics endpoint that aggregates historical events by hour and day of week for a selected corridor, computing average risk scores and event counts. Frontend renders results as interactive Chart.js line chart showing temporal risk patterns. Identify peak risk hours for operational planning. Zero additional data collection required â€” purely derived from existing event history.
 
 ---
 

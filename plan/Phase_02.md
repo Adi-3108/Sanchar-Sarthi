@@ -1,10 +1,10 @@
-﻿# PHASE 2 — Database Schema ORM And Migrations
+# PHASE 2 — Database Schema ORM And Migrations
 
 ## Phase Overview
 
 Connect FastAPI to Supabase PostgreSQL and create all core tables.
 
-This phase is part of EventFlow AI, a predictive traffic command twin for Bengaluru event-driven congestion. The project uses ASTraM historical event data, FastAPI, Next.js, Supabase PostgreSQL free tier, explainable AI/rule-based planning, MapmyIndia/Mappls primary integration using available 1000 INR credits, OpenStreetMap fallback, and only free/open-source APIs or services.
+This phase is part of EventFlow AI, a predictive traffic command twin for Bengaluru event-driven congestion. The project uses ASTraM historical event data, FastAPI, Next.js, Supabase PostgreSQL free tier, explainable AI/rule-based planning, MapmyIndia/Mappls primary integration using available 1000 INR credits, Mappls-only map policy, and only free/open-source APIs or services.
 
 ---
 
@@ -256,7 +256,7 @@ Every dependency is explicit in this file. No previous chat context is required.
 
 ## Technical Design Summary
 
-Build this phase as a modular, testable slice of EventFlow AI. Backend code owns data validation, persistence, AI/rule logic, and sensitive handling. Frontend code owns rendering, interaction, and API consumption. Database access is backend-only. MapmyIndia/Mappls is the primary MVP map provider using available 1000 INR credits; OSM/MapLibre fallback must remain functional through the provider adapter.
+Build this phase as a modular, testable slice of EventFlow AI. Backend code owns data validation, persistence, AI/rule logic, and sensitive handling. Frontend code owns rendering, interaction, and API consumption. Database access is backend-only. MapmyIndia/Mappls is the primary MVP map provider using available 1000 INR credits; MapmyIndia / Mappls must remain the only map provider through the provider adapter.
 
 ---
 
@@ -305,11 +305,3 @@ Phase is complete only if:
 - No paid API dependency is introduced.
 
 ---
-
-
-
-
-
-
-
-

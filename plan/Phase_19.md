@@ -1,4 +1,4 @@
-# PHASE 19 — Google Translate Multilingual Report Intelligence
+# PHASE 19 â€” Google Translate Multilingual Report Intelligence
 
 ## Phase Overview
 

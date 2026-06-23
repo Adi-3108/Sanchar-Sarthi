@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
-import { fallbackReasonLabel, projectLngLat, type LngLat, type MapConfig, type ProjectedPoint } from "@/lib/map-provider";
+import { projectLngLat, type LngLat, type MapConfig, type ProjectedPoint } from "@/lib/map-provider";
 import { ensureMapmyIndiaSdk, type MapmyIndiaLoadState } from "@/lib/map/mapmyindia-provider";
 
 export type MapCanvasProps = {
@@ -11,51 +11,39 @@ export type MapCanvasProps = {
   className?: string;
 };
 
-function providerBadge(config: MapConfig, sdkState: MapmyIndiaLoadState): string {
-  if (config.activeProvider === "osm") {
-    return `OSM fallback: ${fallbackReasonLabel(config.fallbackReason)}`;
-  }
+function providerBadge(sdkState: MapmyIndiaLoadState): string {
   if (sdkState.status === "loaded") {
     return "MapmyIndia / Mappls primary";
   }
   if (sdkState.status === "failed") {
-    return "OSM fallback: SDK load failed";
+    return "Mappls SDK load failed";
   }
-  return "OSM fallback: browser map key missing";
+  return "Mappls browser key missing";
 }
 
 export function MapCanvas({ config, children, className }: MapCanvasProps) {
   const mapId = useId().replace(/:/g, "");
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<{ remove?: () => void; invalidateSize?: () => void } | null>(null);
-  const [sdkState, setSdkState] = useState<MapmyIndiaLoadState>(
-    config.activeProvider === "mapmyindia"
-      ? { status: "disabled", reason: "missing_browser_key" }
-      : { status: "disabled", reason: "missing_browser_key" }
-  );
+  const [sdkState, setSdkState] = useState<MapmyIndiaLoadState>({ status: "disabled", reason: "missing_browser_key" });
 
   useEffect(() => {
     let cancelled = false;
-    if (config.activeProvider !== "mapmyindia") {
-      return;
-    }
-
     ensureMapmyIndiaSdk().then((state) => {
       if (!cancelled) {
         setSdkState(state);
       }
     });
-
     return () => {
       cancelled = true;
     };
-  }, [config.activeProvider]);
+  }, []);
 
-  const activeProvider = config.activeProvider === "mapmyindia" && sdkState.status === "loaded" ? "mapmyindia" : "osm";
+  const mapplsReady = sdkState.status === "loaded";
   const project = useMemo(() => (coordinate: LngLat) => projectLngLat(coordinate), []);
 
   useEffect(() => {
-    if (activeProvider !== "mapmyindia" || !mapContainerRef.current || !window.mappls?.Map) {
+    if (!mapplsReady || !mapContainerRef.current || !window.mappls?.Map) {
       return;
     }
 
@@ -73,11 +61,9 @@ export function MapCanvas({ config, children, className }: MapCanvasProps) {
     let resizeObserver: ResizeObserver | null = null;
     if (mapContainerRef.current) {
       resizeObserver = new ResizeObserver(() => {
-        // MapmyIndia Map object exposes Leaflet's invalidateSize
         if (map && typeof map.invalidateSize === "function") {
           map.invalidateSize();
         } else {
-          // Fallback if Mappls SDK hides the method: trigger a global resize
           window.dispatchEvent(new Event("resize"));
         }
       });
@@ -89,7 +75,7 @@ export function MapCanvas({ config, children, className }: MapCanvasProps) {
       mapInstanceRef.current?.remove?.();
       mapInstanceRef.current = null;
     };
-  }, [activeProvider, config.defaultCenter, config.defaultZoom, mapId]);
+  }, [mapplsReady, config.defaultCenter, config.defaultZoom, mapId]);
 
   return (
     <section
@@ -98,18 +84,14 @@ export function MapCanvas({ config, children, className }: MapCanvasProps) {
       }`}
     >
       <div className="absolute inset-0 bg-[linear-gradient(135deg,#102234_0%,#0b1724_45%,#07111c_100%)]" />
-      <div
-        className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${
-          activeProvider === "mapmyindia" ? "opacity-100" : "opacity-0"
-        }`}
-      >
+      <div className={`absolute inset-0 h-full w-full transition-opacity duration-500 ${mapplsReady ? "opacity-100" : "opacity-0"}`}>
         <div
           id={`mappls-container-${mapId}`}
           ref={mapContainerRef}
           style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}
         />
       </div>
-      <div className={`absolute inset-0 pointer-events-none transition-opacity duration-500 ${activeProvider === "mapmyindia" ? "opacity-0" : "opacity-80"}`}>
+      <div className={`absolute inset-0 pointer-events-none transition-opacity duration-500 ${mapplsReady ? "opacity-0" : "opacity-80"}`}>
         <div className="absolute inset-0 bg-[linear-gradient(transparent_0,transparent_calc(100%-1px),rgba(148,163,184,0.12)_100%),linear-gradient(90deg,transparent_0,transparent_calc(100%-1px),rgba(148,163,184,0.12)_100%)] bg-[length:52px_52px]" />
         <div className="absolute left-[8%] top-[20%] h-[2px] w-[78%] rotate-[-10deg] rounded-full bg-cyan-300/20" />
         <div className="absolute left-[18%] top-[65%] h-[2px] w-[68%] rotate-[7deg] rounded-full bg-amber-300/20" />
@@ -119,10 +101,10 @@ export function MapCanvas({ config, children, className }: MapCanvasProps) {
 
       <div className="absolute left-5 top-5 z-20 flex max-w-[calc(100%-2.5rem)] flex-wrap gap-2">
         <span className="rounded-full border border-slate-700/80 bg-slate-950/85 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-slate-200">
-          {providerBadge(config, sdkState)}
+          {providerBadge(sdkState)}
         </span>
         <span className="rounded-full border border-slate-700/80 bg-slate-950/85 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-slate-300">
-          {activeProvider === "mapmyindia" ? "Primary base map" : "Local overlay mode"}
+          {mapplsReady ? "Primary base map" : "Mappls unavailable"}
         </span>
       </div>
 
@@ -136,4 +118,3 @@ export function MapCanvas({ config, children, className }: MapCanvasProps) {
 }
 
 export default MapCanvas;
-

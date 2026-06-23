@@ -8,6 +8,7 @@ import { getCommandCenterSummary } from "@/lib/api";
 import { useLanguage } from "@/components/LanguageContext";
 import { t } from "@/lib/i18n";
 import CorridorRiskTimeline from "./components/CorridorRiskTimeline";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function CommandCenterPage() {
   const { language } = useLanguage();
@@ -84,9 +85,15 @@ export default function CommandCenterPage() {
               <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">
                 {t(language, "systemState")}
               </p>
-              <p className="mt-2 text-2xl font-semibold text-copy">
-                {isLoading ? t(language, "checking") : isError ? t(language, "attentionNeeded") : t(language, "operational")}
-              </p>
+              <div className="mt-2 text-2xl font-semibold text-copy">
+                {isLoading ? (
+                  <Skeleton.Line width="w-32" height="h-8" className="bg-accent/20" />
+                ) : isError ? (
+                  t(language, "attentionNeeded")
+                ) : (
+                  t(language, "operational")
+                )}
+              </div>
             </div>
           </div>
         </section>
@@ -116,7 +123,7 @@ export default function CommandCenterPage() {
             </div>
 
             <div className="mt-6 rounded-3xl border border-line/70 bg-bg/60 p-5 font-mono text-sm leading-7 text-copy">
-              {isLoading && <p>{t(language, "loadingBackend")}</p>}
+              {isLoading ? <Skeleton.DataGrid count={8} cols={2} /> : null}
               {isError && (
                 <div className="space-y-2 text-danger">
                   <p>{t(language, "backendFailed")}</p>

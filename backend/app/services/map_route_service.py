@@ -13,20 +13,26 @@ from app.core.config import Settings, get_settings
 from app.orm.map_api_usage_log import MapApiUsageLog
 from app.services.citizen_report_service import haversine_km
 
-MapProvider = Literal["mapmyindia", "osm"]
-RouteConfidence = Literal["provider_route", "local_demo_route"]
+MapProvider = Literal["mapmyindia"]
+RouteConfidence = Literal["provider_route"]
 
 ROUTE_ESTIMATED_COST_INR = 0.5
 GEOCODE_ESTIMATED_COST_INR = 0.25
 BENGALURU_CENTER: tuple[float, float] = (77.5946, 12.9716)
-LOCAL_ROUTE_SPEED_KMPH = 24.0
-
 _ROUTE_CACHE: dict[str, dict[str, object]] = {}
 _SPATIAL_GRID: dict[str, set[str]] = {}
 _CACHE_KEY_TO_INCIDENT: dict[str, str] = {}
 
+
+class MapProviderUnavailable(RuntimeError):
+    def __init__(self, reason: str, message: str, *, status_code: int = 503) -> None:
+        super().__init__(message)
+        self.reason = reason
+        self.message = message
+        self.status_code = status_code
+
+
 def get_grid_key(lat: float, lng: float) -> str:
-    # Round to ~2 decimal places (~1.1km boxes)
     return f"{round(lat, 2)}_{round(lng, 2)}"
 
 
@@ -61,45 +67,7 @@ def clear_route_cache() -> None:
 
 
 def _distance_meters(origin: tuple[float, float], destination: tuple[float, float]) -> int:
-    return int(
-        round(
-            haversine_km(origin[1], origin[0], destination[1], destination[0]) * 1000
-        )
-    )
-
-
-def _duration_seconds(distance_meters: int) -> int:
-    if distance_meters <= 0:
-        return 0
-    meters_per_second = LOCAL_ROUTE_SPEED_KMPH * 1000 / 3600
-    return int(round(distance_meters / meters_per_second))
-
-
-def _demo_midpoints(origin: tuple[float, float], destination: tuple[float, float]) -> list[list[float]]:
-    origin_lng, origin_lat = origin
-    destination_lng, destination_lat = destination
-    mid_lng = (origin_lng + destination_lng) / 2
-    mid_lat = (origin_lat + destination_lat) / 2
-    lateral = 0.012 if destination_lng >= origin_lng else -0.012
-    return [
-        [round(origin_lng, 6), round(origin_lat, 6)],
-        [round(mid_lng + lateral, 6), round(mid_lat, 6)],
-        [round(destination_lng, 6), round(destination_lat, 6)],
-    ]
-
-
-def local_demo_route(request: RouteRequest, *, fallback_reason: str) -> dict[str, object]:
-    distance_meters = _distance_meters(request.origin, request.destination)
-    return {
-        "provider": "osm",
-        "polyline": _demo_midpoints(request.origin, request.destination),
-        "distanceMeters": distance_meters,
-        "durationSeconds": _duration_seconds(distance_meters),
-        "confidence": "local_demo_route",
-        "cached": False,
-        "fallbackReason": fallback_reason,
-        "honestyNote": "Local fallback route is an estimated demo polyline, not provider traffic routing.",
-    }
+    return int(round(haversine_km(origin[1], origin[0], destination[1], destination[0]) * 1000))
 
 
 def _spent_recently_inr(db: Session, provider: str) -> float:
@@ -164,7 +132,6 @@ def _extract_polyline(data: dict[str, Any]) -> list[list[float]] | None:
         if isinstance(geometry, dict) and geometry.get("type") == "LineString":
             coords = geometry.get("coordinates")
             if isinstance(coords, list) and len(coords) >= 2:
-                # GeoJSON is already [lng, lat]
                 return [[float(item[0]), float(item[1])] for item in coords if isinstance(item, list) and len(item) >= 2]
         elif isinstance(geometry, list):
             points: list[list[float]] = []
@@ -192,12 +159,12 @@ def _extract_polyline(data: dict[str, Any]) -> list[list[float]] | None:
 
 
 import urllib.parse
-from app.orm.incident import Incident
+
 
 def _call_mapmyindia_route_api(
     request: RouteRequest,
     settings: Settings,
-    avoid_incidents: list[tuple[float, float]] = None
+    avoid_incidents: list[tuple[float, float]] | None = None,
 ) -> dict[str, object]:
     key = settings.mapmyindia_rest_key or settings.mapmyindia_api_key
     if not key:
@@ -206,26 +173,25 @@ def _call_mapmyindia_route_api(
     origin = f"{request.origin[0]},{request.origin[1]}"
     destination = f"{request.destination[0]},{request.destination[1]}"
     url = f"https://apis.mappls.com/advancedmaps/v1/{key}/route_adv/{request.mode}/{origin};{destination}?geometries=geojson"
-    
+
     if avoid_incidents:
         polygons = []
-        d = 0.0025 # ~250 meters radius to ensure proper detours around incidents
+        d = 0.0025
         for lon, lat in avoid_incidents:
-            poly = [
-                [lon - d, lat - d],
-                [lon + d, lat - d],
-                [lon + d, lat + d],
-                [lon - d, lat + d],
-                [lon - d, lat - d]
-            ]
-            polygons.append(poly)
-        
+            polygons.append(
+                [
+                    [lon - d, lat - d],
+                    [lon + d, lat - d],
+                    [lon + d, lat + d],
+                    [lon - d, lat + d],
+                    [lon - d, lat - d],
+                ]
+            )
         if polygons:
-            # format is avoid_polygons=[[[...]], [[...]]]
             import json
-            polygons_str = json.dumps(polygons)
-            url += f"&avoid_polygons={urllib.parse.quote(polygons_str)}"
-            
+
+            url += f"&avoid_polygons={urllib.parse.quote(json.dumps(polygons))}"
+
     with httpx.Client(timeout=8.0) as client:
         response = client.get(url)
         response.raise_for_status()
@@ -236,7 +202,7 @@ def _call_mapmyindia_route_api(
         raise ValueError("Provider route response did not include a supported polyline shape")
 
     distance_meters = int(data.get("distance") or _distance_meters(request.origin, request.destination))
-    duration_seconds = int(data.get("duration") or _duration_seconds(distance_meters))
+    duration_seconds = int(data.get("duration") or 0)
     return {
         "provider": "mapmyindia",
         "polyline": polyline,
@@ -244,7 +210,6 @@ def _call_mapmyindia_route_api(
         "durationSeconds": duration_seconds,
         "confidence": "provider_route",
         "cached": False,
-        "fallbackReason": None,
         "honestyNote": "Provider route returned by MapmyIndia/Mappls routing avoiding blocked incident areas.",
     }
 
@@ -263,7 +228,7 @@ def get_route(
         payload["cached"] = True
         log_map_usage(
             db,
-            provider=str(payload.get("provider") or "osm"),
+            provider="mapmyindia",
             api_name="route",
             cache_hit=True,
             estimated_cost_inr=0,
@@ -273,36 +238,30 @@ def get_route(
         return payload
 
     if not _provider_enabled(settings, capability="routing"):
-        payload = local_demo_route(request, fallback_reason="missing_key")
         log_map_usage(
             db,
-            provider="osm",
+            provider="mapmyindia",
             api_name="route",
             cache_hit=False,
             estimated_cost_inr=0,
-            status="fallback",
+            status="unavailable",
             request_hash=cache_key,
             fallback_reason="missing_key",
         )
-        _ROUTE_CACHE[cache_key] = dict(payload)
-        _update_spatial_grid(request, payload, cache_key)
-        return payload
+        raise MapProviderUnavailable("missing_key", "MapmyIndia/Mappls routing key is missing or routing is disabled.")
 
     if map_credit_guard_hit(db, settings, estimated_cost_inr=ROUTE_ESTIMATED_COST_INR):
-        payload = local_demo_route(request, fallback_reason="credit_guard")
         log_map_usage(
             db,
-            provider="osm",
+            provider="mapmyindia",
             api_name="route",
             cache_hit=False,
             estimated_cost_inr=0,
-            status="fallback",
+            status="credit_guard",
             request_hash=cache_key,
             fallback_reason="credit_guard",
         )
-        _ROUTE_CACHE[cache_key] = dict(payload)
-        _update_spatial_grid(request, payload, cache_key)
-        return payload
+        raise MapProviderUnavailable("credit_guard", "MapmyIndia/Mappls routing credit guard is active.", status_code=429)
 
     try:
         payload = _call_mapmyindia_route_api(request, settings)
@@ -318,21 +277,19 @@ def get_route(
         _ROUTE_CACHE[cache_key] = dict(payload)
         _update_spatial_grid(request, payload, cache_key)
         return payload
-    except (httpx.HTTPError, ValueError):
-        payload = local_demo_route(request, fallback_reason="api_error")
+    except (httpx.HTTPError, ValueError) as exc:
         log_map_usage(
             db,
             provider="mapmyindia",
             api_name="route",
             cache_hit=False,
             estimated_cost_inr=0,
-            status="fallback",
+            status="api_error",
             request_hash=cache_key,
             fallback_reason="api_error",
         )
-        _ROUTE_CACHE[cache_key] = dict(payload)
-        _update_spatial_grid(request, payload, cache_key)
-        return payload
+        raise MapProviderUnavailable("api_error", "MapmyIndia/Mappls routing API is unavailable.") from exc
+
 
 def _update_spatial_grid(request: RouteRequest, payload: dict[str, object], cache_key: str) -> None:
     incident_id = request.incident_id
@@ -345,9 +302,8 @@ def _update_spatial_grid(request: RouteRequest, payload: dict[str, object], cach
             if isinstance(point, list) and len(point) >= 2:
                 lng, lat = point[0], point[1]
                 g_key = get_grid_key(lat, lng)
-                if g_key not in _SPATIAL_GRID:
-                    _SPATIAL_GRID[g_key] = set()
-                _SPATIAL_GRID[g_key].add(cache_key)
+                _SPATIAL_GRID.setdefault(g_key, set()).add(cache_key)
+
 
 def invalidate_route_cache(lat: float, lng: float) -> None:
     g_key = get_grid_key(lat, lng)
@@ -355,10 +311,8 @@ def invalidate_route_cache(lat: float, lng: float) -> None:
         keys_to_remove = list(_SPATIAL_GRID[g_key])
         for c_key in keys_to_remove:
             _ROUTE_CACHE.pop(c_key, None)
-            inc_id = _CACHE_KEY_TO_INCIDENT.get(c_key)
-            # Remove from all grid cells
-            for g in _SPATIAL_GRID.values():
-                g.discard(c_key)
+            for grid_keys in _SPATIAL_GRID.values():
+                grid_keys.discard(c_key)
         _SPATIAL_GRID.pop(g_key, None)
 
 
@@ -370,16 +324,11 @@ def _call_mapmyindia_geocode_api(
     if not key:
         raise ValueError("MapmyIndia REST key missing")
 
-    url = f"https://search.mappls.com/search/address/geocode"
+    url = "https://search.mappls.com/search/address/geocode"
     params: dict[str, object] = {"access_token": key, "address": request.query}
     if request.proximity:
         params["pod"] = f"{request.proximity[1]},{request.proximity[0]}"
 
-    # NOTE ON SYNC I/O: This uses a synchronous httpx.Client which blocks the thread.
-    # However, since the FastAPI route handlers calling this service are defined as
-    # synchronous functions (`def` instead of `async def`), FastAPI automatically
-    # runs them in a separate threadpool. This ensures the main async event loop
-    # is NEVER blocked by these external network calls.
     with httpx.Client(timeout=8.0) as client:
         response = client.get(url, params=params)
         response.raise_for_status()
@@ -412,8 +361,7 @@ def _call_mapmyindia_geocode_api(
         "provider": "mapmyindia",
         "status": "success",
         "candidates": candidates,
-        "fallbackReason": None,
-        "honestyNote": "Provider geocode returned by MapmyIndia/Mappls when credits and API status allow.",
+        "honestyNote": "Provider geocode returned by MapmyIndia/Mappls.",
     }
 
 
@@ -426,40 +374,28 @@ def geocode_address(
     if not _provider_enabled(settings, capability="geocoding"):
         log_map_usage(
             db,
-            provider="osm",
+            provider="mapmyindia",
             api_name="geocode",
             cache_hit=False,
             estimated_cost_inr=0,
-            status="fallback",
+            status="unavailable",
             request_hash=request_hash,
             fallback_reason="missing_key",
         )
-        return {
-            "provider": "osm",
-            "status": "manual_required",
-            "candidates": [],
-            "fallbackReason": "missing_key",
-            "honestyNote": "Geocoding fallback is manual coordinate/address entry when MapmyIndia is unavailable.",
-        }
+        raise MapProviderUnavailable("missing_key", "MapmyIndia/Mappls geocoding key is missing or geocoding is disabled.")
 
     if map_credit_guard_hit(db, settings, estimated_cost_inr=GEOCODE_ESTIMATED_COST_INR):
         log_map_usage(
             db,
-            provider="osm",
+            provider="mapmyindia",
             api_name="geocode",
             cache_hit=False,
             estimated_cost_inr=0,
-            status="fallback",
+            status="credit_guard",
             request_hash=request_hash,
             fallback_reason="credit_guard",
         )
-        return {
-            "provider": "osm",
-            "status": "manual_required",
-            "candidates": [],
-            "fallbackReason": "credit_guard",
-            "honestyNote": "Credit guard reached; use manual coordinate/address entry for this lookup.",
-        }
+        raise MapProviderUnavailable("credit_guard", "MapmyIndia/Mappls geocoding credit guard is active.", status_code=429)
 
     try:
         payload = _call_mapmyindia_geocode_api(request, settings)
@@ -473,27 +409,15 @@ def geocode_address(
             request_hash=request_hash,
         )
         return payload
-    except (httpx.HTTPError, ValueError):
+    except (httpx.HTTPError, ValueError) as exc:
         log_map_usage(
             db,
             provider="mapmyindia",
             api_name="geocode",
             cache_hit=False,
             estimated_cost_inr=0,
-            status="fallback",
+            status="api_error",
             request_hash=request_hash,
             fallback_reason="api_error",
         )
-        return {
-            "provider": "osm",
-            "status": "success",
-            "candidates": [
-                {
-                    "label": request.query,
-                    "coordinate": [77.606, 12.971],
-                    "confidence": "local_demo_geocode",
-                }
-            ],
-            "fallbackReason": "manual_demo",
-            "honestyNote": "MapmyIndia API key missing or failed; returning a mock coordinate for demo purposes.",
-        }
+        raise MapProviderUnavailable("api_error", "MapmyIndia/Mappls geocoding API is unavailable.") from exc

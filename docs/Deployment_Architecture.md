@@ -1,4 +1,4 @@
-﻿# EventFlow AI Infrastructure And Deployment Architecture
+# EventFlow AI Infrastructure And Deployment Architecture
 
 ## 1. Environments
 
@@ -15,7 +15,7 @@
 | Frontend | Vercel free tier | Netlify free tier |
 | Backend | Render/Railway free tier | Fly.io free allowance if available |
 | Database | Supabase PostgreSQL free tier | Neon free tier |
-| Maps | MapmyIndia/Mappls using available 1000 INR credits | OSM + MapLibre fallback |
+| Maps | MapmyIndia/Mappls using available 1000 INR credits | No secondary map provider |
 | Weather | Open-Meteo | Manual selector |
 | Monitoring | UptimeRobot free | GitHub Actions cron |
 
@@ -53,7 +53,6 @@ FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@eventflow-ai-demo.iam.gserviceacco
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 MAP_PROVIDER=mapmyindia
 MAP_PRIMARY_PROVIDER=mapmyindia
-MAP_FALLBACK_PROVIDER=osm
 MAPMYINDIA_API_KEY=replace_with_key
 MAPMYINDIA_REST_KEY=replace_if_different
 MAPMYINDIA_CREDIT_BUDGET_INR=1000
@@ -61,7 +60,6 @@ MAPMYINDIA_DAILY_SOFT_LIMIT_INR=150
 MAPMYINDIA_ENABLE_ROUTING=true
 MAPMYINDIA_ENABLE_GEOCODING=true
 MAPMYINDIA_ENABLE_DISTANCE_MATRIX=false
-MAP_FALLBACK_ON_ERROR=true
 OPEN_METEO_ENABLED=true
 GOOGLE_TRANSLATE_ENABLED=false
 GOOGLE_TRANSLATE_PROVIDER=google
@@ -78,7 +76,6 @@ Frontend public variables:
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 NEXT_PUBLIC_MAP_PROVIDER=mapmyindia
-NEXT_PUBLIC_MAP_FALLBACK_PROVIDER=osm
 NEXT_PUBLIC_MAPMYINDIA_MAP_KEY=replace_with_browser_allowed_key
 NEXT_PUBLIC_FIREBASE_API_KEY=public_web_api_key
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=eventflow-ai-demo.firebaseapp.com
@@ -95,7 +92,7 @@ Rules:
 - MapmyIndia/Mappls is the primary MVP map provider because 1000 INR credits are available.
 - MapmyIndia server REST keys must stay backend-only unless MapmyIndia explicitly provides a browser-safe map SDK key.
 - Route/geocode calls must be cached and budget-guarded.
-- If MapmyIndia fails or credit guard is hit, app must automatically switch to OSM/MapLibre and local demo route overlays.
+- If MapmyIndia fails or the credit guard is hit, app must show a clear Mappls unavailable state and avoid alternate map providers.
 - Google Translate is optional Phase 19. Credentials must stay backend-only, translation must be disabled by default, and budget limits must be configured before enabling it.
 
 ## 4. Deployment Flow
@@ -140,7 +137,7 @@ If hosted backend fails:
 
 If map provider fails:
 
-- Switch to OSM fallback.
+- Switch to Mappls unavailable state.
 
 If weather API fails:
 
@@ -155,5 +152,5 @@ If weather API fails:
 | Vercel | frontend | free hobby limits | Next.js native | serverless constraints |
 | Render | backend | free sleep possible | simple FastAPI deploy | cold starts |
 | MapmyIndia/Mappls | primary maps/routes | 1000 INR credits available | India-local map/routing partner fit | credits must be guarded |
-| MapLibre + OSM | fallback maps | free/open | no paid key | limited routing/geocoding |
+| MapmyIndia / Mappls | required maps | paid credits | official key required | routing/geocoding through backend |
 | Open-Meteo | weather | free no key | reliable free weather | may lack hyperlocal nuance |

@@ -17,6 +17,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.foundation.clickable
+import com.namangulati.sancharsarthi.core.design.SkeletonScreen
 import com.namangulati.sancharsarthi.core.translation.AutoTranslatedText
 
 import kotlin.math.roundToInt
@@ -28,10 +30,16 @@ fun AdminScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    var selectedIncidentId by remember { mutableStateOf<String?>(null) }
+    var selectedStationName by remember { mutableStateOf<String?>(null) }
+
     if (uiState.loading && uiState.overview == null) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
+        SkeletonScreen(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            cards = 6
+        )
         return
     }
 
@@ -197,8 +205,19 @@ fun AdminScreen(
         
         val activeIncidents = uiState.overview?.incidents?.filter { it.status == "active" || it.status == "escalated" || it.status == "resolved" }?.take(8) ?: emptyList()
         items(activeIncidents) { incident ->
+            val isSelected = selectedIncidentId == incident.id || (selectedStationName != null && incident.assigned_station_name == selectedStationName)
             IncidentCard(
                 incident = incident,
+                isSelected = isSelected,
+                onClick = { 
+                    if (selectedIncidentId == incident.id) {
+                        selectedIncidentId = null
+                        selectedStationName = null
+                    } else {
+                        selectedIncidentId = incident.id
+                        selectedStationName = incident.assigned_station_name
+                    }
+                },
                 isEscalating = uiState.actionLoading,
                 onActivate = { viewModel.transitionIncidentStatus(incident.id, "active") },
                 onResolve = { viewModel.transitionIncidentStatus(incident.id, "resolved") },
@@ -222,8 +241,19 @@ fun AdminScreen(
             }
         }
         items(userReportedIncidents) { incident ->
+            val isSelected = selectedIncidentId == incident.id || (selectedStationName != null && incident.assigned_station_name == selectedStationName)
             IncidentCard(
                 incident = incident,
+                isSelected = isSelected,
+                onClick = { 
+                    if (selectedIncidentId == incident.id) {
+                        selectedIncidentId = null
+                        selectedStationName = null
+                    } else {
+                        selectedIncidentId = incident.id
+                        selectedStationName = incident.assigned_station_name
+                    }
+                },
                 isEscalating = uiState.actionLoading,
                 onActivate = { viewModel.transitionIncidentStatus(incident.id, "active") },
                 onResolve = { viewModel.transitionIncidentStatus(incident.id, "resolved") },
@@ -236,28 +266,78 @@ fun AdminScreen(
         item {
             AdminSectionCard("Stations", "Station controls") {
                 uiState.overview?.stations?.forEach { station ->
-                    Row(
+                    val isSelected = selectedStationName == station.name || (selectedIncidentId != null && uiState.overview?.incidents?.find { it.id == selectedIncidentId }?.assigned_station_name == station.name)
+                    
+                    val borderColor = if (isSelected) Color(0xFF3B82F6) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    val bgColor = if (isSelected) Color(0xFFEFF6FF) else MaterialTheme.colorScheme.surface
+                    val borderWidth = if (isSelected) 2.dp else 1.dp
+                    
+                    Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.background)
-                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(vertical = 6.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable {
+                                if (selectedStationName == station.name) {
+                                    selectedStationName = null
+                                    selectedIncidentId = null
+                                } else {
+                                    selectedStationName = station.name
+                                    selectedIncidentId = null
+                                }
+                            },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = bgColor),
+                        border = androidx.compose.foundation.BorderStroke(borderWidth, borderColor),
+                        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 0.dp)
                     ) {
-                        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-                            AutoTranslatedText(station.name, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                            AutoTranslatedText("${station.locality} · ${station.station_code}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
-                            AutoTranslatedText(station.contact_number ?: "Contact unavailable", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
-                        }
-                        OutlinedButton(
-                            onClick = { viewModel.toggleStation(station.id, station.active) },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF334155))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            AutoTranslatedText(if (station.active) "Disable" else "Enable")
+                            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .clip(androidx.compose.foundation.shape.CircleShape)
+                                            .background(if (station.active) Color(0xFF10B981) else Color(0xFF94A3B8))
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    AutoTranslatedText(
+                                        text = station.name,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = if (isSelected) Color(0xFF1E3A8A) else MaterialTheme.colorScheme.onSurface,
+                                        fontSize = 16.sp
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                AutoTranslatedText(
+                                    text = "${station.locality} Ã‚Â· Code: ${station.station_code}",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                AutoTranslatedText(
+                                    text = "Contact: ${station.contact_number ?: "Unavailable"}",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 12.sp
+                                )
+                            }
+                            OutlinedButton(
+                                onClick = { viewModel.toggleStation(station.id, station.active) },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = if (isSelected) Color(0xFF1D4ED8) else Color(0xFF334155)
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, if (isSelected) Color(0xFF93C5FD) else MaterialTheme.colorScheme.outlineVariant)
+                            ) {
+                                AutoTranslatedText(if (station.active) "Disable" else "Enable", fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }
@@ -331,131 +411,183 @@ fun Field(label: String, value: String, isPassword: Boolean = false, onChange: (
 @Composable
 fun IncidentCard(
     incident: com.namangulati.sancharsarthi.core.report.IncidentResponse,
+    isSelected: Boolean = false,
+    onClick: (() -> Unit)? = null,
     isEscalating: Boolean,
     onActivate: () -> Unit,
     onResolve: () -> Unit,
     onReject: () -> Unit,
     onEscalate: () -> Unit
 ) {
+    val borderColor = if (isSelected) Color(0xFF3B82F6) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+    val bgColor = if (isSelected) Color(0xFFEFF6FF) else MaterialTheme.colorScheme.surface
+    val borderWidth = if (isSelected) 2.dp else 1.dp
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = bgColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 8.dp else 6.dp),
+        border = androidx.compose.foundation.BorderStroke(borderWidth, borderColor)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            // Header: Title and Severity Badge
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-                    AutoTranslatedText(incident.title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                    AutoTranslatedText("${incident.location_name} · ${incident.status.replace("_", " ").capitalize()}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    AutoTranslatedText(incident.route_impact_summary ?: "Route impact under review.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                    AutoTranslatedText(
+                        text = incident.title,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer)
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            AutoTranslatedText(
+                                text = incident.status.replace("_", " ").uppercase(),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        AutoTranslatedText(
+                            text = incident.location_name,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+                
+                val severityColor = when (incident.severity.lowercase()) {
+                    "critical" -> Color(0xFFDC2626)
+                    "high" -> Color(0xFFEA580C)
+                    "medium" -> Color(0xFFD97706)
+                    else -> Color(0xFF16A34A)
                 }
                 Box(
                     modifier = Modifier
-                        .background(Color.White, RoundedCornerShape(12.dp))
-                        .padding(horizontal = 12.dp, vertical = 4.dp)
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+                        .background(severityColor.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                        .border(1.dp, severityColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    AutoTranslatedText(incident.severity, color = Color(0xFF334155), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    AutoTranslatedText(
+                        text = incident.severity.uppercase(),
+                        color = severityColor,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+            // AI Impact Box
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFF8FAFC), RoundedCornerShape(12.dp))
+                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
+                    .padding(12.dp)
             ) {
                 Column {
-                    Row {
-                        Text("EVENT ID: ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        Text(incident.id.take(12), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                    AutoTranslatedText("SYSTEM INSIGHT", fontSize = 10.sp, color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    AutoTranslatedText(
+                        text = incident.route_impact_summary ?: "No major route impact detected.",
+                        color = Color(0xFF334155),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Metadata Grid
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                // Column 1
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("TIME REPORTED", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    Text(incident.created_at.take(16).replace("T", " "), color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text("EVENT ID", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    Text(incident.id.take(10), color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontWeight = FontWeight.SemiBold)
+                }
+                // Column 2
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("ASSIGNED STATION", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    Text(incident.assigned_station_name ?: "Unassigned", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text("VERIFICATION CONFIDENCE", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    val conf = incident.confidence_score
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("${(conf * 100).roundToInt()}%", color = if (conf > 0.7) Color(0xFF16A34A) else Color(0xFFD97706), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("(${incident.true_vote_count} votes)", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
                     }
-                    Text("TIME", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
-                    Text(incident.created_at.take(16).replace("T", " "), color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
-                }
-                Column {
-                    Text("STATUS", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    Text(incident.status.replace("_", " ").capitalize(), color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
-                    Text("STATION", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 4.dp))
-                    Text(incident.assigned_station_name ?: "-", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("CONFIDENCE", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            val conf = incident.confidence_score
-            Text("${(conf * 100).roundToInt()}%", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
-
+            Spacer(modifier = Modifier.height(20.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
             Spacer(modifier = Modifier.height(16.dp))
-            
-            // Voting buttons (always disabled in Control Room per user request)
+
+            // Action Buttons
             @OptIn(ExperimentalLayoutApi::class)
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(
-                    onClick = { },
-                    enabled = false,
-                    shape = RoundedCornerShape(100.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(disabledContentColor = Color(0xFF94A3B8)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-                ) {
-                    Text("Vote true (${incident.true_vote_count})", fontSize = 12.sp)
-                }
-                OutlinedButton(
-                    onClick = { },
-                    enabled = false,
-                    shape = RoundedCornerShape(100.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(disabledContentColor = Color(0xFF94A3B8)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-                ) {
-                    Text("Vote false (${incident.false_vote_count})", fontSize = 12.sp)
-                }
-                Button(
-                    onClick = { },
-                    enabled = false,
-                    shape = RoundedCornerShape(100.dp),
-                    colors = ButtonDefaults.buttonColors(disabledContainerColor = Color(0xFFEFF6FF), disabledContentColor = Color(0xFF60A5FA))
-                ) {
-                    Text("View alternate routes", fontSize = 12.sp)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            @OptIn(ExperimentalLayoutApi::class)
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.End,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 if (incident.status == "pending_verification" || incident.status == "reported") {
-                    OutlinedButton(onClick = onReject, shape = RoundedCornerShape(100.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF334155))) {
-                        AutoTranslatedText("Reject")
+                    OutlinedButton(
+                        onClick = onReject,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFEF4444)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFECACA))
+                    ) {
+                        AutoTranslatedText("Reject", fontWeight = FontWeight.Bold)
                     }
-                    OutlinedButton(onClick = onActivate, shape = RoundedCornerShape(100.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF334155))) {
-                        AutoTranslatedText("Activate")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = onActivate,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981), contentColor = Color.White)
+                    ) {
+                        AutoTranslatedText("Activate Incident", fontWeight = FontWeight.Bold)
                     }
                 } else if (incident.status == "active" || incident.status == "escalated") {
-                    OutlinedButton(onClick = onResolve, shape = RoundedCornerShape(100.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF334155))) {
-                        AutoTranslatedText("Resolve")
+                    OutlinedButton(
+                        onClick = onResolve,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF10B981)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFA7F3D0))
+                    ) {
+                        AutoTranslatedText("Mark Resolved", fontWeight = FontWeight.Bold)
                     }
+                    Spacer(modifier = Modifier.width(8.dp))
                     if (incident.status == "active") {
                         Button(
                             onClick = onEscalate,
                             enabled = !isEscalating,
-                            shape = RoundedCornerShape(100.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEFF6FF), contentColor = Color(0xFF1D4ED8))
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3B82F6), contentColor = Color.White)
                         ) {
-                            AutoTranslatedText(if (isEscalating) "Escalating…" else "Escalate to Event")
+                            AutoTranslatedText(if (isEscalating) "EscalatingÃ¢â‚¬Â¦" else "Escalate to Event", fontWeight = FontWeight.Bold)
                         }
                     }
                 }

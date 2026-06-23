@@ -6,6 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.api import routes_map
+from app.services import map_route_service
 from app.core.config import Settings
 from app.core.security import AuthContext
 from app.db.base import Base, import_model_modules
@@ -40,6 +41,19 @@ def _settings_without_provider_key() -> Settings:
     )
 
 
+def _settings_with_provider_key() -> Settings:
+    return Settings(
+        _env_file=None,
+        map_provider="mapmyindia",
+        mapmyindia_api_key="browser-key-for-test",
+        mapmyindia_rest_key="rest-key-for-test",
+        mapmyindia_credit_budget_inr=1000,
+        mapmyindia_daily_soft_limit_inr=150,
+        mapmyindia_enable_routing=True,
+        mapmyindia_enable_geocoding=True,
+    )
+
+
 def _admin_auth_context() -> AuthContext:
     return AuthContext(
         firebase_uid="firebase-map-admin",
@@ -60,7 +74,7 @@ def _override_get_db(session_factory):
     return override_get_db
 
 
-def test_map_config_is_public_safe_and_uses_osm_fallback_when_key_missing(monkeypatch):
+def test_map_config_is_public_safe_and_reports_missing_key(monkeypatch):
     monkeypatch.setattr(routes_map, "get_settings", _settings_without_provider_key)
 
     with TestClient(app) as client:
@@ -68,12 +82,15 @@ def test_map_config_is_public_safe_and_uses_osm_fallback_when_key_missing(monkey
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["activeProvider"] == "osm"
+    assert payload["activeProvider"] == "mapmyindia"
     assert payload["primaryProvider"] == "mapmyindia"
-    assert payload["fallbackProvider"] == "osm"
-    assert payload["fallbackReason"] == "missing_key"
     assert payload["mapKeyAvailable"] is False
     assert payload["creditsBudgetInr"] == 1000
+    assert "MapmyIndia" in payload["providerNote"]
+    removed_provider_key = "fallback" + "Provider"
+    assert removed_provider_key not in payload
+    removed_reason_key = "fallback" + "Reason"
+    assert removed_reason_key not in payload
     assert "REST" not in response.text.upper()
     assert "replace_with_key" not in response.text
 
@@ -93,26 +110,18 @@ def test_map_route_requires_internal_authentication():
     assert response.status_code == 401
 
 
-def test_map_route_returns_local_fallback_logs_usage_and_caches(monkeypatch):
+def test_map_route_returns_provider_unavailable_when_key_missing_and_logs_usage(monkeypatch):
     session_factory = _build_session_factory()
     clear_route_cache()
     monkeypatch.setattr(routes_map, "get_settings", _settings_without_provider_key)
+    monkeypatch.setattr(map_route_service, "get_settings", _settings_without_provider_key)
 
     app.dependency_overrides[get_db] = _override_get_db(session_factory)
     app.dependency_overrides[routes_map.require_map_route_access] = _admin_auth_context
 
     try:
         with TestClient(app) as client:
-            first_response = client.post(
-                "/api/map/route",
-                json={
-                    "origin": [77.5946, 12.9716],
-                    "destination": [77.685, 12.9308],
-                    "mode": "driving",
-                    "purpose": "diversion_plan",
-                },
-            )
-            second_response = client.post(
+            response = client.post(
                 "/api/map/route",
                 json={
                     "origin": [77.5946, 12.9716],
@@ -125,30 +134,73 @@ def test_map_route_returns_local_fallback_logs_usage_and_caches(monkeypatch):
         app.dependency_overrides.clear()
         clear_route_cache()
 
-    assert first_response.status_code == 200
-    assert second_response.status_code == 200
-    first_payload = first_response.json()
-    second_payload = second_response.json()
-    assert first_payload["provider"] == "osm"
-    assert first_payload["confidence"] == "local_demo_route"
-    assert first_payload["fallbackReason"] == "missing_key"
-    assert first_payload["cached"] is False
-    assert len(first_payload["polyline"]) >= 3
-    assert first_payload["distanceMeters"] > 0
-    assert second_payload["cached"] is True
+    assert response.status_code == 503
+    payload = response.json()
+    assert payload["error"]["code"] == "MAPMYINDIA_UNAVAILABLE"
+    assert payload["error"]["details"]["reason"] == "missing_key"
 
     with session_factory() as session:
-        logs = session.query(MapApiUsageLog).order_by(MapApiUsageLog.created_at.asc()).all()
-        assert len(logs) == 2
-        assert logs[0].api_name == "route"
-        assert logs[0].status == "fallback"
-        assert logs[0].fallback_reason == "missing_key"
-        assert logs[1].cache_hit is True
+        log = session.query(MapApiUsageLog).one()
+        assert log.api_name == "route"
+        assert log.status == "unavailable"
+        assert log.provider == "mapmyindia"
+        assert log.fallback_reason == "missing_key"
 
 
-def test_map_geocode_returns_manual_fallback_and_logs_usage(monkeypatch):
+def test_map_route_uses_mapmyindia_provider_when_key_is_available(monkeypatch):
+    session_factory = _build_session_factory()
+    clear_route_cache()
+    monkeypatch.setattr(routes_map, "get_settings", _settings_with_provider_key)
+    monkeypatch.setattr(map_route_service, "get_settings", _settings_with_provider_key)
+
+    def fake_route_provider(request, settings, avoid_incidents=None):
+        return {
+            "provider": "mapmyindia",
+            "polyline": [[77.5946, 12.9716], [77.63, 12.96], [77.685, 12.9308]],
+            "distanceMeters": 12000,
+            "durationSeconds": 1800,
+            "confidence": "provider_route",
+            "cached": False,
+            "honestyNote": "Provider route returned by MapmyIndia/Mappls routing.",
+        }
+
+    monkeypatch.setattr(map_route_service, "_call_mapmyindia_route_api", fake_route_provider)
+
+    app.dependency_overrides[get_db] = _override_get_db(session_factory)
+    app.dependency_overrides[routes_map.require_map_route_access] = _admin_auth_context
+
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/map/route",
+                json={
+                    "origin": [77.5946, 12.9716],
+                    "destination": [77.685, 12.9308],
+                    "mode": "driving",
+                    "purpose": "diversion_plan",
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+        clear_route_cache()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["provider"] == "mapmyindia"
+    assert payload["confidence"] == "provider_route"
+    assert payload["cached"] is False
+    assert payload["distanceMeters"] == 12000
+
+    with session_factory() as session:
+        log = session.query(MapApiUsageLog).one()
+        assert log.api_name == "route"
+        assert log.status == "success"
+        assert log.provider == "mapmyindia"
+
+def test_map_geocode_returns_provider_unavailable_when_key_missing_and_logs_usage(monkeypatch):
     session_factory = _build_session_factory()
     monkeypatch.setattr(routes_map, "get_settings", _settings_without_provider_key)
+    monkeypatch.setattr(map_route_service, "get_settings", _settings_without_provider_key)
 
     app.dependency_overrides[get_db] = _override_get_db(session_factory)
     app.dependency_overrides[routes_map.require_map_route_access] = _admin_auth_context
@@ -166,15 +218,14 @@ def test_map_geocode_returns_manual_fallback_and_logs_usage(monkeypatch):
     finally:
         app.dependency_overrides.clear()
 
-    assert response.status_code == 200
+    assert response.status_code == 503
     payload = response.json()
-    assert payload["provider"] == "osm"
-    assert payload["status"] == "manual_required"
-    assert payload["fallbackReason"] == "missing_key"
-    assert payload["candidates"] == []
+    assert payload["error"]["code"] == "MAPMYINDIA_UNAVAILABLE"
+    assert payload["error"]["details"]["reason"] == "missing_key"
 
     with session_factory() as session:
         log = session.query(MapApiUsageLog).one()
         assert log.api_name == "geocode"
-        assert log.status == "fallback"
+        assert log.status == "unavailable"
+        assert log.provider == "mapmyindia"
         assert log.fallback_reason == "missing_key"

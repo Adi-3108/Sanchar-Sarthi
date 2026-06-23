@@ -490,21 +490,18 @@ export type MultiEventAnalysisResponse = {
   honesty_note: string;
 };
 
-export type MapProvider = "mapmyindia" | "osm";
+export type MapProvider = "mapmyindia";
 
-export type MapFallbackReason = "missing_key" | "api_error" | "credit_guard" | "manual_demo";
 
 export type MapConfigResponse = {
   activeProvider: MapProvider;
   primaryProvider: "mapmyindia";
-  fallbackProvider: "osm";
   mapKeyAvailable: boolean;
   creditsBudgetInr: number;
   budgetGuardEnabled: boolean;
-  fallbackReason?: MapFallbackReason | null;
   defaultCenter: [number, number];
   defaultZoom: number;
-  fallbackNote: string;
+  providerNote: string;
 };
 
 export type MapRouteRequest = {
@@ -521,9 +518,8 @@ export type MapRouteResponse = {
   polyline: Array<[number, number]>;
   distanceMeters: number;
   durationSeconds: number;
-  confidence: "provider_route" | "local_demo_route";
+  confidence: "provider_route";
   cached: boolean;
-  fallbackReason?: string | null;
   honestyNote: string;
 };
 
@@ -535,13 +531,12 @@ export type MapGeocodeRequest = {
 
 export type MapGeocodeResponse = {
   provider: MapProvider;
-  status: "success" | "manual_required";
+  status: "success";
   candidates: Array<{
     label: string;
     coordinate: [number, number];
     confidence: string;
   }>;
-  fallbackReason?: string | null;
   honestyNote: string;
 };
 

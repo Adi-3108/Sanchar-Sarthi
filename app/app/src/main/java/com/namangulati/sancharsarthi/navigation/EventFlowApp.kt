@@ -18,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -46,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.namangulati.sancharsarthi.core.design.SkeletonScreen
 import com.namangulati.sancharsarthi.core.session.AccessLevel
 import com.namangulati.sancharsarthi.feature.auth.AuthSessionScreen
 import com.namangulati.sancharsarthi.feature.auth.LoginScreen
@@ -90,12 +90,12 @@ fun EventFlowApp(viewModel: PlatformFoundationViewModel) {
     }
 
     if (isCheckingSession) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
+        SkeletonScreen(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            cards = 4
+        )
         return
     }
 
@@ -216,7 +216,7 @@ fun EventFlowApp(viewModel: PlatformFoundationViewModel) {
                                     }
                                 )
                                 androidx.compose.material3.DropdownMenuItem(
-                                    text = { Text("ಕನ್ನಡ (Kannada)") },
+                                    text = { Text("Ã Â²â€¢Ã Â²Â¨Ã Â³ÂÃ Â²Â¨Ã Â²Â¡ (Kannada)") },
                                     onClick = { 
                                         com.namangulati.sancharsarthi.core.translation.TranslationManager.setLanguage(com.google.mlkit.nl.translate.TranslateLanguage.KANNADA)
                                         expanded = false 

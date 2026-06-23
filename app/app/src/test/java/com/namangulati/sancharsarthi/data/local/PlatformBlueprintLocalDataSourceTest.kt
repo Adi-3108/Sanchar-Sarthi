@@ -14,7 +14,6 @@ class PlatformBlueprintLocalDataSourceTest {
 
         assertEquals("com.namangulati.sancharsarthi", blueprint.namespace)
         assertEquals("MapmyIndia / Mappls", blueprint.mapPolicy.primaryProvider)
-        assertEquals("OpenStreetMap local overlay mode", blueprint.mapPolicy.fallbackProvider)
         assertEquals("FastAPI backend role and scope checks", blueprint.authAuthority.finalAuthority)
     }
 

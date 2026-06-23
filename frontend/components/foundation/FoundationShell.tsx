@@ -8,6 +8,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import AuthPanel from "@/components/auth/AuthPanel";
 import MapCanvas from "@/components/map/MapCanvas";
 import RouteLayer from "@/components/map/RouteLayer";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { useSessionStore } from "@/lib/stores/useSessionStore";
 import {
   ApiError,
@@ -435,6 +436,16 @@ export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mod
   const requiredRole = mode === "admin" ? "admin" : mode === "control" ? "control_room" : null;
   const hasPageAccess = !requiredRole || (mounted && (session.accessLevel === requiredRole || (requiredRole === "control_room" && session.accessLevel === "admin")));
 
+  if (protectedMode && !ready) {
+    return (
+      <main className="min-h-screen bg-slate-100 px-4 py-8 text-slate-900 md:px-8">
+        <div className="mx-auto max-w-6xl">
+          <Skeleton.AuthGate />
+        </div>
+      </main>
+    );
+  }
+
   if (protectedMode && ready && (!user || !hasPageAccess)) {
     return (
       <main className="min-h-screen bg-slate-100 text-slate-900">
@@ -553,11 +564,11 @@ export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mod
           ) : null}
 
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(300px,0.9fr)]">
-            <IncidentList title={labels.active} incidents={activeIncidents} labels={labels} canVote={session.accessLevel === "citizen"} canManage={canManageIncidents} selectedIncidentId={selectedIncident?.id ?? null} onSelect={setSelectedIncidentId} onVote={(incidentId, voteValue) => voteMutation.mutate({ incidentId, voteValue })} onStatusChange={(incidentId, payload) => statusMutation.mutate({ incidentId, payload })} />
-            <IncidentList title={labels.reports} incidents={reportedIncidents} labels={labels} canVote={session.accessLevel === "citizen"} canManage={canManageIncidents} selectedIncidentId={selectedIncident?.id ?? null} onSelect={setSelectedIncidentId} onVote={(incidentId, voteValue) => voteMutation.mutate({ incidentId, voteValue })} onStatusChange={(incidentId, payload) => statusMutation.mutate({ incidentId, payload })} compact />
+            <IncidentList title={labels.active} incidents={activeIncidents} isLoading={query.isLoading} labels={labels} canVote={session.accessLevel === "citizen"} canManage={canManageIncidents} selectedIncidentId={selectedIncident?.id ?? null} onSelect={setSelectedIncidentId} onVote={(incidentId, voteValue) => voteMutation.mutate({ incidentId, voteValue })} onStatusChange={(incidentId, payload) => statusMutation.mutate({ incidentId, payload })} />
+            <IncidentList title={labels.reports} incidents={reportedIncidents} isLoading={query.isLoading} labels={labels} canVote={session.accessLevel === "citizen"} canManage={canManageIncidents} selectedIncidentId={selectedIncident?.id ?? null} onSelect={setSelectedIncidentId} onVote={(incidentId, voteValue) => voteMutation.mutate({ incidentId, voteValue })} onStatusChange={(incidentId, payload) => statusMutation.mutate({ incidentId, payload })} compact />
           </div>
 
-          <MapPanel data={data} bounds={bounds} labels={labels} selectedIncidentId={selectedIncident?.id ?? null} onSelectIncident={setSelectedIncidentId} config={configQuery.data} routeData={routeQuery.data} activeRoutes={activeRoutesQuery.data} />
+          {query.isLoading || configQuery.isLoading ? <Skeleton.MapPanel /> : <MapPanel data={data} bounds={bounds} labels={labels} selectedIncidentId={selectedIncident?.id ?? null} onSelectIncident={setSelectedIncidentId} config={configQuery.data} routeData={routeQuery.data} activeRoutes={activeRoutesQuery.data} />}
         </section>
 
         <aside className="flex flex-col gap-5">
@@ -606,7 +617,7 @@ function SwitchButton({ active, label, onClick }: { active: boolean; label: stri
   );
 }
 
-function IncidentList({ title, incidents, labels, canVote, canManage, selectedIncidentId, onSelect, onVote, onStatusChange, compact = false }: { title: string; incidents: FoundationIncident[]; labels: Labels; canVote: boolean; canManage: boolean; selectedIncidentId: string | null; onSelect: (incidentId: string) => void; onVote: (incidentId: string, voteValue: "true" | "false") => void; onStatusChange: (incidentId: string, payload: FoundationStatusTransitionRequest) => void; compact?: boolean }) {
+function IncidentList({ title, incidents, isLoading = false, labels, canVote, canManage, selectedIncidentId, onSelect, onVote, onStatusChange, compact = false }: { title: string; incidents: FoundationIncident[]; isLoading?: boolean; labels: Labels; canVote: boolean; canManage: boolean; selectedIncidentId: string | null; onSelect: (incidentId: string) => void; onVote: (incidentId: string, voteValue: "true" | "false") => void; onStatusChange: (incidentId: string, payload: FoundationStatusTransitionRequest) => void; compact?: boolean }) {
   return (
     <section className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur-sm">
       <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
@@ -614,7 +625,10 @@ function IncidentList({ title, incidents, labels, canVote, canManage, selectedIn
         <span className="flex h-7 items-center justify-center rounded-full bg-slate-100 px-3 text-xs font-bold text-slate-600 ring-1 ring-slate-200">{incidents.length}</span>
       </div>
       <div className="mt-5 grid gap-4">
-        {incidents.map((incident) => (
+        {isLoading ? (
+          <Skeleton.IncidentCards count={3} />
+        ) : (
+          incidents.map((incident) => (
           <article 
             key={incident.id} 
             className={`group overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${
@@ -666,7 +680,8 @@ function IncidentList({ title, incidents, labels, canVote, canManage, selectedIn
             </div>
           </article>
         ))}
-        {!incidents.length ? (
+        )}
+        {!isLoading && !incidents.length ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 py-12 text-center">
             <svg className="mb-3 h-10 w-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -860,7 +875,7 @@ function DetailPanel({ incident, labels }: { incident: FoundationIncident | null
   );
 }
 
-function RoutePanel({ incident, labels, routeData, routeError, onForceReload, isReloading, userRole }: { incident: FoundationIncident | null; labels: Labels; routeData?: MapRouteResponse | null; routeError?: any; onForceReload?: () => void; isReloading?: boolean; userRole?: string | null }) {
+function RoutePanel({ incident, labels, routeData, routeError, routeLoading = false, onForceReload, isReloading, userRole }: { incident: FoundationIncident | null; labels: Labels; routeData?: MapRouteResponse | null; routeError?: any; routeLoading?: boolean; onForceReload?: () => void; isReloading?: boolean; userRole?: string | null }) {
   const routes = incident ? altRoutes(incident) : [];
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -873,7 +888,7 @@ function RoutePanel({ incident, labels, routeData, routeError, onForceReload, is
               Route provider is currently unavailable or access is restricted.
             </div>
           )}
-          {!routeData && !routeError ? <p className="text-sm text-slate-500">Calculating live route via MapmyIndia...</p> : routeData && (
+          {routeLoading && !routeData && !routeError ? <Skeleton.TableRows count={2} /> : !routeData && !routeError ? <p className="text-sm text-slate-500">Calculating live route via MapmyIndia...</p> : routeData && (
             <>
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
                 <strong className="text-slate-900">Live Alternate Route Available</strong>
@@ -919,7 +934,7 @@ function StationPanel({ data, labels, selectedIncidentId, onSelectIncident }: { 
             return (
               <div key={station.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <p className="font-semibold text-slate-900">{station.name}</p>
-                <p className="mt-1 text-sm text-slate-600">{station.locality} · {station.station_code}</p>
+                <p className="mt-1 text-sm text-slate-600">{station.locality} Â· {station.station_code}</p>
                 <p className="mt-1 text-sm text-slate-600">{labels.contact}: {station.contact_number ?? "Not available"}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {linked.slice(0, 3).map((incident) => (

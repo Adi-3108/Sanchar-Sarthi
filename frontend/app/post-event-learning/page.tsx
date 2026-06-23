@@ -6,6 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 
 import AuthPanel from "@/components/auth/AuthPanel";
 import PostEventReportView from "@/components/reports/PostEventReportView";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { ApiError, generatePostEventReport, type PostEventReportResponse } from "@/lib/api";
 import { useFirebaseAuthState } from "@/lib/auth";
 import { useCommandStore } from "@/lib/stores/useCommandStore";
@@ -95,7 +96,23 @@ export default function PostEventLearningPage() {
             </form>
           </div>
 
-          <PostEventReportView report={reportMutation.data} />
+          {reportMutation.isPending ? (
+            <section className="rounded-[24px] border border-line/70 bg-panel/85 p-6 shadow-panel space-y-5 animate-pulse">
+              <div className="h-3 w-40 rounded bg-line/50" />
+              <div className="h-7 w-64 rounded bg-line/60" />
+              <div className="space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="rounded-2xl border border-line/70 bg-bg/60 p-5 space-y-3">
+                    <div className="h-4 w-36 rounded bg-line/60" />
+                    <div className={`h-3 rounded bg-line/40 ${i % 2 === 0 ? 'w-full' : 'w-4/5'}`} />
+                    <div className="h-3 w-3/4 rounded bg-line/30" />
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : (
+            <PostEventReportView report={reportMutation.data} />
+          )}
         </section>
       </div>
     </main>

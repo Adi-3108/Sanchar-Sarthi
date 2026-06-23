@@ -44,7 +44,7 @@ class PlatformBlueprintLocalDataSource {
                 ApiFamily("/api/events/*", "Officer, control room, admin", "Dossiers, simulations, and post-event records live here."),
                 ApiFamily("/api/officer/*", "Police officer", "Assignment-aware field visibility comes from backend-verified scope."),
                 ApiFamily("/api/recommendations/*", "Internal planning", "Estimated and recommended planning outputs only."),
-                ApiFamily("/api/map/*", "Internal mapping", "MapmyIndia primary, OSM fallback, backend-mediated."),
+                ApiFamily("/api/map/*", "Internal mapping", "MapmyIndia / Mappls only, backend-mediated."),
                 ApiFamily("/api/analytics/*", "Internal intelligence", "Hotspots, model runs, and corridor analytics."),
                 ApiFamily("/api/command-center/*", "Control room", "Operational summary and city-level shell state."),
                 ApiFamily("/api/demo/*", "Internal demo readiness", "Seed and readiness surfaces for walkthrough prep."),
@@ -138,7 +138,7 @@ class PlatformBlueprintLocalDataSource {
                     audience = "Internal first",
                     primaryAccess = AccessLevel.ControlRoom,
                     supportedAccessLevels = listOf(AccessLevel.PoliceOfficer, AccessLevel.ControlRoom, AccessLevel.Admin),
-                    summary = "The app must show provider state honestly and keep fallback behavior visible.",
+                    summary = "The app must show MapmyIndia / Mappls provider state honestly.",
                     currentSourceOfTruth = "map + analytics + foundation overlays",
                     backendRoutes = listOf(
                         "GET /api/map/config",
@@ -148,8 +148,8 @@ class PlatformBlueprintLocalDataSource {
                     ),
                     capabilities = listOf(
                         "Primary provider indicator",
-                        "Fallback reason visibility",
-                        "Local overlay mode when needed",
+                        "Mappls key availability visibility",
+                        "Clear unavailable state when provider access is missing",
                     ),
                 ),
                 MobileArea(
@@ -212,7 +212,7 @@ class PlatformBlueprintLocalDataSource {
                 ),
                 PlatformRule(
                     title = "Map honesty is part of the product",
-                    detail = "MapmyIndia or Mappls is primary, but OSM fallback and local overlay mode must be visible when active."
+                    detail = "MapmyIndia / Mappls is the only supported map provider for submission."
                 ),
                 PlatformRule(
                     title = "Intelligence copy stays honest",
@@ -284,10 +284,9 @@ class PlatformBlueprintLocalDataSource {
             ),
             mapPolicy = MapPolicy(
                 primaryProvider = "MapmyIndia / Mappls",
-                fallbackProvider = "OpenStreetMap local overlay mode",
                 honestyNotes = listOf(
                     "Do not claim guaranteed real-world navigation precision.",
-                    "Show fallback reason whenever the primary provider is unavailable.",
+                    "Show a clear unavailable state whenever Mappls access is missing.",
                     "Keep provider state visible for command and officer users.",
                 ),
             ),
@@ -313,6 +312,3 @@ class PlatformBlueprintLocalDataSource {
         )
     }
 }
-
-
-

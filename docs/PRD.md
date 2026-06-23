@@ -1,4 +1,4 @@
-﻿# EventFlow AI Product Requirements Document
+# EventFlow AI Product Requirements Document
 
 ## 1. Hackathon Project Overview
 
@@ -83,7 +83,7 @@ Dataset realities observed in the full uploaded ASTraM CSV:
 - `closed_datetime` is present for `3141` rows and `resolved_datetime` for `74` rows.
 - `description` contains non-ASCII/Kannada-script text in `904` rows, about `11.06%`. Text handling must detect language and normalize safely before Event DNA or explanations use description context.
 
-MapmyIndia/Mappls is the primary geospatial layer for MVP because the team has `1000 INR` credits available. OpenStreetMap/MapLibre remains an automatic fallback for missing keys, API failures, or credit guardrails. Flipkart relevance is added through a logistics impact panel that estimates delivery corridor risk.
+MapmyIndia/Mappls is the primary geospatial layer for MVP because the team has `1000 INR` credits available. No secondary map provider is used for submission; missing keys or provider errors are shown as Mappls unavailable states. Flipkart relevance is added through a logistics impact panel that estimates delivery corridor risk.
 
 ## 5. Proposed Solution
 
@@ -187,7 +187,7 @@ For future evening processions near this corridor, activate diversion checkpoint
 The project aligns directly with event-driven congestion by forecasting impact from historical and real-time data and recommending operational response plans. It also aligns with partner strengths:
 
 - **BTP / ASTraM:** real event intelligence and field context.
-- **MapmyIndia / Mappls:** primary geospatial base map, routing context, corridor visualization, and operational overlays using the available `1000 INR` credits with OSM/MapLibre fallback.
+- **MapmyIndia / Mappls:** primary geospatial base map, routing context, corridor visualization, and operational overlays using the available `1000 INR` credits.
 - **Flipkart:** logistics impact layer showing delivery corridor risk and dispatch advisories.
 
 ## 8. Target Users And Personas
@@ -294,7 +294,7 @@ Access must be role-aware:
 - Data cleaning and feature engineering
 - Supabase PostgreSQL free tier storage
 - FastAPI service layer
-- MapmyIndia/Mappls primary integration using available `1000 INR` credits, with OSM/MapLibre fallback
+- MapmyIndia/Mappls primary integration using available `1000 INR` credits,
 - Urgency and road closure prediction
 - Event DNA and similar event memory
 - Hotspot heatmap
@@ -361,7 +361,7 @@ Access must be role-aware:
 | Kannada/non-English descriptions | Bad Event DNA text context | Detect script, preserve raw text, use free/static normalization in base MVP, optionally use Google Translate with budget guardrails in Phase 19, and down-weight low-confidence text |
 | `end_datetime` mostly null | Wrong duration features | Use documented timestamp fallback: `end_datetime`, then `closed_datetime`, then `resolved_datetime`, else duration unknown |
 | Road closure class imbalance | Poor closure recall from standalone ML | Make rule-based/historical closure scoring the primary MVP output; use class-weighted ML only as supporting signal with PR-AUC/recall reporting |
-| MapmyIndia credit/key/API issue | Demo risk | Use provider adapter, budget guardrails, route caching, and OSM/MapLibre fallback |
+| MapmyIndia credit/key/API issue | Demo risk | Use provider adapter, budget guardrails, route caching, |
 | Weather API unavailable | Demo risk | Manual weather selector |
 | Too broad scope | Incomplete prototype | Prioritize end-to-end demo loop |
 

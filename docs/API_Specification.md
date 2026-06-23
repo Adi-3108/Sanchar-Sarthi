@@ -1,4 +1,4 @@
-﻿# EventFlow AI API Specification
+# EventFlow AI API Specification
 
 ## 1. API Standards
 
@@ -661,7 +661,7 @@ Response:
 
 ## 18. GET /api/map/config
 
-**Description:** Return frontend-safe map provider configuration.
+**Description:** Return frontend-safe MapmyIndia / Mappls provider configuration.
 
 Response:
 
@@ -669,17 +669,18 @@ Response:
 {
   "activeProvider": "mapmyindia",
   "primaryProvider": "mapmyindia",
-  "fallbackProvider": "osm",
   "mapKeyAvailable": true,
   "creditsBudgetInr": 1000,
   "budgetGuardEnabled": true,
-  "fallbackReason": null
+  "defaultCenter": [77.5946, 12.9716],
+  "defaultZoom": 11,
+  "providerNote": "MapmyIndia / Mappls is the only configured map provider."
 }
 ```
 
 ## 19. POST /api/map/route
 
-**Description:** Generate diversion/emergency/logistics route polyline using MapmyIndia when budget and API status allow; otherwise return local fallback route.
+**Description:** Generate diversion/emergency/logistics route polyline using MapmyIndia / Mappls when budget and API status allow; otherwise return a provider-unavailable error.
 
 Request:
 

@@ -11,7 +11,13 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 from app.core.security import AuthContext, require_role
 from app.db.session import get_db
-from app.services.map_route_service import GeocodeRequest, RouteRequest, geocode_address, get_route
+from app.services.map_route_service import (
+    GeocodeRequest,
+    MapProviderUnavailable,
+    RouteRequest,
+    geocode_address,
+    get_route,
+)
 
 router = APIRouter(prefix="/api/map", tags=["map"])
 
@@ -19,16 +25,14 @@ Coordinate = tuple[float, float]
 
 
 class MapConfigResponse(BaseModel):
-    activeProvider: Literal["mapmyindia", "osm"]
+    activeProvider: Literal["mapmyindia"]
     primaryProvider: Literal["mapmyindia"]
-    fallbackProvider: Literal["osm"]
     mapKeyAvailable: bool
     creditsBudgetInr: int
     budgetGuardEnabled: bool
-    fallbackReason: Literal["missing_key", "api_error", "credit_guard", "manual_demo"] | None = None
     defaultCenter: Coordinate
     defaultZoom: int
-    fallbackNote: str
+    providerNote: str
 
 
 class MapRouteRequest(BaseModel):
@@ -49,13 +53,12 @@ class MapRouteRequest(BaseModel):
 
 
 class MapRouteResponse(BaseModel):
-    provider: Literal["mapmyindia", "osm"]
+    provider: Literal["mapmyindia"]
     polyline: list[Coordinate]
     distanceMeters: int
     durationSeconds: int
-    confidence: Literal["provider_route", "local_demo_route"]
+    confidence: Literal["provider_route"]
     cached: bool
-    fallbackReason: str | None = None
     honestyNote: str
 
 
@@ -87,10 +90,9 @@ class MapGeocodeCandidateResponse(BaseModel):
 
 
 class MapGeocodeResponse(BaseModel):
-    provider: Literal["mapmyindia", "osm"]
-    status: Literal["success", "manual_required"]
+    provider: Literal["mapmyindia"]
+    status: Literal["success"]
     candidates: list[MapGeocodeCandidateResponse] = Field(default_factory=list)
-    fallbackReason: str | None = None
     honestyNote: str
 
 
@@ -112,6 +114,15 @@ def error_response(
     )
 
 
+def map_provider_error_response(exc: MapProviderUnavailable) -> JSONResponse:
+    return error_response(
+        exc.status_code,
+        "MAPMYINDIA_UNAVAILABLE",
+        exc.message,
+        {"reason": exc.reason},
+    )
+
+
 def require_map_route_access(
     auth: AuthContext = Depends(require_role("admin", "control_room", "police_officer")),
 ) -> AuthContext:
@@ -121,30 +132,15 @@ def require_map_route_access(
 @router.get("/config", response_model=MapConfigResponse)
 def map_config():
     settings = get_settings()
-    active_provider: Literal["mapmyindia", "osm"] = "mapmyindia"
-    fallback_reason = None
-    map_key_available = bool(settings.mapmyindia_api_key)
-    if settings.map_provider != "mapmyindia" or not map_key_available:
-        active_provider = "osm"
-        fallback_reason = "missing_key"
-
-    # SECURITY: The actual REST/API key is deliberately omitted from this response.
-    # The frontend only receives mapKeyAvailable (boolean) to know if the map is configured.
-    # This fulfills the Phase 14 security requirement to prevent API key leaks.
     return MapConfigResponse(
-        activeProvider=active_provider,
+        activeProvider="mapmyindia",
         primaryProvider="mapmyindia",
-        fallbackProvider="osm",
-        mapKeyAvailable=map_key_available,
+        mapKeyAvailable=bool(settings.mapmyindia_api_key or settings.mapmyindia_rest_key),
         creditsBudgetInr=settings.mapmyindia_credit_budget_inr,
         budgetGuardEnabled=True,
-        fallbackReason=fallback_reason,
         defaultCenter=(77.5946, 12.9716),
         defaultZoom=11,
-        fallbackNote=(
-            "Primary: MapmyIndia / Mappls. "
-            "Fallback: OSM safety mode with local demo route overlays."
-        ),
+        providerNote="MapmyIndia / Mappls is the only configured map provider.",
     )
 
 
@@ -162,12 +158,11 @@ def map_route(
             purpose=payload.purpose,
             incident_id=payload.incidentId,
         )
-        result = get_route(
-            db,
-            req,
-            force_reload=payload.forceReload,
-        )
+        result = get_route(db, req, force_reload=payload.forceReload)
         db.commit()
+    except MapProviderUnavailable as exc:
+        db.commit()
+        return map_provider_error_response(exc)
     except SQLAlchemyError:
         db.rollback()
         return error_response(503, "DATABASE_UNAVAILABLE", "Database is unavailable for map route generation.")
@@ -192,23 +187,30 @@ def map_geocode(
             get_settings(),
         )
         db.commit()
+    except MapProviderUnavailable as exc:
+        db.commit()
+        return map_provider_error_response(exc)
     except SQLAlchemyError:
         db.rollback()
         return error_response(503, "DATABASE_UNAVAILABLE", "Database is unavailable for map geocoding.")
 
     return MapGeocodeResponse.model_validate(result)
 
+
 class ActiveRoute(BaseModel):
     incidentId: str
     polyline: list[Coordinate]
 
+
 class MapActiveRoutesResponse(BaseModel):
     routes: list[ActiveRoute]
+
 
 from app.orm.incident import Incident
 from sqlalchemy import select
 
 from app.services.map_route_service import _ROUTE_CACHE, route_cache_key
+
 
 @router.get("/active-routes", response_model=MapActiveRoutesResponse)
 def get_active_routes(
@@ -223,22 +225,12 @@ def get_active_routes(
         if not incident.latitude or not incident.longitude:
             continue
         lng, lat = float(incident.longitude), float(incident.latitude)
-        
-        # Match frontend exactly:
         origin = (lng - 0.015, lat + 0.015)
         destination = (lng + 0.015, lat - 0.015)
-        
-        req = RouteRequest(
-            origin=origin,
-            destination=destination,
-            incident_id=incident.id
-        )
+        req = RouteRequest(origin=origin, destination=destination, incident_id=incident.id)
         c_key = route_cache_key(req)
         cached = _ROUTE_CACHE.get(c_key)
         if cached and "polyline" in cached:
-            active_routes.append({
-                "incidentId": incident.id,
-                "polyline": cached["polyline"]
-            })
+            active_routes.append({"incidentId": incident.id, "polyline": cached["polyline"]})
 
     return {"routes": active_routes}

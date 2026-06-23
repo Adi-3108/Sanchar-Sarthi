@@ -37,16 +37,12 @@ class Settings(BaseSettings):
     )
     map_provider: str = Field(
         default="mapmyindia",
-        pattern="^(osm|mapmyindia)$",
+        pattern="^mapmyindia$",
         validation_alias="MAP_PROVIDER",
     )
     map_primary_provider: str = Field(
         default="mapmyindia",
         validation_alias="MAP_PRIMARY_PROVIDER",
-    )
-    map_fallback_provider: str = Field(
-        default="osm",
-        validation_alias="MAP_FALLBACK_PROVIDER",
     )
     mapmyindia_api_key: str | None = Field(default=None, validation_alias="MAPMYINDIA_API_KEY")
     mapmyindia_rest_key: str | None = Field(default=None, validation_alias="MAPMYINDIA_REST_KEY")
@@ -69,10 +65,6 @@ class Settings(BaseSettings):
     mapmyindia_enable_distance_matrix: bool = Field(
         default=False,
         validation_alias="MAPMYINDIA_ENABLE_DISTANCE_MATRIX",
-    )
-    map_fallback_on_error: bool = Field(
-        default=True,
-        validation_alias="MAP_FALLBACK_ON_ERROR",
     )
     open_meteo_enabled: bool = Field(default=True, validation_alias="OPEN_METEO_ENABLED")
     google_translate_enabled: bool = Field(

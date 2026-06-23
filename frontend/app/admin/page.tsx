@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useI18n } from "@/components/LanguageContext";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 import AuthPanel from "@/components/auth/AuthPanel";
 import { useSessionStore } from "@/lib/stores/useSessionStore";
@@ -241,7 +242,17 @@ export default function AdminPage() {
 
   const hasAccess = mounted && session.accessLevel === "admin";
 
-  if (!authReady || !user || !hasAccess) {
+  if (!authReady) {
+    return (
+      <main className="min-h-screen bg-slate-100 px-6 py-8 text-slate-900 md:px-10">
+        <div className="mx-auto max-w-5xl">
+          <Skeleton.AuthGate />
+        </div>
+      </main>
+    );
+  }
+
+  if (!user || !hasAccess) {
     return (
       <main className="min-h-screen bg-slate-100 px-6 py-8 text-slate-900 md:px-10">
         <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-[1fr_380px]">
@@ -276,15 +287,22 @@ export default function AdminPage() {
               <h1 className="mt-3 text-4xl font-bold tracking-tight md:text-5xl">Sanchar Sarthi admin and operations console</h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">This admin surface now covers Phase 3 management for incidents, users, stations, votes, predictions, and audit logs, while keeping the earlier system-health and officer-bootstrap tools available.</p>
             </div>
-
           </div>
         </section>
 
         <section className="grid gap-5 lg:grid-cols-4">
-          <MetricCard label="Backend" value={healthQuery.isLoading ? "Checking" : healthQuery.isError ? "Needs attention" : "Operational"} note={`Database: ${healthQuery.data?.database ?? "n/a"}`} />
-          <MetricCard label="Firebase" value={healthQuery.data?.auth.firebase ?? "n/a"} note={`Priority model: ${healthQuery.data?.models.priority ?? "n/a"}`} />
-          <MetricCard label="Map provider" value={mapQuery.data?.activeProvider ?? "Checking"} note={`Fallback: ${mapQuery.data?.fallbackProvider ?? "osm"}`} />
-          <MetricCard label="Latest model run" value={latestRun?.model_name ?? "No run yet"} note={`Version: ${latestRun?.model_version ?? "n/a"}`} />
+          {healthQuery.isLoading || mapQuery.isLoading || modelRunsQuery.isLoading ? (
+            <>
+              <Skeleton.MetricGrid count={4} />
+            </>
+          ) : (
+            <>
+              <MetricCard label="Backend" value={healthQuery.isError ? "Needs attention" : "Operational"} note={`Database: ${healthQuery.data?.database ?? "n/a"}`} />
+              <MetricCard label="Firebase" value={healthQuery.data?.auth.firebase ?? "n/a"} note={`Priority model: ${healthQuery.data?.models.priority ?? "n/a"}`} />
+              <MetricCard label="Map provider" value={mapQuery.data?.activeProvider ?? "n/a"} note={mapQuery.data?.providerNote ?? "MapmyIndia / Mappls only"} />
+              <MetricCard label="Latest model run" value={latestRun?.model_name ?? "No run yet"} note={`Version: ${latestRun?.model_version ?? "n/a"}`} />
+            </>
+          )}
         </section>
 
         <section className="grid gap-5 xl:grid-cols-[1.45fr_1fr]">
@@ -306,10 +324,16 @@ export default function AdminPage() {
             </div>
 
             <div className="mt-5 grid gap-4 md:grid-cols-4">
-              <MetricCard label="RAG status" value={ragStatusQuery.data?.enabled ? "Enabled" : ragStatusQuery.isLoading ? "Checking" : "Disabled"} note={`LLM: ${ragStatusQuery.data?.llm_provider ?? "n/a"}`} />
-              <MetricCard label="Embedding" value={ragStatusQuery.data?.embedding_provider ?? "n/a"} note={`Chunks: ${metric(ragStatusQuery.data?.chunk_count)}`} />
-              <MetricCard label="Control-room chunks" value={metric(ragStatusQuery.data?.by_visibility?.control_room)} note={`Public: ${metric(ragStatusQuery.data?.by_visibility?.public)}`} />
-              <MetricCard label="Admin chunks" value={metric(ragStatusQuery.data?.by_visibility?.admin)} note={`Updated: ${formatTime(ragStatusQuery.data?.latest_updated_at)}`} />
+              {ragStatusQuery.isLoading ? (
+                <Skeleton.MetricGrid count={4} />
+              ) : (
+                <>
+                  <MetricCard label="RAG status" value={ragStatusQuery.data?.enabled ? "Enabled" : "Disabled"} note={`LLM: ${ragStatusQuery.data?.llm_provider ?? "n/a"}`} />
+                  <MetricCard label="Embedding" value={ragStatusQuery.data?.embedding_provider ?? "n/a"} note={`Chunks: ${metric(ragStatusQuery.data?.chunk_count)}`} />
+                  <MetricCard label="Control-room chunks" value={metric(ragStatusQuery.data?.by_visibility?.control_room)} note={`Public: ${metric(ragStatusQuery.data?.by_visibility?.public)}`} />
+                  <MetricCard label="Admin chunks" value={metric(ragStatusQuery.data?.by_visibility?.admin)} note={`Updated: ${formatTime(ragStatusQuery.data?.latest_updated_at)}`} />
+                </>
+              )}
             </div>
 
             <form onSubmit={handleEventRagRebuild} className="mt-5 flex flex-col gap-3 md:flex-row md:items-end">
@@ -341,6 +365,7 @@ export default function AdminPage() {
             <p className="mt-3 text-sm leading-7 text-slate-600">The retrieval layer stays grounded by separating public, control-room, and admin-only chunks while keeping the source mix visible.</p>
 
             <div className="mt-5 space-y-4">
+              {ragStatusQuery.isLoading ? <Skeleton.TableRows count={3} /> : null}
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">By visibility</p>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -386,12 +411,18 @@ export default function AdminPage() {
               </div>
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              <Metric value={metric(foundationQuery.data?.summary.incident_count)} label="Incidents" />
-              <Metric value={metric(foundationQuery.data?.summary.station_count)} label="Stations" />
-              <Metric value={metric(foundationQuery.data?.summary.user_count)} label="Users" />
-              <Metric value={metric(foundationQuery.data?.summary.vote_count)} label="Votes" />
-              <Metric value={metric(foundationQuery.data?.summary.prediction_count)} label="Predictions" />
-              <Metric value={metric(foundationQuery.data?.summary.audit_log_count)} label="Audit logs" />
+              {foundationQuery.isLoading ? (
+                <Skeleton.DataGrid count={6} cols={3} />
+              ) : (
+                <>
+                  <Metric value={metric(foundationQuery.data?.summary.incident_count)} label="Incidents" />
+                  <Metric value={metric(foundationQuery.data?.summary.station_count)} label="Stations" />
+                  <Metric value={metric(foundationQuery.data?.summary.user_count)} label="Users" />
+                  <Metric value={metric(foundationQuery.data?.summary.vote_count)} label="Votes" />
+                  <Metric value={metric(foundationQuery.data?.summary.prediction_count)} label="Predictions" />
+                  <Metric value={metric(foundationQuery.data?.summary.audit_log_count)} label="Audit logs" />
+                </>
+              )}
             </div>
             {latestAction ? <p className="mt-4 text-sm leading-7 text-emerald-700">{latestAction}</p> : null}
             {foundationQuery.isError ? <p className="mt-3 text-sm text-rose-700">{errorText(foundationQuery.error)}</p> : null}
@@ -449,36 +480,42 @@ export default function AdminPage() {
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{foundationQuery.data?.incidents.length ?? 0}</span>
             </div>
             <div className="mt-4 grid gap-3">
-              {escalateMutation.isSuccess && escalateMutation.data && (
-                <div className="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                  <p className="text-sm font-semibold text-emerald-800">✅ Incident escalated successfully!</p>
-                  <p className="mt-1 text-sm text-emerald-700">
-                    New Event ID: <span className="font-mono font-bold">{escalateMutation.data.event_id}</span>
-                  </p>
-                  <p className="mt-1 text-xs text-emerald-600">AI prediction and recommendations have been generated. You can now generate a Post-Event Report using this Event ID.</p>
-                </div>
+              {foundationQuery.isLoading ? (
+                <Skeleton.IncidentCards count={3} />
+              ) : (
+                <>
+                  {escalateMutation.isSuccess && escalateMutation.data && (
+                    <div className="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                      <p className="text-sm font-semibold text-emerald-800">Ã¢Å“â€¦ Incident escalated successfully!</p>
+                      <p className="mt-1 text-sm text-emerald-700">
+                        New Event ID: <span className="font-mono font-bold">{escalateMutation.data.event_id}</span>
+                      </p>
+                      <p className="mt-1 text-xs text-emerald-600">AI prediction and recommendations have been generated. You can now generate a Post-Event Report using this Event ID.</p>
+                    </div>
+                  )}
+                  {escalateMutation.isError && (
+                    <div className="mb-3 rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                      <p className="text-sm font-semibold text-rose-800">Failed to escalate incident</p>
+                      <p className="mt-1 text-xs text-rose-700">{errorText(escalateMutation.error)}</p>
+                    </div>
+                  )}
+                  {(foundationQuery.data?.incidents ?? [])
+                    .filter(incident => !["resolved", "archived", "rejected"].includes(incident.status))
+                    .slice(0, 8)
+                    .map((incident) => (
+                    <IncidentCard
+                      key={incident.id}
+                      incident={incident}
+                      isEscalating={escalateMutation.isPending}
+                      onActivate={() => incidentMutation.mutate({ incidentId: incident.id, payload: { status: "active" } })}
+                      onResolve={() => incidentMutation.mutate({ incidentId: incident.id, payload: { status: "resolved", resolution_notes: "Resolved from admin console." } })}
+                      onArchive={() => incidentMutation.mutate({ incidentId: incident.id, payload: { status: "archived", visible_to_public: false } })}
+                      onDelete={() => deleteIncidentMutation.mutate(incident.id)}
+                      onEscalate={() => { escalateMutation.reset(); escalateMutation.mutate(incident.id); }}
+                    />
+                  ))}
+                </>
               )}
-              {escalateMutation.isError && (
-                <div className="mb-3 rounded-2xl border border-rose-200 bg-rose-50 p-4">
-                  <p className="text-sm font-semibold text-rose-800">Failed to escalate incident</p>
-                  <p className="mt-1 text-xs text-rose-700">{errorText(escalateMutation.error)}</p>
-                </div>
-              )}
-              {(foundationQuery.data?.incidents ?? [])
-                .filter(incident => !["resolved", "archived", "rejected"].includes(incident.status))
-                .slice(0, 8)
-                .map((incident) => (
-                <IncidentCard
-                  key={incident.id}
-                  incident={incident}
-                  isEscalating={escalateMutation.isPending}
-                  onActivate={() => incidentMutation.mutate({ incidentId: incident.id, payload: { status: "active" } })}
-                  onResolve={() => incidentMutation.mutate({ incidentId: incident.id, payload: { status: "resolved", resolution_notes: "Resolved from admin console." } })}
-                  onArchive={() => incidentMutation.mutate({ incidentId: incident.id, payload: { status: "archived", visible_to_public: false } })}
-                  onDelete={() => deleteIncidentMutation.mutate(incident.id)}
-                  onEscalate={() => { escalateMutation.reset(); escalateMutation.mutate(incident.id); }}
-                />
-              ))}
             </div>
           </article>
 
@@ -501,18 +538,22 @@ export default function AdminPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">{t("stationsText")}</p>
             <h2 className="mt-2 text-2xl font-bold">{t("stationControls")}</h2>
             <div className="mt-4 grid gap-3">
-              {(foundationQuery.data?.stations ?? []).map((station: FoundationStation) => (
-                <div key={station.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-slate-900">{station.name}</p>
-                      <p className="mt-1 text-sm text-slate-600">{station.locality} · {station.station_code}</p>
-                      <p className="mt-1 text-sm text-slate-600">{station.contact_number ?? "Contact unavailable"}</p>
+              {foundationQuery.isLoading ? (
+                <Skeleton.TableRows count={4} />
+              ) : (
+                (foundationQuery.data?.stations ?? []).map((station: FoundationStation) => (
+                  <div key={station.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-slate-900">{station.name}</p>
+                        <p className="mt-1 text-sm text-slate-600">{station.locality} Ã‚Â· {station.station_code}</p>
+                        <p className="mt-1 text-sm text-slate-600">{station.contact_number ?? "Contact unavailable"}</p>
+                      </div>
+                      <button type="button" onClick={() => stationMutation.mutate({ stationId: station.id, active: !station.active })} className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">{station.active ? "Disable" : "Enable"}</button>
                     </div>
-                    <button type="button" onClick={() => stationMutation.mutate({ stationId: station.id, active: !station.active })} className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">{station.active ? "Disable" : "Enable"}</button>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </article>
 
@@ -520,18 +561,22 @@ export default function AdminPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">{t("usersText")}</p>
             <h2 className="mt-2 text-2xl font-bold">{t("userAccessText")}</h2>
             <div className="mt-4 grid gap-3">
-              {(foundationQuery.data?.users ?? []).slice(0, 8).map((account: FoundationAdminUser) => (
-                <div key={account.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-slate-900">{account.display_name ?? account.auth_provider_uid}</p>
-                      <p className="mt-1 text-sm text-slate-600">{pretty(account.role)}</p>
-                      <p className="mt-1 text-sm text-slate-600">Created: {formatTime(account.created_at)}</p>
+              {foundationQuery.isLoading ? (
+                <Skeleton.TableRows count={4} />
+              ) : (
+                (foundationQuery.data?.users ?? []).slice(0, 8).map((account: FoundationAdminUser) => (
+                  <div key={account.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-slate-900">{account.display_name ?? account.auth_provider_uid}</p>
+                        <p className="mt-1 text-sm text-slate-600">{pretty(account.role)}</p>
+                        <p className="mt-1 text-sm text-slate-600">Created: {formatTime(account.created_at)}</p>
+                      </div>
+                      <button type="button" onClick={() => userMutation.mutate({ userId: account.id, is_active: !account.is_active })} className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">{account.is_active ? "Disable" : "Enable"}</button>
                     </div>
-                    <button type="button" onClick={() => userMutation.mutate({ userId: account.id, is_active: !account.is_active })} className="rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">{account.is_active ? "Disable" : "Enable"}</button>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </article>
         </section>
@@ -545,7 +590,7 @@ export default function AdminPage() {
                 <div key={vote.id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
                   <div>
                     <p className="font-medium text-slate-900">Incident {vote.incident_id}</p>
-                    <p className="text-slate-600">{vote.vote_value.toUpperCase()} · {formatTime(vote.created_at)}</p>
+                    <p className="text-slate-600">{vote.vote_value.toUpperCase()} Ãƒâ€šÃ‚Â· {formatTime(vote.created_at)}</p>
                   </div>
                   <button type="button" onClick={() => voteMutation.mutate(vote.id)} className="rounded-2xl border border-rose-200 bg-white px-3 py-2 text-sm text-rose-700">Delete vote</button>
                 </div>
@@ -562,7 +607,7 @@ export default function AdminPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold text-slate-900">{pretty(log.action)}</p>
-                      <p className="mt-1 text-slate-600">{pretty(log.actor_role)} · {formatTime(log.created_at)}</p>
+                      <p className="mt-1 text-slate-600">{pretty(log.actor_role)} Ãƒâ€šÃ‚Â· {formatTime(log.created_at)}</p>
                     </div>
                     <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">{log.resource_type}</span>
                   </div>
@@ -614,7 +659,7 @@ function IncidentCard({ incident, onActivate, onResolve, onArchive, onDelete, on
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="font-semibold text-slate-900">{incident.title}</h3>
-          <p className="mt-1 text-sm text-slate-600">{incident.location_name} · {pretty(incident.status)}</p>
+          <p className="mt-1 text-sm text-slate-600">{incident.location_name} Ãƒâ€šÃ‚Â· {pretty(incident.status)}</p>
           <p className="mt-2 text-sm text-slate-600">{incident.route_impact_summary ?? "Route impact under review."}</p>
         </div>
         <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">{pretty(incident.severity)}</span>
@@ -637,7 +682,7 @@ function IncidentCard({ incident, onActivate, onResolve, onArchive, onDelete, on
             disabled={isEscalating}
             className="rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 disabled:opacity-60"
           >
-            {isEscalating ? "Escalating…" : "⬆ Escalate to Event"}
+            {isEscalating ? "EscalatingÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦" : "ÃƒÂ¢Ã‚Â¬Ã¢â‚¬Â  Escalate to Event"}
           </button>
         )}
       </div>
@@ -672,6 +717,3 @@ function MetricCard({ label, value, note }: { label: string; value: string; note
     </article>
   );
 }
-
-
-

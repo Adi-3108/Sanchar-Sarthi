@@ -1,10 +1,10 @@
-# PHASE 7 — AI ML Prediction Models
+# PHASE 7 â€” AI ML Prediction Models
 
 ## Phase Overview
 
 Train and serve urgency and road-closure likelihood models.
 
-This phase is part of EventFlow AI, a predictive traffic command twin for Bengaluru event-driven congestion. The project uses ASTraM historical event data, FastAPI, Next.js, Supabase PostgreSQL free tier, explainable AI/rule-based planning, MapmyIndia/Mappls primary integration using available 1000 INR credits, OpenStreetMap fallback, and only free/open-source APIs or services.
+This phase is part of EventFlow AI, a predictive traffic command twin for Bengaluru event-driven congestion. The project uses ASTraM historical event data, FastAPI, Next.js, Supabase PostgreSQL free tier, explainable AI/rule-based planning, MapmyIndia/Mappls primary integration using available 1000 INR credits, Mappls-only map policy, and only free/open-source APIs or services.
 
 ---
 
@@ -281,7 +281,7 @@ def predict_event(db: Session, event: Event) -> EventPrediction:
 
 ### Dataset-Specific: Resolution Time Predictor
 
-**Why this is a differentiating feature:** The ASTraM dataset contains `start_datetime`, `closed_datetime`, and `resolved_datetime`. After filtering out administrative long-tail closures, these allow estimating *how long* an incident will disrupt traffic — a number directly missing from existing traffic systems.
+**Why this is a differentiating feature:** The ASTraM dataset contains `start_datetime`, `closed_datetime`, and `resolved_datetime`. After filtering out administrative long-tail closures, these allow estimating *how long* an incident will disrupt traffic â€” a number directly missing from existing traffic systems.
 
 **Critical data quality filter (mandatory):**
 
@@ -513,7 +513,7 @@ def predict_resolution_time(event: Event) -> dict[str, object]:
         upper_bound = round(estimated_minutes + (mae or 30.0), 1)
         confidence_note = f'Based on {training_rows} qualifying ASTraM incidents with reliable clearance timestamps'
         if mae:
-            confidence_note += f'. Typical error margin: ±{mae:.0f} min'
+            confidence_note += f'. Typical error margin: Â±{mae:.0f} min'
     else:
         estimated_minutes, method = _rule_estimate(event)
         confidence = 0.45
@@ -527,7 +527,7 @@ def predict_resolution_time(event: Event) -> dict[str, object]:
         'clearance_confidence_note': confidence_note,
         'historical_clearance_range_min': lower_bound,
         'historical_clearance_range_max': upper_bound,
-        'honesty_label': 'Estimated clearance time — not a guaranteed operational commitment.',
+        'honesty_label': 'Estimated clearance time â€” not a guaranteed operational commitment.',
         'data_filter_applied': 'resolved_datetime within 24h, else closed_datetime within 24h',
     }
 ```
@@ -537,7 +537,7 @@ def predict_resolution_time(event: Event) -> dict[str, object]:
 Model Insights page must show:
 - Training row count (after quality filter)
 - MAE in minutes
-- R² score
+- RÂ² score
 - Data filter applied
 - Rule fallback status (active or inactive)
 
@@ -677,7 +677,7 @@ Every dependency is explicit in this file. No previous chat context is required.
 
 ## Technical Design Summary
 
-Build this phase as a modular, testable slice of EventFlow AI. Backend code owns data validation, persistence, AI/rule logic, and sensitive handling. Frontend code owns rendering, interaction, and API consumption. Database access is backend-only. MapmyIndia/Mappls is the primary MVP map provider using available 1000 INR credits; OSM/MapLibre fallback must remain functional through the provider adapter.
+Build this phase as a modular, testable slice of EventFlow AI. Backend code owns data validation, persistence, AI/rule logic, and sensitive handling. Frontend code owns rendering, interaction, and API consumption. Database access is backend-only. MapmyIndia/Mappls is the primary MVP map provider using available 1000 INR credits; MapmyIndia / Mappls must remain the only map provider through the provider adapter.
 
 ---
 
@@ -728,11 +728,3 @@ Phase is complete only if:
 - No paid API dependency is introduced.
 
 ---
-
-
-
-
-
-
-
-

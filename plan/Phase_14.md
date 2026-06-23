@@ -1,16 +1,16 @@
-﻿# PHASE 14 — MapmyIndia Map Intelligence UI And Provider Adapter
+# PHASE 14 — MapmyIndia Map Intelligence UI And Provider Adapter
 
 ## Phase Overview
 
-Render MapmyIndia/Mappls as the primary map provider using available 1000 INR credits, with OSM/MapLibre fallback and operational overlays.
+Render MapmyIndia/Mappls as the primary map provider using available 1000 INR credits, with Mappls unavailable state and operational overlays.
 
-This phase is part of EventFlow AI, a predictive traffic command twin for Bengaluru event-driven congestion. The project uses ASTraM historical event data, FastAPI, Next.js, Supabase PostgreSQL free tier, explainable AI/rule-based planning, MapmyIndia/Mappls primary integration using available 1000 INR credits, OpenStreetMap fallback, and only free/open-source APIs or services.
+This phase is part of EventFlow AI, a predictive traffic command twin for Bengaluru event-driven congestion. The project uses ASTraM historical event data, FastAPI, Next.js, Supabase PostgreSQL free tier, explainable AI/rule-based planning, MapmyIndia/Mappls primary integration using available 1000 INR credits, Mappls-only map policy, and only free/open-source APIs or services.
 
 ---
 
 ## Why This Phase Exists
 
-- **Problem being solved:** Render MapmyIndia/Mappls as the primary map provider using available 1000 INR credits, with OSM/MapLibre fallback and operational overlays.
+- **Problem being solved:** Render MapmyIndia/Mappls as the primary map provider using available 1000 INR credits, with Mappls unavailable state and operational overlays.
 - **User need addressed:** Traffic operators, planners, field officers, citizens, delivery stakeholders, and judges need a reliable implementation step that advances the Predict -> Plan -> Monitor -> Adapt -> Learn workflow.
 - **Business requirement satisfied:** This phase supports a complete Flipkart Gridlock 2.0 prototype that demonstrates feasibility, innovation, scalability, security, user experience, and real-world impact.
 - **Why now:** This phase depends on Phase 05, Phase 09, Phase 10, Phase 11, Phase 13 and must exist before Core visual demo.
@@ -30,7 +30,7 @@ Traffic response is often reactive, delayed, and experience-driven. Users need e
 
 ### Product Goal
 
-Deliver this capability: Render MapmyIndia/Mappls as the primary map provider using available 1000 INR credits, with OSM/MapLibre fallback and operational overlays.
+Deliver this capability: Render MapmyIndia/Mappls as the primary map provider using available 1000 INR credits, with Mappls unavailable state and operational overlays.
 
 ### Architecture Goal
 
@@ -54,7 +54,7 @@ Support MVP targets: dashboard under 5 seconds, simulation under 3 seconds, even
 
 After completion:
 
-- **New functionality:** Render MapmyIndia/Mappls as the primary map provider using available 1000 INR credits, with OSM/MapLibre fallback and operational overlays.
+- **New functionality:** Render MapmyIndia/Mappls as the primary map provider using available 1000 INR credits, with Mappls unavailable state and operational overlays.
 - **New APIs:** Consumes analytics, event detail, recommendation, report APIs
 - **New workflows:** The product moves forward in the end-to-end traffic command workflow.
 - **New capabilities:** Core visual demo
@@ -90,16 +90,14 @@ Required implementation standards:
 
 ### `frontend/lib/map/provider.ts`
 ```ts
-export type MapProvider = 'osm' | 'mapmyindia';
+export type MapProvider = 'mapmyindia';
 
 export type MapConfig = {
   activeProvider: MapProvider;
   primaryProvider: 'mapmyindia';
-  fallbackProvider: 'osm';
   mapKeyAvailable: boolean;
   creditsBudgetInr: number;
   budgetGuardEnabled: boolean;
-  fallbackReason?: 'missing_key' | 'api_error' | 'credit_guard' | 'manual_demo';
   defaultCenter: [number, number];
   defaultZoom: number;
 };
@@ -110,18 +108,11 @@ export async function getMapConfig(): Promise<MapConfig> {
   return response.json();
 }
 
-export function osmStyle() {
+export function mapplsUnavailableStyle() {
   return {
     version: 8,
-    sources: {
-      osm: {
-        type: 'raster',
-        tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-        tileSize: 256,
-        attribution: 'OpenStreetMap contributors',
-      },
-    },
-    layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
+    sources: {},
+    layers: [],
   } as const;
 }
 ```
@@ -157,21 +148,17 @@ router = APIRouter(prefix='/api/map', tags=['map'])
 def map_config() -> dict[str, object]:
     settings = get_settings()
     provider = 'mapmyindia'
-    fallback_reason = None
     if settings.map_provider != 'mapmyindia' or not settings.mapmyindia_api_key:
-        provider = 'osm'
-        fallback_reason = 'missing_key'
+        provider = 'mapmyindia'
     return {
         'activeProvider': provider,
         'primaryProvider': 'mapmyindia',
-        'fallbackProvider': 'osm',
         'mapKeyAvailable': bool(settings.mapmyindia_api_key),
         'creditsBudgetInr': settings.mapmyindia_credit_budget_inr,
         'budgetGuardEnabled': True,
-        'fallbackReason': fallback_reason,
         'defaultCenter': [77.5946, 12.9716],
         'defaultZoom': 11,
-        'fallbackNote': 'MapmyIndia/Mappls is primary with 1000 INR credits; OSM/MapLibre is safety fallback.',
+        'providerNote': 'MapmyIndia/Mappls is the only map provider for submission.',
     }
 ```
 
@@ -359,7 +346,7 @@ Every dependency is explicit in this file. No previous chat context is required.
 
 ## Technical Design Summary
 
-Build this phase as a modular, testable slice of EventFlow AI. Backend code owns data validation, persistence, AI/rule logic, and sensitive handling. Frontend code owns rendering, interaction, and API consumption. Database access is backend-only. MapmyIndia/Mappls is the primary MVP map provider using available 1000 INR credits; OSM/MapLibre fallback must remain functional through the provider adapter.
+Build this phase as a modular, testable slice of EventFlow AI. Backend code owns data validation, persistence, AI/rule logic, and sensitive handling. Frontend code owns rendering, interaction, and API consumption. Database access is backend-only. MapmyIndia/Mappls is the primary MVP map provider using available 1000 INR credits; MapmyIndia / Mappls must remain the only map provider through the provider adapter.
 
 ---
 
@@ -408,12 +395,3 @@ Phase is complete only if:
 - No paid API dependency is introduced.
 
 ---
-
-
-
-
-
-
-
-
-

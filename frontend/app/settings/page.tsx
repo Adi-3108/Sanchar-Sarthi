@@ -19,6 +19,7 @@ import {
 import { handleError, errorText as getErrorText } from "@/lib/errorHandler";
 import { useFirebaseAuthState } from "@/lib/auth";
 import { useCommandStore } from "@/lib/stores/useCommandStore";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "sonner";
 
 
@@ -106,7 +107,7 @@ export default function SettingsPage() {
             <div className="flex flex-col gap-3">
               <div className="rounded-3xl border border-accent/30 bg-accent/10 px-5 py-4">
                 <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Demo state</p>
-                <p className="mt-2 text-2xl font-semibold text-copy">{headline}</p>
+                <p className="mt-2 text-2xl font-semibold text-copy">{demoStatusQuery.isLoading ? <Skeleton.Line width="w-52" height="h-7" className="bg-accent/20" /> : headline}</p>
               </div>
             </div>
           </div>
@@ -147,26 +148,32 @@ export default function SettingsPage() {
             </article>
 
             <article className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <MetricCard
-                label="Backend"
-                value={healthQuery.data?.database ?? (healthQuery.isLoading ? "Checking" : "n/a")}
-                note={`Firebase: ${healthQuery.data?.auth.firebase ?? "n/a"}`}
-              />
-              <MetricCard
-                label="Map Provider"
-                value={mapQuery.data?.activeProvider ?? (mapQuery.isLoading ? "Checking" : "n/a")}
-                note={`Fallback: ${mapQuery.data?.fallbackProvider ?? "osm"}`}
-              />
-              <MetricCard
-                label="Demo Events"
-                value={String(summary?.demo_events ?? 0)}
-                note={`${summary?.demo_hotspot_clusters ?? 0} hotspot clusters`}
-              />
-              <MetricCard
-                label="Learning Loop"
-                value={String(summary?.demo_post_event_reports ?? 0)}
-                note={`${summary?.demo_reports ?? 0} reports / ${summary?.demo_live_updates ?? 0} live updates`}
-              />
+              {healthQuery.isLoading || mapQuery.isLoading || demoStatusQuery.isLoading ? (
+                <Skeleton.MetricGrid count={4} />
+              ) : (
+                <>
+                  <MetricCard
+                    label="Backend"
+                    value={healthQuery.data?.database ?? "n/a"}
+                    note={`Firebase: ${healthQuery.data?.auth.firebase ?? "n/a"}`}
+                  />
+                  <MetricCard
+                    label="Map Provider"
+                    value={mapQuery.data?.activeProvider ?? "n/a"}
+                    note={mapQuery.data?.providerNote ?? "MapmyIndia / Mappls only"}
+                  />
+                  <MetricCard
+                    label="Demo Events"
+                    value={String(summary?.demo_events ?? 0)}
+                    note={`${summary?.demo_hotspot_clusters ?? 0} hotspot clusters`}
+                  />
+                  <MetricCard
+                    label="Learning Loop"
+                    value={String(summary?.demo_post_event_reports ?? 0)}
+                    note={`${summary?.demo_reports ?? 0} reports / ${summary?.demo_live_updates ?? 0} live updates`}
+                  />
+                </>
+              )}
             </article>
           </div>
         </section>
@@ -176,13 +183,25 @@ export default function SettingsPage() {
             <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Readiness checks</p>
             <h2 className="mt-2 text-2xl font-semibold">Demo completion gates</h2>
             <div className="mt-5 space-y-3">
-              {demoStatusQuery.data?.checks?.length ? (
+              {demoStatusQuery.isLoading ? (
+                <div className="space-y-3 animate-pulse">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="rounded-2xl border border-line/70 bg-bg/60 p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="space-y-2 flex-1">
+                          <div className="h-4 w-40 rounded bg-line/60" />
+                          <div className="h-3 w-full rounded bg-line/40" />
+                        </div>
+                        <div className="h-6 w-16 rounded-full bg-line/40" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : demoStatusQuery.data?.checks?.length ? (
                 demoStatusQuery.data.checks.map((check) => <ReadinessRow key={check.key} check={check} />)
               ) : (
                 <p className="text-sm leading-7 text-muted">
-                  {demoStatusQuery.isLoading
-                    ? "Loading readiness checks..."
-                    : demoStatusQuery.isError
+                  {demoStatusQuery.isError
                     ? getErrorText(demoStatusQuery.error)
                     : "No demo readiness checks are available yet."}
                 </p>
@@ -194,42 +213,52 @@ export default function SettingsPage() {
             <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Quick launch</p>
             <h2 className="mt-2 text-2xl font-semibold">Use the seeded walkthrough anchors</h2>
             <div className="mt-5 grid gap-3">
-              <QuickLink
-                href={predictPlanId ? `/events/${predictPlanId}` : "/simulation"}
-                label="Predict and plan anchor"
-                note={predictPlanId ?? "Simulation route"}
-                onClick={() => setSelectedEventId(predictPlanId)}
-              />
-              <QuickLink
-                href="/map-intelligence"
-                label="Multi-event coordination"
-                note={coordinationIds.length ? coordinationIds.join(" + ") : "Tumkur overlap pair"}
-                onClick={() => setSelectedEventId(coordinationIds[0])}
-              />
-              <QuickLink
-                href={learningId ? `/events/${learningId}` : "/post-event-learning"}
-                label="Learning event dossier"
-                note={learningId ?? "Post-event learning route"}
-                onClick={() => setSelectedEventId(learningId)}
-              />
-              <QuickLink
-                href="/post-event-learning"
-                label="After-action report"
-                note="Generate the learning panel from the seeded event"
-                onClick={() => setSelectedEventId(learningId)}
-              />
+              {demoStatusQuery.isLoading ? (
+                <Skeleton.TableRows count={4} />
+              ) : (
+                <>
+                  <QuickLink
+                    href={predictPlanId ? `/events/${predictPlanId}` : "/simulation"}
+                    label="Predict and plan anchor"
+                    note={predictPlanId ?? "Simulation route"}
+                    onClick={() => setSelectedEventId(predictPlanId)}
+                  />
+                  <QuickLink
+                    href="/map-intelligence"
+                    label="Multi-event coordination"
+                    note={coordinationIds.length ? coordinationIds.join(" + ") : "Tumkur overlap pair"}
+                    onClick={() => setSelectedEventId(coordinationIds[0])}
+                  />
+                  <QuickLink
+                    href={learningId ? `/events/${learningId}` : "/post-event-learning"}
+                    label="Learning event dossier"
+                    note={learningId ?? "Post-event learning route"}
+                    onClick={() => setSelectedEventId(learningId)}
+                  />
+                  <QuickLink
+                    href="/post-event-learning"
+                    label="After-action report"
+                    note="Generate the learning panel from the seeded event"
+                    onClick={() => setSelectedEventId(learningId)}
+                  />
+                </>
+              )}
             </div>
           </article>
         </section>
 
         <section className="grid gap-5 lg:grid-cols-2">
-          {(demoStatusQuery.data?.scenario_cards ?? []).map((scenario) => (
-            <ScenarioCard
-              key={scenario.scenario_name}
-              scenario={scenario}
-              onSelectEvent={(eventId) => setSelectedEventId(eventId)}
-            />
-          ))}
+          {demoStatusQuery.isLoading ? (
+            <Skeleton.ScenarioGrid count={2} />
+          ) : (
+            (demoStatusQuery.data?.scenario_cards ?? []).map((scenario) => (
+              <ScenarioCard
+                key={scenario.scenario_name}
+                scenario={scenario}
+                onSelectEvent={(eventId) => setSelectedEventId(eventId)}
+              />
+            ))
+          )}
         </section>
       </div>
     </main>
@@ -351,3 +380,4 @@ function QuickLink({
     </Link>
   );
 }
+

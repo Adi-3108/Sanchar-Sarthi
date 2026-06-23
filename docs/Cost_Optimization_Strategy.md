@@ -1,4 +1,4 @@
-﻿# EventFlow AI Cost Optimization Strategy
+# EventFlow AI Cost Optimization Strategy
 
 ## 1. Cost Principle
 
@@ -8,7 +8,7 @@ The base MVP must run on free APIs, free tiers, open-source libraries, and local
 
 | Area | Decision | Cost Benefit |
 |---|---|---|
-| Maps | MapmyIndia primary with 1000 INR credits, OSM fallback safety mode | uses available credits while preventing demo failure |
+| Maps | MapmyIndia / Mappls only with 1000 INR credits and backend guardrails | uses available credits while preventing demo failure |
 | Routing | simplified NetworkX graph | avoids paid routing APIs |
 | Weather | Open-Meteo/manual selector | avoids paid weather APIs |
 | Database | Supabase free PostgreSQL | avoids infra cost |

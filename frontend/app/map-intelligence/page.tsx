@@ -12,6 +12,7 @@ import MapCanvas from "@/components/map/MapCanvas";
 import ReportLayer, { type MapReportPoint } from "@/components/map/ReportLayer";
 import RouteLayer, { type RouteOverlay } from "@/components/map/RouteLayer";
 import MultiEventConflictPanel from "@/components/recommendations/MultiEventConflictPanel";
+import { Skeleton } from "@/components/ui/Skeleton";
 import {
   analyzeMultiEvent,
   geocodeMapAddress,
@@ -123,18 +124,16 @@ function routeOverlayFromResponse(route?: MapRouteResponse): RouteOverlay[] {
         id: "demo-route",
         label: "Demo diversion route",
         kind: "diversion",
-        polyline: [demoRoute.origin, [77.63, 12.96], demoRoute.destination],
-        fallbackReason: "manual_demo"
+        polyline: [demoRoute.origin, [77.63, 12.96], demoRoute.destination]
       }
     ];
   }
   return [
     {
       id: "provider-route",
-      label: route.provider === "mapmyindia" ? "MapmyIndia route" : "Fallback route",
+      label: "MapmyIndia route",
       kind: "diversion",
-      polyline: route.polyline,
-      fallbackReason: route.fallbackReason
+      polyline: route.polyline
     }
   ];
 }
@@ -143,10 +142,7 @@ function providerStatus(config?: MapConfigResponse): string {
   if (!config) {
     return "Checking provider";
   }
-  if (config.activeProvider === "mapmyindia") {
-    return "MapmyIndia primary";
-  }
-  return `OSM fallback: ${config.fallbackReason?.replaceAll("_", " ") ?? "active"}`;
+  return config.mapKeyAvailable ? "MapmyIndia / Mappls ready" : "MapmyIndia / Mappls key missing";
 }
 
 function defaultEventIdsFromHotspots(hotspots: HotspotResponseItem[]): string[] {
@@ -287,9 +283,7 @@ export default function MapIntelligencePage() {
         <section className="grid gap-5 lg:grid-cols-[1fr_0.38fr]">
           <div>
             {configQuery.isLoading ? (
-              <div className="min-h-[560px] rounded-[28px] border border-line/80 bg-panel/70 p-8 text-sm text-muted shadow-panel">
-                Loading map provider configuration...
-              </div>
+              <Skeleton.MapPanel className="min-h-[560px]" />
             ) : configQuery.isError || !config ? (
               <div className="min-h-[560px] rounded-[28px] border border-danger/30 bg-danger/10 p-8 text-sm text-danger shadow-panel">
                 Map configuration is unavailable. Non-map recommendation panels can still work.
@@ -317,11 +311,11 @@ export default function MapIntelligencePage() {
 
             <article className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel">
               <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Provider</p>
-              <h2 className="mt-2 text-2xl font-semibold">{providerStatus(config)}</h2>
+              {configQuery.isLoading ? <Skeleton.Line width="w-52" height="h-8" className="mt-2" /> : <h2 className="mt-2 text-2xl font-semibold">{providerStatus(config)}</h2>}
               <div className="mt-4 space-y-2 text-sm leading-7 text-muted">
                 <p>Map key available: {config?.mapKeyAvailable ? "yes" : "no"}</p>
 
-                <p>Routing status: {routeMutation.data?.provider ?? "demo overlay"}</p>
+                <p>Routing status: {routeMutation.data?.provider ?? "Mappls route not loaded"}</p>
               </div>
             </article>
 
@@ -353,7 +347,7 @@ export default function MapIntelligencePage() {
                     <div key={`${candidate.label}-${candidate.coordinate.join(",")}`} className="rounded-2xl border border-line/70 bg-bg/60 p-4 text-sm text-copy">
                       <p className="font-semibold">{candidate.label}</p>
                       <p className="mt-1 text-muted">
-                        {candidate.coordinate[1].toFixed(5)}, {candidate.coordinate[0].toFixed(5)} · {candidate.confidence}
+                        {candidate.coordinate[1].toFixed(5)}, {candidate.coordinate[0].toFixed(5)} - {candidate.confidence}
                       </p>
                     </div>
                   ))}
@@ -363,24 +357,18 @@ export default function MapIntelligencePage() {
 
             <article className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel">
               <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Overlay counts</p>
-              <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <div className="rounded-2xl border border-line/60 bg-bg/60 p-3">
-                  <dt className="text-muted">Hotspots</dt>
-                  <dd className="mt-1 text-xl font-semibold">{hotspots.length}</dd>
-                </div>
-                <div className="rounded-2xl border border-line/60 bg-bg/60 p-3">
-                  <dt className="text-muted">Reports</dt>
-                  <dd className="mt-1 text-xl font-semibold">{reportPoints.length}</dd>
-                </div>
-                <div className="rounded-2xl border border-line/60 bg-bg/60 p-3">
-                  <dt className="text-muted">Search markers</dt>
-                  <dd className="mt-1 text-xl font-semibold">{geocodeMutation.data?.candidates.length ?? 0}</dd>
-                </div>
-                <div className="rounded-2xl border border-line/60 bg-bg/60 p-3">
-                  <dt className="text-muted">Conflicts</dt>
-                  <dd className="mt-1 text-xl font-semibold">{conflictOverlays.length}</dd>
-                </div>
-              </dl>
+              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                {hotspotsQuery.isLoading ? (
+                  <Skeleton.MetricGrid count={4} />
+                ) : (
+                  <>
+                    <div className="rounded-2xl border border-line/60 bg-bg/60 p-3"><p className="text-muted">Hotspots</p><p className="mt-1 text-xl font-semibold">{hotspots.length}</p></div>
+                    <div className="rounded-2xl border border-line/60 bg-bg/60 p-3"><p className="text-muted">Reports</p><p className="mt-1 text-xl font-semibold">{reportPoints.length}</p></div>
+                    <div className="rounded-2xl border border-line/60 bg-bg/60 p-3"><p className="text-muted">Search markers</p><p className="mt-1 text-xl font-semibold">{geocodeMutation.data?.candidates.length ?? 0}</p></div>
+                    <div className="rounded-2xl border border-line/60 bg-bg/60 p-3"><p className="text-muted">Conflicts</p><p className="mt-1 text-xl font-semibold">{conflictOverlays.length}</p></div>
+                  </>
+                )}
+              </div>
             </article>
 
             {selectedHotspot ? (
@@ -434,7 +422,7 @@ export default function MapIntelligencePage() {
             </p>
           </article>
 
-          <MultiEventConflictPanel analysis={multiEventMutation.data} />
+          {multiEventMutation.isPending ? <Skeleton.Card rows={5} /> : <MultiEventConflictPanel analysis={multiEventMutation.data} />}
         </section>
 
         <HotspotLayer

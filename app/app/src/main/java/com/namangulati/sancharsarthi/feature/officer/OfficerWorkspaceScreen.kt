@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.namangulati.sancharsarthi.core.design.SkeletonScreen
 import com.namangulati.sancharsarthi.core.network.RetrofitClient
 import com.namangulati.sancharsarthi.data.remote.OfficerAssignmentsResponse
 import com.namangulati.sancharsarthi.data.remote.LiveUpdateRequestDto
@@ -54,7 +55,12 @@ fun OfficerWorkspaceScreen(
     }
 
     if (isLoading) {
-        CircularProgressIndicator(modifier = Modifier.padding(20.dp))
+        SkeletonScreen(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(20.dp),
+            cards = 4
+        )
         return
     }
 

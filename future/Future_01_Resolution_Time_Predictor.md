@@ -1,4 +1,4 @@
-# FUTURE 01 — Resolution Time Predictor
+# FUTURE 01 â€” Resolution Time Predictor
 
 ## Overview
 

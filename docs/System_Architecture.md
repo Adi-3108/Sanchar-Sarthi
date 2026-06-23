@@ -1,4 +1,4 @@
-﻿# EventFlow AI System Architecture
+# EventFlow AI System Architecture
 
 ## 1. Architecture Goals
 
@@ -39,7 +39,7 @@ flowchart TD
     Auth --> V["FastAPI REST APIs"]
     V --> D
     V --> H
-    U --> W["Map Adapter: MapmyIndia primary with 1000 INR credits, OSM fallback"]
+    U --> W["Map Adapter: MapmyIndia / Mappls only with 1000 INR credits"]
 ```
 
 ## 3. Layer Responsibilities

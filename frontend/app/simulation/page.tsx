@@ -22,6 +22,7 @@ import {
   type EventSimulationRequest,
   type EventSimulationResponse
 } from "@/lib/api";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { useFirebaseAuthState } from "@/lib/auth";
 
 type WeatherCondition = NonNullable<EventSimulationRequest["weather_condition"]>;
@@ -216,7 +217,27 @@ export default function SimulationPage() {
           </div>
 
           <div className="space-y-5">
-            {!result ? (
+            {simulationMutation.isPending ? (
+              <section className="rounded-[24px] border border-line/70 bg-panel/85 p-5 shadow-panel space-y-5 animate-pulse">
+                <div className="h-3 w-32 rounded bg-line/50" />
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="rounded-2xl border border-line/70 bg-bg/60 p-4 space-y-2">
+                      <div className="h-3 w-20 rounded bg-line/50" />
+                      <div className="h-5 w-16 rounded bg-line/60" />
+                    </div>
+                  ))}
+                </div>
+                <Skeleton.Block height="h-32" />
+                <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+                  <Skeleton.Block height="h-48" />
+                  <div className="space-y-5">
+                    <Skeleton.Block height="h-20" />
+                    <Skeleton.Block height="h-20" />
+                  </div>
+                </div>
+              </section>
+            ) : !result ? (
               <section className="rounded-[24px] border border-line/70 bg-panel/85 p-5 shadow-panel">
                 <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Simulation output</p>
                 <p className="mt-5 text-sm leading-7 text-muted">

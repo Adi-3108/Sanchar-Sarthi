@@ -16,9 +16,9 @@ data class ActiveRoute(
 @Serializable
 data class MapConfigResponse(
     val activeProvider: String,
-    val fallbackProvider: String,
-    val fallbackReason: String? = null,
-    val mapKeyAvailable: Boolean
+    val primaryProvider: String,
+    val mapKeyAvailable: Boolean,
+    val providerNote: String? = null
 )
 
 @Serializable
@@ -55,6 +55,5 @@ data class MapRouteResponse(
     val provider: String,
     val distanceMeters: Int,
     val durationSeconds: Int,
-    val polyline: List<List<Double>>,
-    val fallbackReason: String? = null
+    val polyline: List<List<Double>>
 )

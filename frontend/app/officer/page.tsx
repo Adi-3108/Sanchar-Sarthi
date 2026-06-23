@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { useFirebaseAuthState } from "@/lib/auth";
 import { useI18n } from "@/components/LanguageContext";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { useSessionStore } from "@/lib/stores/useSessionStore";
 
 export default function OfficerPage() {
@@ -131,9 +132,15 @@ export default function OfficerPage() {
           <div className="grid gap-5">
             <article className="rounded-[24px] border border-line/70 bg-panelAlt/90 p-5 shadow-panel">
               <div className="grid gap-3 md:grid-cols-3">
-                <Metric label={t("officerId")} value={assignmentsQuery.data?.officer_id ?? "n/a"} />
-                <Metric label={t("station")} value={assignmentsQuery.data?.police_station ?? "n/a"} />
-                <Metric label={t("assignedEvents")} value={String(assignmentsQuery.data?.assigned_events.length ?? 0)} />
+                {assignmentsQuery.isLoading ? (
+                  <div className="col-span-3 grid gap-3 md:grid-cols-3"><Skeleton.MetricGrid count={3} /></div>
+                ) : (
+                  <>
+                    <Metric label={t("officerId")} value={assignmentsQuery.data?.officer_id ?? "n/a"} />
+                    <Metric label={t("station")} value={assignmentsQuery.data?.police_station ?? "n/a"} />
+                    <Metric label={t("assignedEvents")} value={String(assignmentsQuery.data?.assigned_events.length ?? 0)} />
+                  </>
+                )}
               </div>
               <label className="mt-5 block text-sm text-muted">
                 <span className="mb-2 block text-xs uppercase tracking-[0.18em] text-accentSoft">{t("eventId")}</span>
@@ -165,9 +172,15 @@ export default function OfficerPage() {
                 </div>
               ) : null}
               <div className="mt-5 grid gap-3 md:grid-cols-3">
-                <Metric label={t("priority")} value={detailQuery.data?.event.priority ?? "n/a"} />
-                <Metric label={t("corridor")} value={detailQuery.data?.event.corridor ?? "n/a"} />
-                <Metric label={t("impact")} value={detailQuery.data?.prediction?.impact_category ?? "n/a"} />
+                {detailQuery.isLoading ? (
+                  <div className="col-span-3 grid gap-3 md:grid-cols-3"><Skeleton.MetricGrid count={3} /></div>
+                ) : (
+                  <>
+                    <Metric label={t("priority")} value={detailQuery.data?.event.priority ?? "n/a"} />
+                    <Metric label={t("corridor")} value={detailQuery.data?.event.corridor ?? "n/a"} />
+                    <Metric label={t("impact")} value={detailQuery.data?.prediction?.impact_category ?? "n/a"} />
+                  </>
+                )}
               </div>
               {!authReady ? <p className="mt-4 text-sm text-muted">{t("restoringOfficer")}</p> : null}
               {authReady && !user ? (

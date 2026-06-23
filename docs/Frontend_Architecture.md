@@ -1,4 +1,4 @@
-﻿# EventFlow AI Frontend Architecture
+# EventFlow AI Frontend Architecture
 
 ## 1. Technology Stack
 
@@ -8,7 +8,6 @@
 | TypeScript | Type safety | Safer implementation handoff | Yes |
 | Tailwind CSS | Styling | Fast, consistent dashboard UI | Yes |
 | MapmyIndia/Mappls SDK | Primary map provider | Uses available 1000 INR credits for Bengaluru map, routing, and corridor visualization | Paid credits available |
-| MapLibre GL JS | OSM fallback rendering | Open-source fallback if MapmyIndia key/API/credit guard fails | Yes |
 | ECharts/Recharts | Charts | Operational dashboards | Yes |
 | Zustand | Client state | Simple map/filter/simulation state | Yes |
 | TanStack Query | Server state | API caching/retry/loading states | Yes |
@@ -288,7 +287,7 @@ All colors must have operational meaning.
 - Memoize map layer data.
 - Cache MapmyIndia route/geocode responses and avoid API calls on pan/zoom.
 - Use MapmyIndia route APIs only on explicit plan generation or route refresh.
-- Fall back to OSM/MapLibre and local NetworkX route polylines if MapmyIndia fails or credit guard is hit.
+- Show a clear Mappls unavailable state if MapmyIndia fails or the credit guard is hit.
 - Cache analytics API results through TanStack Query.
 - Lazy-load heavy map and chart components.
 - Keep dashboard initial load under 5 seconds.

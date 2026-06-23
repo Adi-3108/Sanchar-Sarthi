@@ -1,10 +1,10 @@
-﻿# PHASE 1 — Repository Scaffold And Environment
+# PHASE 1 — Repository Scaffold And Environment
 
 ## Phase Overview
 
 Create the monorepo, FastAPI backend, Next.js frontend, base config, and health endpoint.
 
-This phase is part of EventFlow AI, a predictive traffic command twin for Bengaluru event-driven congestion. The project uses ASTraM historical event data, FastAPI, Next.js, Supabase PostgreSQL free tier, explainable AI/rule-based planning, MapmyIndia/Mappls primary integration using available 1000 INR credits, OpenStreetMap fallback, and only free/open-source APIs or services.
+This phase is part of EventFlow AI, a predictive traffic command twin for Bengaluru event-driven congestion. The project uses ASTraM historical event data, FastAPI, Next.js, Supabase PostgreSQL free tier, explainable AI/rule-based planning, MapmyIndia/Mappls primary integration using available 1000 INR credits, Mappls-only map policy, and only free/open-source APIs or services.
 
 ---
 
@@ -105,9 +105,8 @@ class Settings(BaseSettings):
     environment: str = Field(default='local', pattern='^(local|test|production)$')
     database_url: str = Field(default='postgresql+psycopg://postgres:postgres@localhost:5432/eventflow')
     frontend_origin: str = 'http://localhost:3000'
-    map_provider: str = Field(default='mapmyindia', pattern='^(osm|mapmyindia)$')
+    map_provider: str = Field(default='mapmyindia', pattern='^mapmyindia$')
     map_primary_provider: str = 'mapmyindia'
-    map_fallback_provider: str = 'osm'
     mapmyindia_api_key: str | None = None
     mapmyindia_rest_key: str | None = None
     mapmyindia_credit_budget_inr: int = 1000
@@ -324,7 +323,6 @@ NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=eventflow-ai-demo.firebaseapp.com
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=eventflow-ai-demo
 MAP_PROVIDER=mapmyindia
 MAP_PRIMARY_PROVIDER=mapmyindia
-MAP_FALLBACK_PROVIDER=osm
 MAPMYINDIA_API_KEY=replace_with_key
 MAPMYINDIA_REST_KEY=replace_if_different
 MAPMYINDIA_CREDIT_BUDGET_INR=1000
@@ -332,7 +330,6 @@ MAPMYINDIA_DAILY_SOFT_LIMIT_INR=150
 MAPMYINDIA_ENABLE_ROUTING=true
 MAPMYINDIA_ENABLE_GEOCODING=true
 MAPMYINDIA_ENABLE_DISTANCE_MATRIX=false
-MAP_FALLBACK_ON_ERROR=true
 OPEN_METEO_ENABLED=true
 GOOGLE_TRANSLATE_ENABLED=false
 GOOGLE_TRANSLATE_PROVIDER=google
@@ -343,7 +340,6 @@ GOOGLE_TRANSLATE_FAIL_OPEN=true
 GOOGLE_CLOUD_PROJECT_ID=
 GOOGLE_APPLICATION_CREDENTIALS_JSON=
 NEXT_PUBLIC_MAP_PROVIDER=mapmyindia
-NEXT_PUBLIC_MAP_FALLBACK_PROVIDER=osm
 NEXT_PUBLIC_MAPMYINDIA_MAP_KEY=replace_with_browser_allowed_key
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ```
@@ -487,7 +483,7 @@ Every dependency is explicit in this file. No previous chat context is required.
 
 ## Technical Design Summary
 
-Build this phase as a modular, testable slice of EventFlow AI. Backend code owns data validation, persistence, AI/rule logic, and sensitive handling. Frontend code owns rendering, interaction, and API consumption. Database access is backend-only. MapmyIndia/Mappls is the primary MVP map provider using available 1000 INR credits; OSM/MapLibre fallback must remain functional through the provider adapter.
+Build this phase as a modular, testable slice of EventFlow AI. Backend code owns data validation, persistence, AI/rule logic, and sensitive handling. Frontend code owns rendering, interaction, and API consumption. Database access is backend-only. MapmyIndia/Mappls is the primary MVP map provider using available 1000 INR credits; MapmyIndia / Mappls must remain the only map provider through the provider adapter.
 
 ---
 
@@ -536,11 +532,3 @@ Phase is complete only if:
 - No mandatory paid API dependency is introduced. Optional Phase 19 Google Translate remains disabled by default.
 
 ---
-
-
-
-
-
-
-
-

@@ -56,7 +56,7 @@ def get_user_stats(
         return UserStatsResponse(incidents_reported=0, incidents_voted=0)
 
     incidents_reported = db.scalar(
-        select(func.count()).select_from(Incident).where(Incident.reported_by_user_id == user_uuid)
+        select(func.count()).select_from(Incident).where(Incident.created_by_user_id == user_uuid)
     ) or 0
 
     incidents_voted = db.scalar(

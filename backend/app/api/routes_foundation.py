@@ -535,23 +535,43 @@ def vote_incident(
     if user_id is None:
         return error_response(403, "USER_ACCOUNT_REQUIRED", "Voting requires a registered user account.")
     try:
-        db.add(IncidentVote(incident_id=incident.id, voter_user_id=user_id, vote_value=payload.vote_value))
-        apply_incident_vote(incident, payload.vote_value)
-        db.add(
-            SystemAuditLog(
-                actor_user_id=user_id,
-                actor_role=auth.role,
-                action="incident_vote",
-                resource_type="incidents",
-                resource_id=incident.id,
-                metadata_json={"vote_value": payload.vote_value},
+        existing_vote = db.scalar(select(IncidentVote).where(IncidentVote.incident_id == incident.id, IncidentVote.voter_user_id == user_id))
+        if existing_vote:
+            if existing_vote.vote_value == payload.vote_value:
+                return error_response(409, "DUPLICATE_VOTE", "Multiple votes not allowed. You have already cast this vote.")
+            
+            if existing_vote.vote_value == "true":
+                incident.true_vote_count = max(0, incident.true_vote_count - 1)
+            else:
+                incident.false_vote_count = max(0, incident.false_vote_count - 1)
+                
+            existing_vote.vote_value = payload.vote_value
+            apply_incident_vote(incident, payload.vote_value)
+            db.add(
+                SystemAuditLog(
+                    actor_user_id=user_id,
+                    actor_role=auth.role,
+                    action="incident_vote_change",
+                    resource_type="incidents",
+                    resource_id=incident.id,
+                    metadata_json={"new_vote_value": payload.vote_value},
+                )
             )
-        )
+        else:
+            db.add(IncidentVote(incident_id=incident.id, voter_user_id=user_id, vote_value=payload.vote_value))
+            apply_incident_vote(incident, payload.vote_value)
+            db.add(
+                SystemAuditLog(
+                    actor_user_id=user_id,
+                    actor_role=auth.role,
+                    action="incident_vote",
+                    resource_type="incidents",
+                    resource_id=incident.id,
+                    metadata_json={"vote_value": payload.vote_value},
+                )
+            )
         db.commit()
         db.refresh(incident)
-    except IntegrityError:
-        db.rollback()
-        return error_response(409, "DUPLICATE_VOTE", "Only one vote is allowed per user per incident.")
     except SQLAlchemyError:
         db.rollback()
         return error_response(503, "DATABASE_UNAVAILABLE", "Database is unavailable for voting.")

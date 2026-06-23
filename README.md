@@ -1,6 +1,6 @@
-# Sachar Sarthi
+# Sanchar Sarthi
 
-Sachar Sarthi is a role-aware traffic operations platform for Bengaluru event-driven congestion.
+Sanchar Sarthi is a role-aware traffic operations platform for Bengaluru event-driven congestion.
 It joins public reporting, internal triage, historical event memory, explainable prediction, operational planning, live escalation, and after-action learning inside one codebase.
 
 The current repository ships three connected software surfaces.
@@ -57,7 +57,7 @@ Report -> Verify -> Understand -> Predict -> Plan -> Monitor -> Learn
 
 ## Platform Summary
 
-Sachar Sarthi is split into two connected operating layers.
+Sanchar Sarthi is split into two connected operating layers.
 
 1. A foundation layer for public incident intake, verification, station mapping, and control-room handling.
 2. An event intelligence layer for historical memory, simulation, route-aware planning, officer guidance, live escalation, and learning after resolution.
@@ -1848,7 +1848,7 @@ For someone opening the codebase fresh, the shortest useful reading order is:
 
 ## Closing Notes
 
-Sachar Sarthi is strongest when read as a traffic-operations system rather than as a generic smart-city dashboard.
+Sanchar Sarthi is strongest when read as a traffic-operations system rather than as a generic smart-city dashboard.
 The current codebase already has a clear product shape.
 
 - Public users can raise signals.

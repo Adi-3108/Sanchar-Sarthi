@@ -57,7 +57,7 @@ export function LiveEscalationTimeline({ updates, className }: LiveEscalationTim
   if (updates.length === 0) {
     return (
       <section
-        className={`rounded-[28px] border border-dashed border-slate-700/80 bg-slate-950/60 p-6 text-sm text-slate-400 ${
+        className={`rounded-[28px] border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500 ${
           className ?? ""
         }`}
       >
@@ -68,16 +68,16 @@ export function LiveEscalationTimeline({ updates, className }: LiveEscalationTim
 
   return (
     <section
-      className={`rounded-[28px] border border-slate-800/80 bg-slate-950/85 p-6 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ${
+      className={`rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm ${
         className ?? ""
       }`}
     >
       <div className="flex flex-col gap-2">
         <div>
           <p className="text-[11px] uppercase tracking-[0.24em] text-fuchsia-300/80">Live Escalation Timeline</p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-100">Field updates and adaptive actions</h2>
+          <h2 className="mt-2 text-2xl font-semibold text-slate-900">Field updates and adaptive actions</h2>
         </div>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-slate-500">
           Dataset-backed escalation guidance that keeps the command plan adaptive.
         </p>
       </div>
@@ -88,17 +88,17 @@ export function LiveEscalationTimeline({ updates, className }: LiveEscalationTim
           return (
             <article
               key={update.id}
-              className="rounded-3xl border border-slate-800/80 bg-slate-900/75 p-4"
+              className="rounded-3xl border border-slate-200 bg-white p-4"
             >
               <div className="flex flex-col gap-4">
                 <div className="max-w-3xl">
                   <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">
                     {update.update_source.replaceAll("_", " ")}
                   </p>
-                  <h3 className="mt-2 text-lg font-semibold text-slate-100">
+                  <h3 className="mt-2 text-lg font-semibold text-slate-900">
                     {update.current_congestion_level} congestion update
                   </h3>
-                  <p className="mt-2 text-sm leading-7 text-slate-300">
+                  <p className="mt-2 text-sm leading-7 text-slate-600">
                     {update.field_update ?? "No additional free-text field update was recorded."}
                   </p>
                 </div>
@@ -110,7 +110,7 @@ export function LiveEscalationTimeline({ updates, className }: LiveEscalationTim
                   >
                     {update.alert_level ?? "Stable"}
                   </span>
-                  <span className="rounded-full border border-slate-700/80 bg-slate-950/80 px-3 py-1 text-xs uppercase tracking-[0.18em] text-slate-300">
+                  <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs uppercase tracking-[0.18em] text-slate-600">
                     {formatTimestamp(update.created_at)}
                   </span>
                 </div>
@@ -121,7 +121,7 @@ export function LiveEscalationTimeline({ updates, className }: LiveEscalationTim
                   {signals.map((signal) => (
                     <span
                       key={`${update.id}-${signal}`}
-                      className="rounded-full border border-slate-700/80 bg-slate-950/80 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-slate-300"
+                      className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-slate-600"
                     >
                       {signal}
                     </span>
@@ -129,25 +129,25 @@ export function LiveEscalationTimeline({ updates, className }: LiveEscalationTim
                 </div>
               ) : null}
 
-              <dl className="mt-4 grid gap-3 text-xs text-slate-300 grid-cols-3">
-                <div className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-3">
+              <dl className="mt-4 grid gap-3 text-xs text-slate-600 grid-cols-3">
+                <div className="rounded-2xl border border-slate-200 bg-white p-3">
                   <dt className="text-slate-500">Exp.</dt>
-                  <dd className="mt-2 text-sm font-semibold text-slate-100">{update.expected_impact_score}</dd>
+                  <dd className="mt-2 text-sm font-semibold text-slate-900">{update.expected_impact_score}</dd>
                 </div>
-                <div className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-3">
+                <div className="rounded-2xl border border-slate-200 bg-white p-3">
                   <dt className="text-slate-500">Cur.</dt>
-                  <dd className="mt-2 text-sm font-semibold text-slate-100">{update.current_impact_score}</dd>
+                  <dd className="mt-2 text-sm font-semibold text-slate-900">{update.current_impact_score}</dd>
                 </div>
-                <div className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-3">
+                <div className="rounded-2xl border border-slate-200 bg-white p-3">
                   <dt className="text-slate-500">Dev.</dt>
-                  <dd className="mt-2 text-sm font-semibold text-slate-100">
+                  <dd className="mt-2 text-sm font-semibold text-slate-900">
                     {update.impact_deviation >= 0 ? "+" : ""}
                     {update.impact_deviation}
                   </dd>
                 </div>
-                <div className="col-span-3 rounded-2xl border border-slate-800/80 bg-slate-950/70 p-3">
+                <div className="col-span-3 rounded-2xl border border-slate-200 bg-white p-3">
                   <dt className="text-slate-500">Recommended action</dt>
-                  <dd className="mt-2 text-sm font-semibold text-slate-100">
+                  <dd className="mt-2 text-sm font-semibold text-slate-900">
                     {update.adaptive_action ?? "Monitor situation"}
                   </dd>
                 </div>

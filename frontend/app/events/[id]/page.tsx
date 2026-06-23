@@ -33,6 +33,8 @@ import { useFirebaseAuthState } from "@/lib/auth";
 import { useCommandStore } from "@/lib/stores/useCommandStore";
 import { useLanguage } from "@/components/LanguageContext";
 import { t } from "@/lib/i18n";
+import { handleError } from "@/lib/errorHandler";
+import { toast } from "sonner";
 
 type EventDetailPageProps = {
   params: {
@@ -123,6 +125,7 @@ export default function EventDetailPage({ params: { id: eventIdParam } }: EventD
   const planMutation = useMutation<RecommendationPlanResponse, unknown, EventPlanRequest>({
     mutationFn: (payload) => generateEventPlan(payload),
     onSuccess: async (plan) => {
+      toast.success("Event plan generated successfully.");
       queryClient.setQueryData<EventDetailResponse | undefined>(["event-detail", eventId], (current) =>
         current
           ? {
@@ -132,13 +135,16 @@ export default function EventDetailPage({ params: { id: eventIdParam } }: EventD
           : current
       );
       await queryClient.invalidateQueries({ queryKey: ["event-detail", eventId] });
-    }
+    },
+    onError: (error) => handleError(error, "Failed to generate event plan.")
   });
   const liveUpdateMutation = useMutation<LiveUpdateResponse, unknown, LiveUpdateRequest>({
     mutationFn: (payload) => submitLiveUpdate(eventId, payload),
-    onSuccess: async () => {
+    onSuccess: async (data) => {
+      toast.success(`Live update submitted. New score: ${data.current_impact_score.toFixed(1)}`);
       await queryClient.invalidateQueries({ queryKey: ["event-detail", eventId] });
-    }
+    },
+    onError: (error) => handleError(error, "Failed to submit live update.")
   });
 
   function handlePlanSubmit(event: FormEvent<HTMLFormElement>) {
@@ -190,7 +196,7 @@ export default function EventDetailPage({ params: { id: eventIdParam } }: EventD
             <AuthPanel
               preferredRole="control_room"
               title="Protected dossier sign-in"
-              note="This dossier loads only for internal Level 1 users or officers assigned to the event, corridor, station, or zone."
+              note="This dossier loads only for internal Admins or officers assigned to the event, corridor, station, or zone."
             />
 
             {detail ? (
@@ -256,7 +262,7 @@ export default function EventDetailPage({ params: { id: eventIdParam } }: EventD
             {authReady && !user ? <p className="text-sm text-muted">Sign in to load this protected event dossier.</p> : null}
             {detailQuery.isError ? (
               <section className="rounded-[24px] border border-danger/30 bg-danger/10 p-5 text-sm leading-7 text-danger shadow-panel">
-                Event detail requires an authenticated Level 1 or assigned Level 2 Firebase session. The event ID route is wired,
+                Event detail requires an authenticated Admin or assigned Police Officer access. The event ID route is wired,
                 but backend authorization remains mandatory.
               </section>
             ) : null}
@@ -339,9 +345,6 @@ export default function EventDetailPage({ params: { id: eventIdParam } }: EventD
                   ) : (
                     <p className="mt-5 text-sm leading-7 text-muted">No recommendation is attached yet.</p>
                   )}
-                  {planMutation.isError ? (
-                    <p className="mt-4 text-sm text-danger">Plan generation needs internal access for this event.</p>
-                  ) : null}
                 </article>
 
                 <form onSubmit={handleLiveUpdate} className="rounded-[24px] border border-line/70 bg-panel/85 p-5 shadow-panel">
@@ -362,14 +365,6 @@ export default function EventDetailPage({ params: { id: eventIdParam } }: EventD
                   >
                     {liveUpdateMutation.isPending ? "Submitting" : "Submit live update"}
                   </button>
-                  {liveUpdateMutation.data ? (
-                    <p className="mt-4 text-sm leading-7 text-ok">
-                      Accepted with current score {liveUpdateMutation.data.current_impact_score.toFixed(1)}.
-                    </p>
-                  ) : null}
-                  {liveUpdateMutation.isError ? (
-                    <p className="mt-4 text-sm text-danger">Live update was not accepted for this session.</p>
-                  ) : null}
                 </form>
 
                 <LiveEscalationTimeline updates={detail.live_updates} />

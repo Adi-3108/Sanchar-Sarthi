@@ -27,7 +27,7 @@ export function SimilarEventMemoryPanel({
   if (similarEvents.length === 0) {
     return (
       <section
-        className={`rounded-[28px] border border-dashed border-slate-700/80 bg-slate-950/60 p-6 text-sm text-slate-400 ${
+        className={`rounded-[28px] border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500 ${
           className ?? ""
         }`}
       >
@@ -38,7 +38,7 @@ export function SimilarEventMemoryPanel({
 
   return (
     <section
-      className={`rounded-[28px] border border-slate-800/80 bg-slate-950/85 p-6 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ${
+      className={`rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm ${
         className ?? ""
       }`}
     >
@@ -47,9 +47,9 @@ export function SimilarEventMemoryPanel({
           <p className="text-[11px] uppercase tracking-[0.24em] text-amber-300/80">
             Similar Event Memory
           </p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-100">Historical operational matches</h2>
+          <h2 className="mt-2 text-2xl font-semibold text-slate-900">Historical operational matches</h2>
         </div>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-slate-500">
           Ranked by structured-field alignment and operational fingerprint similarity.
         </p>
       </div>
@@ -58,13 +58,13 @@ export function SimilarEventMemoryPanel({
         {similarEvents.map((match) => (
           <article
             key={match.event_id}
-            className="rounded-3xl border border-slate-800/80 bg-slate-900/75 p-4"
+            className="rounded-3xl border border-slate-200 bg-white p-4"
           >
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Historical event</p>
-                <h3 className="mt-2 text-lg font-semibold text-slate-100">{match.event_id}</h3>
-                <p className="mt-2 text-sm leading-7 text-slate-300">
+                <h3 className="mt-2 text-lg font-semibold text-slate-900">{match.event_id}</h3>
+                <p className="mt-2 text-sm leading-7 text-slate-600">
                   {(match.event_cause_clean ?? "unknown cause").replaceAll("_", " ")} in{" "}
                   {match.corridor ?? "unknown corridor"} near {match.police_station ?? "unknown station"}.
                 </p>
@@ -82,36 +82,36 @@ export function SimilarEventMemoryPanel({
               {match.matched_signals.map((signal) => (
                 <span
                   key={`${match.event_id}-${signal}`}
-                  className="rounded-full border border-slate-700/80 bg-slate-950/80 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-slate-300"
+                  className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-slate-600"
                 >
                   {signal}
                 </span>
               ))}
             </div>
 
-            <dl className="mt-4 grid gap-3 text-xs text-slate-300 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-3">
+            <dl className="mt-4 grid gap-3 text-xs text-slate-600 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-2xl border border-slate-200 bg-white p-3">
                 <dt className="text-slate-500">Priority</dt>
-                <dd className="mt-2 text-sm font-semibold text-slate-100">{match.priority ?? "unknown"}</dd>
+                <dd className="mt-2 text-sm font-semibold text-slate-900">{match.priority ?? "unknown"}</dd>
               </div>
-              <div className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-3">
+              <div className="rounded-2xl border border-slate-200 bg-white p-3">
                 <dt className="text-slate-500">Road closure</dt>
-                <dd className="mt-2 text-sm font-semibold text-slate-100">
+                <dd className="mt-2 text-sm font-semibold text-slate-900">
                   {match.requires_road_closure ? "Required" : "Not required"}
                 </dd>
               </div>
-              <div className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-3">
+              <div className="rounded-2xl border border-slate-200 bg-white p-3">
                 <dt className="text-slate-500">Corridor closure rate</dt>
-                <dd className="mt-2 text-sm font-semibold text-slate-100">
+                <dd className="mt-2 text-sm font-semibold text-slate-900">
                   {match.historical_corridor_closure_rate !== null &&
                   match.historical_corridor_closure_rate !== undefined
                     ? `${Math.round(match.historical_corridor_closure_rate * 100)}%`
                     : "n/a"}
                 </dd>
               </div>
-              <div className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-3">
+              <div className="rounded-2xl border border-slate-200 bg-white p-3">
                 <dt className="text-slate-500">Cluster closure rate</dt>
-                <dd className="mt-2 text-sm font-semibold text-slate-100">
+                <dd className="mt-2 text-sm font-semibold text-slate-900">
                   {match.historical_cluster_closure_rate !== null &&
                   match.historical_cluster_closure_rate !== undefined
                     ? `${Math.round(match.historical_cluster_closure_rate * 100)}%`

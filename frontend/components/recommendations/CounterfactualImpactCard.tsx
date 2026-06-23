@@ -17,7 +17,7 @@ function formatNumber(value: number | null | undefined, digits = 2): string {
 
 function deltaTone(delta: number | null | undefined): string {
   if (delta === null || delta === undefined) {
-    return "text-slate-200";
+    return "text-slate-700";
   }
   if (delta >= 25) {
     return "text-red-200";
@@ -25,7 +25,7 @@ function deltaTone(delta: number | null | undefined): string {
   if (delta >= 10) {
     return "text-amber-200";
   }
-  return "text-emerald-200";
+  return "text-emerald-700";
 }
 
 export function CounterfactualImpactCard({
@@ -38,7 +38,7 @@ export function CounterfactualImpactCard({
   if (baselineRiskScore === null || baselineRiskScore === undefined) {
     return (
       <section
-        className={`rounded-[28px] border border-dashed border-slate-700/80 bg-slate-950/60 p-6 text-sm text-slate-400 ${
+        className={`rounded-[28px] border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500 ${
           className ?? ""
         }`}
       >
@@ -49,14 +49,14 @@ export function CounterfactualImpactCard({
 
   return (
     <section
-      className={`flex flex-col h-full rounded-[28px] border border-slate-800/80 bg-slate-950/85 p-6 shadow-[0_18px_40px_rgba(2,6,23,0.35)] ${
+      className={`flex flex-col h-full rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm ${
         className ?? ""
       }`}
     >
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-300/80">Counterfactual</p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-100">Baseline vs event-adjusted impact</h2>
+          <p className="text-[11px] uppercase tracking-[0.24em] text-blue-600">Counterfactual</p>
+          <h2 className="mt-2 text-2xl font-semibold text-slate-900">Baseline vs event-adjusted impact</h2>
         </div>
         <p className={`text-3xl font-semibold ${deltaTone(additionalEventDelta)}`}>
           +{formatNumber(additionalEventDelta)}
@@ -70,9 +70,9 @@ export function CounterfactualImpactCard({
       </div>
 
       <div className="mt-auto pt-6">
-        <div className="rounded-3xl border border-slate-800/70 bg-slate-900/70 p-4">
+        <div className="rounded-3xl border border-slate-200 bg-white p-4">
           <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Honesty note</p>
-        <p className="mt-2 text-sm leading-7 text-slate-300">
+        <p className="mt-2 text-sm leading-7 text-slate-600">
           {honestyNote ?? "Delta is a relative operational estimate, not measured vehicle delay."}
         </p>
         </div>
@@ -83,9 +83,9 @@ export function CounterfactualImpactCard({
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <article className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-4">
+    <article className="rounded-2xl border border-slate-200 bg-white p-4">
       <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-2 text-2xl font-semibold text-slate-100">{value}</p>
+      <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
     </article>
   );
 }

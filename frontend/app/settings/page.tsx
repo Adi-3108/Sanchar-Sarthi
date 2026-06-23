@@ -16,18 +16,12 @@ import {
   type DemoSeedResponse,
   type DemoStatusResponse,
 } from "@/lib/api";
+import { handleError, errorText as getErrorText } from "@/lib/errorHandler";
 import { useFirebaseAuthState } from "@/lib/auth";
 import { useCommandStore } from "@/lib/stores/useCommandStore";
+import { toast } from "sonner";
 
-function errorText(error: unknown): string {
-  if (error instanceof ApiError) {
-    return error.body;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "Action failed.";
-}
+
 
 function statusLabel(status: string | undefined): string {
   return status === "ready" ? "Judge demo ready" : "Needs seeding or verification";
@@ -70,9 +64,13 @@ export default function SettingsPage() {
 
   const seedMutation = useMutation<DemoSeedResponse, unknown>({
     mutationFn: () => seedDemoScenarios(),
-    onSuccess: async () => {
+    onSuccess: async (data) => {
+      toast.success(data.message || "Demo seeded successfully.");
       await queryClient.invalidateQueries({ queryKey: ["demo-status"] });
     },
+    onError: (error) => {
+      handleError(error, "Failed to refresh demo seed.");
+    }
   });
 
   const canRunProtectedActions = authReady && Boolean(user);
@@ -118,7 +116,7 @@ export default function SettingsPage() {
           <AuthPanel
             preferredRole="admin"
             title="Protected controls"
-            note="Sign in with a Level 1 Firebase account to refresh the deterministic demo data through the backend."
+            note="Sign in with an Admin account to refresh the deterministic demo data through the backend."
           />
 
           <div className="grid gap-5">
@@ -141,9 +139,6 @@ export default function SettingsPage() {
                 The seed refresh only updates fixed `DEMO_` records, keeps non-demo data untouched,
                 and rebuilds the full stack needed for the demo walkthrough.
               </p>
-              {seedMutation.isError ? (
-                <p className="mt-3 text-sm leading-7 text-danger">{errorText(seedMutation.error)}</p>
-              ) : null}
               {!canRunProtectedActions ? (
                 <p className="mt-3 text-sm leading-7 text-muted">
                   Sign in before running the protected demo seed action.
@@ -188,7 +183,7 @@ export default function SettingsPage() {
                   {demoStatusQuery.isLoading
                     ? "Loading readiness checks..."
                     : demoStatusQuery.isError
-                    ? errorText(demoStatusQuery.error)
+                    ? getErrorText(demoStatusQuery.error)
                     : "No demo readiness checks are available yet."}
                 </p>
               )}
@@ -236,18 +231,6 @@ export default function SettingsPage() {
             />
           ))}
         </section>
-
-        <section className="rounded-[24px] border border-line/70 bg-panel/85 p-6 shadow-panel">
-          <p className="text-xs uppercase tracking-[0.24em] text-accentSoft">Operational notes</p>
-          <h2 className="mt-2 text-2xl font-semibold">What the seed does and does not do</h2>
-          <div className="mt-5 grid gap-4 md:grid-cols-3">
-            {(demoStatusQuery.data?.notes ?? []).map((note) => (
-              <div key={note} className="rounded-2xl border border-line/70 bg-bg/60 p-4 text-sm leading-7 text-muted">
-                {note}
-              </div>
-            ))}
-          </div>
-        </section>
       </div>
     </main>
   );
@@ -274,8 +257,8 @@ function ReadinessRow({ check }: { check: DemoCheckResponse }) {
         <span
           className={
             check.ready
-              ? "rounded-full border border-emerald-300/40 bg-emerald-300/10 px-3 py-1 text-xs uppercase tracking-[0.18em] text-emerald-200"
-              : "rounded-full border border-amber-300/40 bg-amber-300/10 px-3 py-1 text-xs uppercase tracking-[0.18em] text-amber-200"
+              ? "rounded-full border border-emerald-500 bg-emerald-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-emerald-800"
+              : "rounded-full border border-amber-500 bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-amber-800"
           }
         >
           {check.ready ? "Ready" : "Check"}

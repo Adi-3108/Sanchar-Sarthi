@@ -67,6 +67,10 @@ export function TopNav() {
   const [mounted, setMounted] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
+  // During SSR and hydration, always use "public_citizen" to prevent hydration mismatch.
+  // Once mounted, use the actual session access level.
+  const currentRole = mounted ? session.accessLevel : "public_citizen";
+
   const statsQuery = useQuery({
     queryKey: ["user-stats"],
     queryFn: getUserStats,
@@ -87,10 +91,6 @@ export function TopNav() {
       return () => clearTimeout(timer);
     }
   }, [session.showLoginSuccess, session]);
-
-  // During SSR and hydration, always use "public_citizen" to prevent hydration mismatch.
-  // Once mounted, use the actual session access level.
-  const currentRole = mounted ? session.accessLevel : "public_citizen";
 
   async function handleLogout() {
     await logoutFirebase();

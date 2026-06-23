@@ -43,15 +43,16 @@ Report -> Verify -> Understand -> Predict -> Plan -> Monitor -> Learn
 19. [Live Escalation Loop](#live-escalation-loop)
 20. [Multi-Event Coordination](#multi-event-coordination)
 21. [Post-Event Learning](#post-event-learning)
-22. [Map And Spatial Intelligence](#map-and-spatial-intelligence)
-23. [Translation And Multilingual Flow](#translation-and-multilingual-flow)
-24. [Authentication And Authorization](#authentication-and-authorization)
-25. [Model Artifacts And Training Scripts](#model-artifacts-and-training-scripts)
-26. [Android App Module](#android-app-module)
-27. [Testing And Verification Coverage](#testing-and-verification-coverage)
-28. [Local Runbook](#local-runbook)
-29. [Repository Structure](#repository-structure)
-30. [Closing Notes](#closing-notes)
+22. [RAG And AI Assistant Architecture](#rag-and-ai-assistant-architecture)
+23. [Map And Spatial Intelligence](#map-and-spatial-intelligence)
+24. [Translation And Multilingual Flow](#translation-and-multilingual-flow)
+25. [Authentication And Authorization](#authentication-and-authorization)
+26. [Model Artifacts And Training Scripts](#model-artifacts-and-training-scripts)
+27. [Android App Module](#android-app-module)
+28. [Testing And Verification Coverage](#testing-and-verification-coverage)
+29. [Local Runbook](#local-runbook)
+30. [Repository Structure](#repository-structure)
+31. [Closing Notes](#closing-notes)
 
 ---
 
@@ -165,115 +166,15 @@ A user with a valid Firebase session still fails protected route checks unless t
 
 ## System Architecture
 
+![System Architecture](./FlowDiagrams%20%26%20Architecture/SystemArchitecture.jpeg)
+
 ### High-Level Context
 
-```mermaid
-flowchart LR
-    Citizen[Citizen or Public User]
-    ControlRoom[Control Room]
-    Officer[Police Officer]
-    Admin[Administrator]
-
-    Web[Web App]
-    Android[Android App]
-    API[API / Backend]
-
-    Citizen --> Web
-    Citizen --> Android
-
-    ControlRoom --> Web
-    ControlRoom --> Android
-
-    Officer --> Web
-    Officer --> Android
-
-    Admin --> Web
-    Admin --> Android
-
-    Web --> API
-    Android --> API
-
-    API --> Auth[Firebase Auth]
-    API --> DB[(PostgreSQL or SQLite)]
-    API --> CSV[ASTraM Historical CSV]
-    API --> Maps[MapmyIndia Provider]
-    API --> Fallback[Fallback Spatial Shell]
-    API --> Weather[Weather Service]
-    API --> Translate[Translation Service]
-    API --> Models[Prediction Artifacts]
-```
+````
 
 ### Runtime Layering
 
-```mermaid
-flowchart TB
-    subgraph Presentation
-        A1[Next.js Pages]
-        A2[React Query Client]
-        A3[Android Compose Screens]
-    end
-
-    subgraph API Layer
-        B1[Foundation Routes]
-        B2[Event Routes]
-        B3[Map Routes]
-        B4[Officer Routes]
-        B5[Admin Routes]
-        B6[Analytics And Health Routes]
-    end
-
-    subgraph Domain Services
-        C1[Incident Service]
-        C2[Feature Engineering]
-        C3[Event DNA]
-        C4[Prediction Service]
-        C5[Recommendation Orchestrator]
-        C6[Live Escalation]
-        C7[Post Event Report]
-        C8[Map Route Service]
-        C9[Translation Service]
-    end
-
-    subgraph Persistence
-        D1[SQLAlchemy ORM]
-        D2[Local Or Postgres Database]
-        D3[Model Run History]
-        D4[Audit Logs]
-    end
-
-    A1 --> B1
-    A1 --> B2
-    A1 --> B3
-    A1 --> B4
-    A1 --> B5
-    A1 --> B6
-    A3 --> B1
-    A3 --> B2
-    A3 --> B3
-
-    B1 --> C1
-    B2 --> C2
-    B2 --> C3
-    B2 --> C4
-    B2 --> C5
-    B2 --> C6
-    B2 --> C7
-    B3 --> C8
-    B1 --> C9
-    B2 --> C9
-
-    C1 --> D1
-    C2 --> D1
-    C3 --> D1
-    C4 --> D1
-    C5 --> D1
-    C6 --> D1
-    C7 --> D1
-    C8 --> D1
-    D1 --> D2
-    D1 --> D3
-    D1 --> D4
-```
+````
 
 ### Core Design Characteristics
 
@@ -289,30 +190,9 @@ The present codebase is built around five consistent design choices.
 
 ## End-To-End Operating Loop
 
-```mermaid
-flowchart LR
-    R1[Public Report or Official Intake]
-    R2[Foundation Verification]
-    R3[Event Storage]
-    R4[Feature Engineering]
-    R5[Event DNA]
-    R6[Prediction]
-    R7[Recommendation]
-    R8[Officer Monitoring]
-    R9[Multi Event Review]
-    R10[Post Event Report]
+![End-To-End Operating Loop](./FlowDiagrams%20%26%20Architecture/End-To-End%20Operating%20Loop.png)
 
-    R1 --> R2
-    R2 --> R3
-    R3 --> R4
-    R4 --> R5
-    R5 --> R6
-    R6 --> R7
-    R7 --> R8
-    R8 --> R9
-    R8 --> R10
-    R9 --> R10
-```
+````
 
 The loop is not just conceptual.
 Each stage is mapped to concrete backend routes, service modules, stored tables, and corresponding pages in the web client.
@@ -391,37 +271,7 @@ The web app is intentionally split across dedicated screens instead of forcing e
 
 ### Product Surface Map
 
-```mermaid
-flowchart TB
-    Home[Home and User Shell]
-    Reports[Public Reports]
-    Control[Control Room]
-    Command[Command Center]
-    Explore[Explorer]
-    Sim[Simulation]
-    Map[Map Intelligence]
-    Event[Event Dossier]
-    Officer[Officer Portal]
-    Learning[Post Event Learning]
-    Admin[Admin Console]
-    Settings[Demo Readiness]
-    Insights[Model Insights]
-
-    Home --> Reports
-    Home --> Control
-    Command --> Insights
-    Command --> Sim
-    Command --> Map
-    Command --> Learning
-    Explore --> Event
-    Sim --> Event
-    Map --> Event
-    Officer --> Event
-    Officer --> Map
-    Learning --> Event
-    Admin --> Settings
-    Admin --> Insights
-```
+````
 ---
 
 ## Backend Architecture
@@ -472,26 +322,9 @@ The app includes the following route groups at startup.
 
 ### Backend Request Path
 
-```mermaid
-sequenceDiagram
-    participant UI as Web or Android Client
-    participant API as FastAPI Route
-    participant Auth as Auth Context Loader
-    participant Service as Domain Service
-    participant ORM as SQLAlchemy ORM
-    participant DB as Database
+![Backend Request Path](./FlowDiagrams%20%26%20Architecture/Backend%20Request%20Path.png)
 
-    UI->>API: HTTP request
-    API->>Auth: Resolve Firebase identity and backend role
-    Auth-->>API: Auth context with role and assignment scope
-    API->>Service: Call domain logic
-    Service->>ORM: Load or persist models
-    ORM->>DB: SQL operations
-    DB-->>ORM: rows
-    ORM-->>Service: mapped objects
-    Service-->>API: response payload
-    API-->>UI: JSON response
-```
+````
 
 ---
 
@@ -618,23 +451,7 @@ The route files stay fairly thin and the service modules own the operational log
 
 ### Service Interaction Diagram
 
-```mermaid
-flowchart TD
-    A[Stored Event] --> B[Feature Engineering]
-    B --> C[Event DNA]
-    B --> D[Prediction Service]
-    C --> D
-    D --> E[Recommendation Orchestrator]
-    E --> F[Live Escalation Service]
-    F --> G[Post Event Report Service]
-    B --> H[Hotspot Service]
-    D --> I[Multi Event Service]
-    A --> J[Similar Event Service]
-    J --> C
-    K[Weather Service] --> D
-    K --> E
-    L[Map Route Service] --> E
-```
+````
 
 ---
 
@@ -690,15 +507,7 @@ It also:
 
 ### Raw To Stored Flow
 
-```mermaid
-flowchart LR
-    CSV[ASTraM CSV] --> Clean[Data Cleaning Service]
-    Clean --> Parse[Type Parsing and Validation]
-    Parse --> Normalize[Text and Cause Normalization]
-    Normalize --> Mask[Mask Sensitive Vehicle Fields]
-    Mask --> Upsert[Upsert Event ORM Rows]
-    Upsert --> EventTable[(events)]
-```
+````
 
 ### Data Families Used By The System
 
@@ -722,32 +531,7 @@ It stores the event, its engineered features, its narrative fingerprint, its pre
 
 ### Entity Relationship View
 
-```mermaid
-erDiagram
-    FOUNDATION_USER ||--o{ INCIDENT : reports_or_manages
-    FOUNDATION_STATION ||--o{ INCIDENT : receives
-    INCIDENT ||--o| INCIDENT_PREDICTION : latest_prediction
-    INCIDENT ||--o{ INCIDENT_VOTE : receives
-
-    ACTOR ||--o{ CITIZEN_REPORT : submits
-    ACTOR ||--o{ LIVE_EVENT_UPDATE : submits
-    ACTOR ||--o{ SYSTEM_AUDIT_LOG : triggers
-
-    POLICE_OFFICER_PROFILE ||--o{ OFFICER_EVENT_ASSIGNMENT : has
-    EVENT ||--o{ OFFICER_EVENT_ASSIGNMENT : mapped_to
-
-    EVENT ||--o| EVENT_FEATURE : has
-    EVENT ||--o| EVENT_DNA : has
-    EVENT ||--o| EVENT_PREDICTION : has
-    EVENT ||--o| EVENT_RECOMMENDATION : has
-    EVENT ||--o{ CITIZEN_REPORT : receives
-    EVENT ||--o{ LIVE_EVENT_UPDATE : receives
-    EVENT ||--o{ POST_EVENT_REPORT : produces
-
-    HOTSPOT_CLUSTER ||--o{ EVENT : contextualizes
-    MODEL_RUN ||--o{ SYSTEM_AUDIT_LOG : referenced_by_operations
-    MAP_API_USAGE_LOG }o--|| EVENT : may_reference
-```
+````
 
 ### Main Persistence Groups
 
@@ -826,26 +610,7 @@ The service logic prevents invalid transitions and supports automatic promotion 
 
 ### Foundation Flow
 
-```mermaid
-sequenceDiagram
-    participant Public as Public User
-    participant UI as Foundation Shell
-    participant API as Foundation Route
-    participant Service as Incident Service
-    participant DB as Database
-    participant Station as Station Mapping
-
-    Public->>UI: submit incident
-    UI->>API: POST /api/foundation/incidents/report
-    API->>Service: validate and persist
-    Service->>Station: attach station context
-    Service->>DB: store incident
-    DB-->>Service: incident row
-    Service-->>API: incident response
-    API-->>UI: visible in reported queue
-
-    Note over UI,API: control-room users can later activate, reject, or resolve it
-```
+````
 
 ### Foundation Frontend Responsibilities
 
@@ -884,26 +649,7 @@ It is a stitched view of:
 
 ### Event Dossier Assembly
 
-```mermaid
-flowchart LR
-    Event[(events)] --> Features[(event_features)]
-    Event --> DNA[(event_dna)]
-    Event --> Pred[(event_predictions)]
-    Event --> Rec[(event_recommendations)]
-    Event --> Reports[(citizen_reports)]
-    Event --> Live[(live_event_updates)]
-    Event --> Learn[(post_event_reports)]
-    Event --> Similar[Similar Event Retrieval]
-
-    Features --> Dossier[Protected Event Dossier]
-    DNA --> Dossier
-    Pred --> Dossier
-    Rec --> Dossier
-    Reports --> Dossier
-    Live --> Dossier
-    Learn --> Dossier
-    Similar --> Dossier
-```
+````
 
 ### Intelligence Records Around An Event
 
@@ -951,19 +697,7 @@ The dossier UI and the stored `event_dna` model are built around the following f
 
 ### Event DNA Generation Flow
 
-```mermaid
-flowchart TD
-    A[Event Record] --> B[Feature Bundle]
-    A --> C[Normalized Description]
-    A --> D[Location Cluster Builder]
-    B --> E[Historical Pattern Builder]
-    C --> F[Cause Context Builder]
-    D --> G[Location Context Builder]
-    E --> H[DNA Summary Composer]
-    F --> H
-    G --> H
-    H --> I[(event_dna)]
-```
+````
 
 Event DNA is one of the reasons the dossier page feels operational rather than purely statistical.
 It gives internal users a way to read the event as a recognizable pattern.
@@ -1031,28 +765,7 @@ These fields are persisted in `event_features`, not just rebuilt on page load.
 
 ### Simulation Flow
 
-```mermaid
-sequenceDiagram
-    participant User as Internal User
-    participant UI as Simulation Page
-    participant API as /api/events/simulate
-    participant FE as Feature Builder
-    participant DNA as Event DNA Service
-    participant Pred as Prediction Service
-    participant Rec as Recommendation Orchestrator
-
-    User->>UI: enter scenario fields
-    UI->>API: submit simulation request
-    API->>FE: derive transient features
-    FE-->>API: feature payload
-    API->>DNA: build transient DNA
-    DNA-->>API: narrative fingerprint
-    API->>Pred: compute prediction package
-    Pred-->>API: impact, closure, clearance, explanation
-    API->>Rec: compute plan
-    Rec-->>API: manpower, barricades, diversion, corridor, logistics
-    API-->>UI: full simulation response
-```
+````
 
 ### Priority Model
 
@@ -1109,25 +822,7 @@ The recommendation layer translates prediction into an operational plan that a h
 
 ### Recommendation Orchestration Flow
 
-```mermaid
-flowchart LR
-    P[Prediction Output] --> O[Recommendation Orchestrator]
-    W[Weather Service] --> O
-    M[Map Route Context] --> O
-    H[Hotspot Memory] --> O
-
-    O --> MP[Manpower Service]
-    O --> BP[Barricade Service]
-    O --> DP[Diversion Service]
-    O --> EC[Emergency Corridor Service]
-    O --> LI[Logistics Impact Service]
-
-    MP --> R[(event_recommendations)]
-    BP --> R
-    DP --> R
-    EC --> R
-    LI --> R
-```
+````
 
 ### What The Plan Looks Like In The UI
 
@@ -1182,27 +877,7 @@ A protected live update can include:
 
 ### Live Escalation Flow
 
-```mermaid
-sequenceDiagram
-    participant Officer as Assigned Officer
-    participant Portal as Officer Portal
-    participant API as Live Update Route
-    participant Access as Officer Access Guard
-    participant Live as Live Escalation Service
-    participant DB as Database
-    participant Dossier as Event Dossier
-
-    Officer->>Portal: submit field update
-    Portal->>API: POST live update
-    API->>Access: verify officer assignment scope
-    Access-->>API: allow or deny
-    API->>Live: compute adaptive update
-    Live->>DB: store live_event_update
-    DB-->>Live: persisted update
-    Live-->>API: current impact and action response
-    API-->>Portal: updated alert and score
-    Dossier->>DB: load live updates in event timeline
-```
+````
 
 ### Why This Matters
 
@@ -1230,29 +905,7 @@ The multi-event analyzer currently considers signals such as:
 
 ### Multi-Event Analysis Flow
 
-```mermaid
-flowchart TD
-    A[Event A]
-    B[Event B]
-    C[Event C]
-
-    A --> S[Multi Event Service]
-    B --> S
-    C --> S
-
-    S --> T[Time Overlap Check]
-    S --> U[Distance and Radius Overlap]
-    S --> V[Shared Corridor and Station Check]
-    S --> W[Recommendation and Officer Demand Review]
-
-    T --> X[Conflict Score]
-    U --> X
-    V --> X
-    W --> X
-
-    X --> Y[Coordination Plan]
-    X --> Z[Conflict GeoJSON Overlay]
-```
+````
 
 ### Output Shape
 
@@ -1294,29 +947,28 @@ The backend can generate a report after an event is resolved, using the stored e
 
 ### Post-Event Learning Flow
 
-```mermaid
-sequenceDiagram
-    participant User as Internal User
-    participant UI as Post Event Learning Screen
-    participant API as /api/events/{id}/post-event-report
-    participant Learn as Post Event Report Service
-    participant DB as Database
-
-    User->>UI: request report for resolved event
-    UI->>API: generate report
-    API->>Learn: gather event, prediction, recommendation, reports, live updates
-    Learn->>DB: read event history
-    DB-->>Learn: records
-    Learn->>DB: store post_event_report
-    Learn-->>API: report payload
-    API-->>UI: rendered after-action view
-```
+````
 
 ### Why It Matters
 
 The learning layer closes the traffic-operations loop in the product.
 A system that only predicts and recommends can still be useful.
 A system that also records how well those recommendations held up becomes reusable over time.
+---
+
+## RAG And AI Assistant Architecture
+
+The platform includes a fully integrated Hybrid Retrieval-Augmented Generation (RAG) system, powering the contextual AI Chatbot available on both public and admin interfaces. 
+
+### RAG Components In The Codebase
+1. **`rag_indexer_service.py`**: Converts database models (events, citizen reports, recommendations) into raw text chunks, assigns role-based visibility, and stores them in the `RagChunk` table.
+2. **`rag_embedding_service.py`**: Interacts with the configured LLM Provider (Gemini, OpenAI, or Ollama) to translate text chunks into high-dimensional vectors. It includes a deterministic hashing fallback if the provider fails.
+3. **`rag_context_builder.py`**: Responsible for building a hybrid "context window" when a user asks a question. It uses Cosine Similarity against the `RagChunk` vectors, combined with strict keyword-based live SQL queries to ensure the AI always has the latest event updates.
+4. **`rag_llm_service.py`**: Assembles the prompt, applies the `PUBLIC` or `INTERNAL` system prompt depending on user role, and streams the inference chunks back to the client. Contains a static fallback response mechanism if the upstream provider errors out.
+
+### Frontend Integration
+The frontend architecture provides a dedicated conversational interface built out in `frontend/components/rag/`. The AI assistant is context-aware and respects visibility boundaries (i.e. public users cannot ask the AI for internal deployment strategies).
+
 ---
 
 ## Map And Spatial Intelligence
@@ -1349,19 +1001,7 @@ A primary provider is configured, a fallback provider is configured, and route a
 
 ### Map Provider Decision Flow
 
-```mermaid
-flowchart TD
-    Start[Map Request] --> CheckKey{Primary provider configured?}
-    CheckKey -- No --> Fallback[Fallback spatial mode]
-    CheckKey -- Yes --> Budget{Budget guard allows request?}
-    Budget -- No --> Fallback
-    Budget -- Yes --> Provider[Call primary route or geocode provider]
-    Provider --> Success{Provider succeeded?}
-    Success -- Yes --> Result[Return provider response]
-    Success -- No --> ErrorFallback[Fallback on provider error]
-    Fallback --> DemoOverlay[Return local or fallback-friendly overlay]
-    ErrorFallback --> DemoOverlay
-```
+````
 
 ### Active Route Background Loop
 
@@ -1434,24 +1074,7 @@ Translated and normalized text is used in:
 
 ### Translation Flow
 
-```mermaid
-sequenceDiagram
-    participant User as Citizen or Officer
-    participant UI as Web Form
-    participant API as Report Route
-    participant Translate as Translation Service
-    participant Match as Event Matching Logic
-    participant DB as Database
-
-    User->>UI: submit description
-    UI->>API: POST report
-    API->>Translate: normalize and translate text
-    Translate-->>API: original and translated text
-    API->>Match: score and match report to event
-    Match->>DB: store citizen_report
-    DB-->>API: stored report
-    API-->>UI: accepted report summary
-```
+````
 
 ---
 
@@ -1473,16 +1096,7 @@ The backend decides whether that user can perform the requested action.
 
 ### Auth Flow
 
-```mermaid
-flowchart LR
-    SignIn[User signs in] --> Firebase[Firebase session or token]
-    Firebase --> Backend[Backend auth context]
-    Backend --> Role[Load backend role]
-    Role --> Scope[Load officer or station scope if needed]
-    Scope --> Guard{Route allowed?}
-    Guard -- Yes --> Data[Return protected data or action result]
-    Guard -- No --> Deny[403 or protected screen state]
-```
+````
 
 ### Important Authorization Facts In The Current Build
 
@@ -1561,19 +1175,7 @@ That gives the product a way to show:
 
 ### ML Lifecycle Diagram
 
-```mermaid
-flowchart LR
-    Raw[Stored historical events] --> Features[Feature engineering]
-    Features --> Train[Training scripts]
-    Train --> Runs[(model_runs)]
-    Train --> Artifacts[Saved artifacts]
-
-    Event[New or simulated event] --> Bundle[Feature bundle]
-    Bundle --> Inference[Prediction service]
-    Artifacts --> Inference
-    Inference --> Explain[Explanation and scores]
-    Explain --> Plan[Recommendation orchestrator]
-```
+````
 ### Why Model Insights Exists
 
 The model-insights page is not just a vanity screen.
@@ -1718,8 +1320,14 @@ npm install --prefix frontend
 
 ### 4. Create Local Environment Values
 
+The project uses two separate environment files (one for backend secrets, one for frontend public keys).
+
 ```powershell
+# Create backend environment
 Copy-Item .env.example .env
+
+# Create frontend environment
+Copy-Item frontend\.env.example frontend\.env
 ```
 
 ### 5. Apply Migrations
@@ -1737,14 +1345,14 @@ python backend\scripts\rebuild_hotspots.py
 python backend\scripts\rebuild_event_dna.py
 ```
 
-### 7. Optional Internal Seeds
+### 7. Internal Seeds
 
 ```powershell
 python backend\scripts\seed_foundation_data.py
 python backend\scripts\create_demo_scenarios.py
 ```
 
-### 8. Optional Model Training
+### 8. Model Training
 
 ```powershell
 python backend\app\ml\train_priority_model.py

@@ -131,12 +131,12 @@ export function ChatPanel() {
   }
 
   return (
-    <aside className="fixed bottom-5 right-5 z-50 flex h-[min(760px,82vh)] w-[min(440px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white/95 text-slate-900 shadow-2xl backdrop-blur-md">
-      <header className="border-b border-slate-100 bg-slate-50/50 px-5 py-4">
+    <aside className="fixed bottom-5 right-5 z-50 flex h-[min(760px,82vh)] w-[min(440px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-3xl border border-slate-200/60 bg-white/90 text-slate-900 shadow-2xl shadow-blue-900/5 backdrop-blur-xl transition-all duration-300">
+      <header className="border-b border-slate-200/50 bg-white/60 px-5 py-4 backdrop-blur-md">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-blue-600">Namma Sarthi Copilot</p>
-            <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-900">Namma Sarthi AI Assistant</h2>
+            <h2 className="mt-1 text-xl font-extrabold tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">Namma Sarthi AI Assistant</h2>
             <p className="mt-1 text-xs leading-relaxed text-slate-600">{accessNote(session.accessLevel)}</p>
           </div>
           <button
@@ -175,7 +175,7 @@ export function ChatPanel() {
         ))}
       </div>
 
-      <footer className="border-t border-slate-100 bg-slate-50/50 px-5 py-4">
+      <footer className="border-t border-slate-200/50 bg-white/60 px-5 py-4 backdrop-blur-md">
         {error ? <p className="mb-3 text-sm font-medium text-rose-600">{error}</p> : null}
         <form onSubmit={handleSubmit} className="space-y-3">
           <textarea
@@ -189,7 +189,7 @@ export function ChatPanel() {
             }}
             rows={2}
             placeholder={currentEventId ? `Ask about ${currentEventId}...` : "Ask about current traffic, hotspots, or response plans..."}
-            className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-inner outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
           />
           <div className="flex items-center justify-between gap-3">
             <button

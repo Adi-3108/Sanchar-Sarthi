@@ -148,6 +148,52 @@ fun MapIntelligenceScreen(
             }
         }
 
+        // Error banner with retry — shown when hotspot fetch failed (e.g. expired token)
+        if (uiState.errorMessage != null || (uiState.hotspots.isEmpty() && !uiState.isLoading)) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3CD)),
+                    border = BorderStroke(1.dp, Color(0xFFFFD86E))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            AutoTranslatedText(
+                                "Hotspots unavailable",
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF7A5000),
+                                fontSize = 14.sp
+                            )
+                            if (uiState.errorMessage != null) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                AutoTranslatedText(
+                                    uiState.errorMessage!!,
+                                    color = Color(0xFF7A5000),
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Button(
+                            onClick = { viewModel.reload() },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFF59E0B),
+                                contentColor = Color.White
+                            )
+                        ) {
+                            AutoTranslatedText("Retry", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Card(modifier = Modifier.weight(1f), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
@@ -214,7 +260,7 @@ fun MapIntelligenceScreen(
                             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
                                 Column(modifier = Modifier.padding(12.dp).fillMaxWidth()) {
                                     AutoTranslatedText(candidate.label, fontWeight = FontWeight.Bold)
-                                    AutoTranslatedText("${candidate.coordinate.getOrNull(1)}, ${candidate.coordinate.getOrNull(0)} Â· ${candidate.confidence}", fontSize = 12.sp)
+                                    AutoTranslatedText("${candidate.coordinate.getOrNull(1)}, ${candidate.coordinate.getOrNull(0)} - ${candidate.confidence}", fontSize = 12.sp)
                                 }
                             }
                         }

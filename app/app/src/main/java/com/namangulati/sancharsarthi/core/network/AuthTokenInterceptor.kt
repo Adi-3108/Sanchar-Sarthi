@@ -10,7 +10,8 @@ class AuthTokenInterceptor(
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val original = chain.request()
-        val token = runBlocking { firebaseAuthManager.currentToken() }
+        // Always force-refresh so expired tokens (1h lifetime) don't silently block API calls
+        val token = runBlocking { firebaseAuthManager.currentToken(forceRefresh = true) }
         val request = if (token.isNullOrBlank()) {
             original
         } else {

@@ -316,7 +316,7 @@ fun AdminScreen(
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
                                 AutoTranslatedText(
-                                    text = "${station.locality} Ã‚Â· Code: ${station.station_code}",
+                                    text = "${station.locality} - Code: ${station.station_code}",
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Medium
@@ -521,23 +521,23 @@ fun IncidentCard(
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 // Column 1
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("TIME REPORTED", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    AutoTranslatedText("TIME REPORTED", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                     Text(incident.created_at.take(16).replace("T", " "), color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text("EVENT ID", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    AutoTranslatedText("EVENT ID", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                     Text(incident.id.take(10), color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontWeight = FontWeight.SemiBold)
                 }
                 // Column 2
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("ASSIGNED STATION", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                    Text(incident.assigned_station_name ?: "Unassigned", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    AutoTranslatedText("ASSIGNED STATION", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    AutoTranslatedText(incident.assigned_station_name ?: "Unassigned", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text("VERIFICATION CONFIDENCE", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    AutoTranslatedText("VERIFICATION CONFIDENCE", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                     val conf = incident.confidence_score
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("${(conf * 100).roundToInt()}%", color = if (conf > 0.7) Color(0xFF16A34A) else Color(0xFFD97706), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("(${incident.true_vote_count} votes)", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+                        AutoTranslatedText("(${incident.true_vote_count} votes)", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
                     }
                 }
             }
@@ -587,7 +587,7 @@ fun IncidentCard(
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3B82F6), contentColor = Color.White)
                         ) {
-                            AutoTranslatedText(if (isEscalating) "EscalatingÃ¢â‚¬Â¦" else "Escalate to Event", fontWeight = FontWeight.Bold)
+                            AutoTranslatedText(if (isEscalating) "Escalating..." else "Escalate to Event", fontWeight = FontWeight.Bold)
                         }
                     }
                 }

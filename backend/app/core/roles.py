@@ -11,7 +11,7 @@ ROLE_ALIASES = {
 
 
 def canonical_role(role: str | None) -> str:
-    value = (role or "guest").strip()
+    value = (role or "guest").strip().lower()
     return ROLE_ALIASES.get(value, value)
 
 

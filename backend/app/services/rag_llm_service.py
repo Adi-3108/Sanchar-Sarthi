@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import logging
 import re
 from collections.abc import AsyncGenerator
 from typing import Any
@@ -20,6 +21,8 @@ try:  # pragma: no cover - optional provider dependency
     import anthropic
 except ModuleNotFoundError:  # pragma: no cover - optional provider dependency
     anthropic = None
+
+logger = logging.getLogger(__name__)
 
 PROVIDER_CONFIGS = {
     "openai": {
@@ -44,7 +47,8 @@ PROVIDER_CONFIGS = {
     },
     "gemini": {
         "base_url": None,
-        "default_model": "gemini-1.5-flash",
+        "default_model": "gemini-2.0-flash",
+        "fallback_models": ("gemini-1.5-flash",),
     },
     "anthropic": {
         "base_url": None,
@@ -284,11 +288,25 @@ async def _stream_gemini(
         f"Conversation history:\n{history_text}\n\n"
         f"{_build_user_prompt(context_chunks, question)}"
     )
-    chunks = await asyncio.to_thread(_stream_gemini_sync, api_key, model, prompt)
-    for chunk in chunks:
-        yield chunk
-        await asyncio.sleep(0)
+    model_candidates = [model]
+    for fallback_model in PROVIDER_CONFIGS["gemini"].get("fallback_models", ()):  # type: ignore[union-attr]
+        if fallback_model not in model_candidates:
+            model_candidates.append(str(fallback_model))
 
+    last_error: Exception | None = None
+    for candidate in model_candidates:
+        try:
+            chunks = await asyncio.to_thread(_stream_gemini_sync, api_key, candidate, prompt)
+            for chunk in chunks:
+                yield chunk
+                await asyncio.sleep(0)
+            return
+        except Exception as exc:
+            last_error = exc
+            logger.warning("Gemini RAG generation failed for model %s: %s", candidate, exc)
+
+    if last_error is not None:
+        raise last_error
 
 async def _stream_anthropic(
     api_key: str,
@@ -316,6 +334,27 @@ async def _stream_anthropic(
                 yield text
 
 
+def _resolve_llm_settings() -> tuple[str, str | None, str]:
+    settings = get_settings()
+    configured_provider = (settings.rag_llm_provider or "").strip().lower()
+    embedding_provider = (settings.rag_embedding_provider or "").strip().lower()
+    provider = configured_provider or "gemini"
+
+    api_key = settings.rag_llm_api_key
+    if not api_key and embedding_provider in PROVIDER_CONFIGS:
+        provider = embedding_provider
+        api_key = settings.rag_embedding_api_key
+
+    config = PROVIDER_CONFIGS.get(provider)
+    if config is None:
+        logger.warning("Unsupported RAG_LLM_PROVIDER=%s; using gemini fallback provider", provider)
+        provider = "gemini"
+        config = PROVIDER_CONFIGS[provider]
+
+    model = settings.rag_llm_model or str(config["default_model"])
+    return provider, api_key, model
+
+
 async def stream_llm_response(
     context_chunks: list[str],
     conversation_history: list[dict[str, Any]],
@@ -323,13 +362,11 @@ async def stream_llm_response(
     role: str,
 ) -> AsyncGenerator[str, None]:
     settings = get_settings()
-    provider = (settings.rag_llm_provider or "deepseek").strip().lower()
-    config = PROVIDER_CONFIGS.get(provider, PROVIDER_CONFIGS["deepseek"])
-    model = settings.rag_llm_model or config["default_model"]
-    api_key = settings.rag_llm_api_key or settings.rag_embedding_api_key
+    provider, api_key, model = _resolve_llm_settings()
     selected_context = _select_context_chunks(context_chunks, settings.rag_max_context_tokens)
 
     if not api_key:
+        logger.warning("RAG LLM fallback used because no API key is configured for provider %s", provider)
         async for token in _stream_fallback_answer(_compose_fallback_answer(selected_context, question, role)):
             yield token
         return
@@ -353,8 +390,7 @@ async def stream_llm_response(
                 yield token
             return
     except Exception:
-        pass
+        logger.exception("RAG LLM provider %s failed with model %s; using grounded fallback answer", provider, model)
 
     async for token in _stream_fallback_answer(_compose_fallback_answer(selected_context, question, role)):
         yield token
-

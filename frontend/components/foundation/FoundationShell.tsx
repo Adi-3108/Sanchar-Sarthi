@@ -601,6 +601,10 @@ function getStatusColor(status: string) {
   }
 }
 
+function getEscalatedEventId(incident: FoundationIncident): string | null {
+  const match = incident.resolution_notes?.match(/SS-EVT-[A-Z0-9]+/i);
+  return match?.[0]?.toUpperCase() ?? null;
+}
 function SwitchButton({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
   return (
     <button 
@@ -628,7 +632,9 @@ function IncidentList({ title, incidents, isLoading = false, labels, canVote, ca
         {isLoading ? (
           <Skeleton.IncidentCards count={3} />
         ) : (
-          incidents.map((incident) => (
+          incidents.map((incident) => {
+            const escalatedEventId = getEscalatedEventId(incident);
+            return (
           <article 
             key={incident.id} 
             className={`group overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${
@@ -662,7 +668,7 @@ function IncidentList({ title, incidents, isLoading = false, labels, canVote, ca
                 <Info label={labels.time} value={formatTime(incident.created_at)} />
                 <Info label={labels.station} value={incident.assigned_station_name ?? "Pending"} />
                 <Info label={labels.confidence} value={`${Math.round(incident.confidence_score * 100)}%`} />
-                <Info label="Event ID" value={incident.id.split("-").pop() || incident.id} />
+                <Info label={escalatedEventId ? "Event ID" : "Incident ID"} value={escalatedEventId ?? incident.id} mono />
               </div>
               {!canManage ? (
                 <div className="mt-5 border-t border-slate-200/60 pt-4">
@@ -679,7 +685,8 @@ function IncidentList({ title, incidents, isLoading = false, labels, canVote, ca
               ) : null}
             </div>
           </article>
-        ))
+        );
+          })
         )}
         {!isLoading && !incidents.length ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 py-12 text-center">
@@ -885,30 +892,30 @@ function RoutePanel({ incident, labels, routeData, routeError, routeLoading = fa
           {routes.map((route, index) => <div key={`${incident.id}-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">{route}</div>)}
           {routeError && (
             <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
-              Route provider is currently unavailable or access is restricted.
+              {(routeError as any)?.status === 403 
+                ? "Your role does not have permission to access live routing."
+                : "Route provider is currently unavailable. Displaying static advisory."}
             </div>
           )}
           {routeLoading && !routeData && !routeError ? <Skeleton.TableRows count={2} /> : !routeData && !routeError ? <p className="text-sm text-slate-500">Calculating live route via MapmyIndia...</p> : routeData && (
-            <>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-                <strong className="text-slate-900">Live Alternate Route Available</strong>
-                <ul className="mt-2 list-disc pl-5">
-                  <li><strong>Distance:</strong> {(routeData.distanceMeters / 1000).toFixed(1)} km</li>
-                  <li><strong>Estimated Duration:</strong> {Math.ceil(routeData.durationSeconds / 60)} minutes</li>
-                  <li><strong>Provider:</strong> {routeData.provider === "mapmyindia" ? "MapmyIndia" : routeData.provider}</li>
-                </ul>
-              </div>
-              {(userRole === "admin" || userRole === "control_room" || userRole === "police_officer") && (
-                <button
-                  type="button"
-                  onClick={onForceReload}
-                  disabled={isReloading}
-                  className="mt-2 w-full rounded-2xl bg-slate-800 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
-                >
-                  {isReloading ? "Recalculating Globally..." : "Force Global Recalculation"}
-                </button>
-              )}
-            </>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+              <strong className="text-slate-900">Live Alternate Route Available</strong>
+              <ul className="mt-2 list-disc pl-5">
+                <li><strong>Distance:</strong> {(routeData.distanceMeters / 1000).toFixed(1)} km</li>
+                <li><strong>Estimated Duration:</strong> {Math.ceil(routeData.durationSeconds / 60)} minutes</li>
+                <li><strong>Provider:</strong> {routeData.provider === "mapmyindia" ? "MapmyIndia" : routeData.provider}</li>
+              </ul>
+            </div>
+          )}
+          {(userRole === "admin" || userRole === "control_room" || userRole === "police_officer") && (
+            <button
+              type="button"
+              onClick={onForceReload}
+              disabled={isReloading}
+              className="mt-2 w-full rounded-2xl bg-slate-800 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
+            >
+              {isReloading ? "Recalculating Globally..." : "Force Global Recalculation"}
+            </button>
           )}
         </div>
       )}
@@ -934,7 +941,7 @@ function StationPanel({ data, labels, selectedIncidentId, onSelectIncident }: { 
             return (
               <div key={station.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <p className="font-semibold text-slate-900">{station.name}</p>
-                <p className="mt-1 text-sm text-slate-600">{station.locality} Â· {station.station_code}</p>
+                <p className="mt-1 text-sm text-slate-600">{station.locality} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· {station.station_code}</p>
                 <p className="mt-1 text-sm text-slate-600">{labels.contact}: {station.contact_number ?? "Not available"}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {linked.slice(0, 3).map((incident) => (
@@ -994,11 +1001,11 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   return <label className="block text-sm text-slate-600"><span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</span>{children}</label>;
 }
 
-function Info({ label, value }: { label: string; value: string }) {
+function Info({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex min-w-0 flex-col gap-1">
       <dt className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</dt>
-      <dd className="text-sm font-semibold text-slate-800">{value}</dd>
+      <dd className={`break-all text-sm font-semibold text-slate-800 ${mono ? "font-mono text-xs leading-5" : ""}`}>{value}</dd>
     </div>
   );
 }

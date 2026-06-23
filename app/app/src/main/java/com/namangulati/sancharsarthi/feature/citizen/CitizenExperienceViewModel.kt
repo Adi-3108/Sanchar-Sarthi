@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.namangulati.sancharsarthi.core.network.RetrofitClient
 import com.namangulati.sancharsarthi.core.report.FoundationIncidentCreateRequest
+import com.namangulati.sancharsarthi.core.session.ProfileStatsStore
 import com.namangulati.sancharsarthi.core.report.IncidentResponse
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -50,6 +51,7 @@ class CitizenExperienceViewModel : ViewModel() {
                 _isSubmitting.value = true
                 _feedbackMsg.value = ""
                 RetrofitClient.reportApi.createIncidentReport(request)
+                ProfileStatsStore.recordIncidentReported()
                 _feedbackMsg.value = "Incident reported successfully!"
                 onSuccess()
                 fetchIncidents()
@@ -73,6 +75,7 @@ class CitizenExperienceViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 RetrofitClient.foundationApi.voteIncident(incidentId, mapOf("vote_value" to voteVal))
+                ProfileStatsStore.recordIncidentVoted()
                 fetchIncidents()
             } catch (e: Exception) {
                 // Handled

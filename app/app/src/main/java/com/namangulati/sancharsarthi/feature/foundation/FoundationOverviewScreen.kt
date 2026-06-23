@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.viewinterop.AndroidView
 import com.namangulati.sancharsarthi.core.design.SkeletonScreen
+import com.namangulati.sancharsarthi.core.report.HotspotResponse
 import com.namangulati.sancharsarthi.core.report.IncidentResponse
 import com.namangulati.sancharsarthi.core.report.StationResponse
 import com.namangulati.sancharsarthi.core.translation.AutoTranslatedText
@@ -100,6 +101,9 @@ fun FoundationOverviewScreen(
                     hotspots = uiState.hotspots,
                     routes = uiState.routes
                 )
+            }
+            item {
+                HotspotPanel(hotspots = uiState.hotspots)
             }
             item {
                 StationPanel(
@@ -159,7 +163,7 @@ fun FoundationOverviewScreen(
 fun MapPanel(
     activeIncidents: List<IncidentResponse>,
     reportedIncidents: List<IncidentResponse>,
-    hotspots: List<com.namangulati.sancharsarthi.core.report.HotspotResponse> = emptyList(),
+    hotspots: List<HotspotResponse> = emptyList(),
     routes: List<com.namangulati.sancharsarthi.core.network.ActiveRoute> = emptyList()
 ) {
     PlatformSectionCard(
@@ -291,6 +295,125 @@ fun MapPanel(
     }
 }
 
+
+@Composable
+fun HotspotPanel(hotspots: List<HotspotResponse>) {
+    PlatformSectionCard(
+        title = "Hotspots",
+        subtitle = "Incident clusters"
+    ) {
+        if (hotspots.isEmpty()) {
+            AutoTranslatedText(
+                text = "No hotspots are active right now.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                hotspots.sortedByDescending { it.incident_count }.forEach { hotspot ->
+                    val severityColor = when (hotspot.severity.lowercase()) {
+                        "critical" -> Color(0xFFBE123C)
+                        "high" -> Color(0xFFD97706)
+                        "medium" -> Color(0xFF0284C7)
+                        else -> Color(0xFF16A34A)
+                    }
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                                    AutoTranslatedText(
+                                        text = hotspot.label,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    AutoTranslatedText(
+                                        text = hotspot.hotspot_id,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(100.dp))
+                                        .background(severityColor.copy(alpha = 0.12f))
+                                        .border(1.dp, severityColor.copy(alpha = 0.35f), RoundedCornerShape(100.dp))
+                                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                                ) {
+                                    AutoTranslatedText(
+                                        text = hotspot.severity.uppercase(),
+                                        color = severityColor,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                HotspotMetric(
+                                    label = "Incidents",
+                                    value = hotspot.incident_count.toString(),
+                                    modifier = Modifier.weight(1f)
+                                )
+                                HotspotMetric(
+                                    label = "Linked IDs",
+                                    value = hotspot.active_incident_ids.size.toString(),
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                            if (hotspot.active_incident_ids.isNotEmpty()) {
+                                AutoTranslatedText(
+                                    text = hotspot.active_incident_ids.take(4).joinToString(", "),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun HotspotMetric(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.background)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+            .padding(12.dp)
+    ) {
+        AutoTranslatedText(
+            text = label.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        AutoTranslatedText(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
 @Composable
 fun StationPanel(
     stations: List<StationResponse>,
@@ -331,7 +454,7 @@ fun StationPanel(
                             .padding(12.dp)
                     ) {
                         AutoTranslatedText(text = station.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
-                        AutoTranslatedText(text = "${station.locality} â€¢ ${station.station_code}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        AutoTranslatedText(text = "${station.locality} - ${station.station_code}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         AutoTranslatedText(text = "Contact: ${station.contact_number ?: "Not available"}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         
                         Spacer(modifier = Modifier.height(8.dp))
@@ -466,7 +589,7 @@ fun IncidentCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text(text = " Â· ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                Text(text = " - ", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(100.dp))
@@ -507,7 +630,7 @@ fun IncidentCard(
                         letterSpacing = 0.5.sp
                     )
                     Text(
-                        text = incident.id.take(16) + "â€¦",
+                        text = incident.id.take(16) + "...",
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium

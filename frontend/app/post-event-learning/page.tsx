@@ -21,10 +21,16 @@ function errorText(error: unknown): string {
   return "Post-event report generation failed.";
 }
 
+
+function isIncidentId(value: string): boolean {
+  return /^SS-?INC[-A-Z0-9]*$/i.test(value.trim());
+}
+
 export default function PostEventLearningPage() {
   const { selectedEventId } = useCommandStore();
   const { user, ready: authReady } = useFirebaseAuthState();
   const [eventId, setEventId] = useState("");
+  const incidentIdError = isIncidentId(eventId) ? "This is an incident ID. Post-event learning needs a real event ID like SS-EVT-XXXXXXXX, created after admin escalation." : null;
 
   useEffect(() => {
     if (!eventId && selectedEventId) {
@@ -38,7 +44,7 @@ export default function PostEventLearningPage() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!user || !eventId.trim()) {
+    if (!user || !eventId.trim() || incidentIdError) {
       return;
     }
     reportMutation.mutate(eventId.trim());
@@ -77,13 +83,14 @@ export default function PostEventLearningPage() {
                 <input
                   value={eventId}
                   onChange={(event) => setEventId(event.target.value)}
-                  placeholder="FKID000001"
+                  placeholder="SS-EVT-XXXXXXXX or FKID000001"
                   className="w-full rounded-2xl border border-line bg-bg/80 px-4 py-3 text-copy outline-none transition focus:border-accent"
                 />
               </label>
+              {incidentIdError ? <p className="mt-3 text-sm leading-6 text-danger">{incidentIdError}</p> : null}
               <button
                 type="submit"
-                disabled={!user || reportMutation.isPending || !eventId.trim()}
+                disabled={!user || reportMutation.isPending || !eventId.trim() || Boolean(incidentIdError)}
                 className="mt-4 rounded-2xl border border-accent/50 bg-accent px-5 py-3 text-sm font-semibold text-bg transition hover:bg-accentSoft disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {reportMutation.isPending ? "Generating" : "Generate post-event report"}

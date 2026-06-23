@@ -3,6 +3,7 @@ package com.namangulati.sancharsarthi.feature.map
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.namangulati.sancharsarthi.data.remote.AnalyticsApi
+import com.namangulati.sancharsarthi.core.network.HotspotClusterProfile
 import com.namangulati.sancharsarthi.core.network.HotspotResponseItem
 import com.namangulati.sancharsarthi.data.remote.MapApi
 import com.namangulati.sancharsarthi.core.network.MapConfigResponse
@@ -51,44 +52,94 @@ class MapIntelligenceViewModel(
     }
 
     private fun loadInitialData() {
-        _uiState.update { it.copy(isLoading = true) }
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
         viewModelScope.launch {
-            try {
-                val config = mapApi.getMapConfig()
-                val hotspotsResponse = analyticsApi.getHotspots()
-                
-                val hotspots = hotspotsResponse.hotspots
-                
-                val defaultEvents = if (hotspots.isNotEmpty()) {
-                    val uniqueEvents = mutableSetOf<String>()
-                    for (h in hotspots) {
-                        h.cluster_profile?.member_event_ids?.let { members ->
-                            for (e in members) {
-                                uniqueEvents.add(e)
-                                if (uniqueEvents.size >= 2) break
-                            }
-                        }
-                        if (uniqueEvents.size >= 2) break
-                    }
-                    uniqueEvents.joinToString(", ")
-                } else ""
-                
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        mapConfig = config,
-                        hotspots = hotspots,
-                        eventIdsInput = defaultEvents.ifEmpty { "FKID005760, FKID005762" }
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, errorMessage = e.message) }
+            val config = try {
+                mapApi.getMapConfig()
+            } catch (_: Exception) {
+                null
             }
+
+            var hotspotError: String? = null
+            val analyticsHotspots = try {
+                analyticsApi.getHotspots().hotspots
+            } catch (e: Exception) {
+                hotspotError = "Analytics hotspots: ${e.message}"
+                emptyList()
+            }
+
+            val hotspots = if (analyticsHotspots.isNotEmpty()) {
+                analyticsHotspots
+            } else {
+                val fallback = loadFoundationHotspotFallback()
+                if (fallback.isEmpty() && hotspotError != null) {
+                    // Both sources failed — keep the error visible
+                } else {
+                    hotspotError = null // fallback succeeded, clear error
+                }
+                fallback
+            }
+            val defaultEvents = buildDefaultEventIds(hotspots)
+
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    mapConfig = config,
+                    hotspots = hotspots,
+                    eventIdsInput = defaultEvents.ifEmpty { "FKID005760, FKID005762" },
+                    errorMessage = hotspotError
+                )
+            }
+        }
+    }
+
+    private suspend fun loadFoundationHotspotFallback(): List<HotspotResponseItem> {
+        return try {
+            RetrofitClient.foundationApi.getIncidents().hotspots.map { hotspot ->
+                HotspotResponseItem(
+                    location_cluster_id = hotspot.label.ifBlank { hotspot.hotspot_id },
+                    centroid_latitude = hotspot.latitude,
+                    centroid_longitude = hotspot.longitude,
+                    cluster_risk_score = riskScoreForSeverity(hotspot.severity),
+                    cluster_event_count = hotspot.incident_count,
+                    cluster_top_event_cause = hotspot.severity,
+                    cluster_profile = HotspotClusterProfile(
+                        hotspot_category = hotspot.severity,
+                        member_event_ids = hotspot.active_incident_ids
+                    )
+                )
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun buildDefaultEventIds(hotspots: List<HotspotResponseItem>): String {
+        val uniqueEvents = mutableSetOf<String>()
+        for (hotspot in hotspots) {
+            hotspot.cluster_profile.member_event_ids.forEach { eventId ->
+                uniqueEvents.add(eventId)
+                if (uniqueEvents.size >= 2) return uniqueEvents.joinToString(", ")
+            }
+        }
+        return uniqueEvents.joinToString(", ")
+    }
+
+    private fun riskScoreForSeverity(severity: String): Double {
+        return when (severity.lowercase()) {
+            "critical", "high" -> 75.0
+            "medium" -> 45.0
+            "low" -> 20.0
+            else -> 30.0
         }
     }
 
     fun updateGeocodeQuery(query: String) {
         _uiState.update { it.copy(geocodeQuery = query) }
+    }
+
+    fun reload() {
+        loadInitialData()
     }
 
     fun searchAddress() {

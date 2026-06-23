@@ -44,7 +44,11 @@ class FoundationOverviewViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val response = RetrofitClient.foundationApi.getIncidents()
-                val routesResponse = RetrofitClient.mapApi.getActiveRoutes()
+                val routes = try {
+                    RetrofitClient.mapApi.getActiveRoutes().routes
+                } catch (_: Exception) {
+                    emptyList()
+                }
                 val incidents = response.incidents
                 
                 val active = incidents.filter { it.status in listOf("active", "escalated", "resolved") }
@@ -56,7 +60,7 @@ class FoundationOverviewViewModel : ViewModel() {
                     hotspots = response.hotspots.size,
                     pendingReports = reported.size,
                     resolvedToday = incidents.count { it.status == "resolved" },
-                    recommendations = routesResponse.routes.size + 3,
+                    recommendations = routes.size + 3,
                     totalIncidents = incidents.size,
                     totalEvents = 8182 + incidents.size
                 )
@@ -68,7 +72,7 @@ class FoundationOverviewViewModel : ViewModel() {
                         reportedIncidents = reported,
                         stations = response.stations,
                         hotspots = response.hotspots,
-                        routes = routesResponse.routes,
+                        routes = routes,
                         metrics = metrics
                     )
                 }

@@ -209,7 +209,7 @@ fun ControlRoomScreen(viewModel: AdminViewModel = viewModel()) {
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         AutoTranslatedText(
-                            text = "${station.locality} Ã‚Â· Code: ${station.station_code}",
+                            text = "${station.locality} - Code: ${station.station_code}",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium

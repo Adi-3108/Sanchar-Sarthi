@@ -170,11 +170,7 @@ A user with a valid Firebase session still fails protected route checks unless t
 
 ### High-Level Context
 
-````
 
-### Runtime Layering
-
-````
 
 ### Core Design Characteristics
 
@@ -192,7 +188,6 @@ The present codebase is built around five consistent design choices.
 
 ![End-To-End Operating Loop](./FlowDiagrams%20%26%20Architecture/End-To-End%20Operating%20Loop.png)
 
-````
 
 The loop is not just conceptual.
 Each stage is mapped to concrete backend routes, service modules, stored tables, and corresponding pages in the web client.
@@ -269,9 +264,6 @@ The web app is intentionally split across dedicated screens instead of forcing e
 | `/settings` | Demo readiness | Deterministic demo seed and readiness checks |
 | `/login` | Sign-in entry | Shared authentication route |
 
-### Product Surface Map
-
-````
 ---
 
 ## Backend Architecture
@@ -324,7 +316,6 @@ The app includes the following route groups at startup.
 
 ![Backend Request Path](./FlowDiagrams%20%26%20Architecture/Backend%20Request%20Path.png)
 
-````
 
 ---
 
@@ -449,9 +440,6 @@ The route files stay fairly thin and the service modules own the operational log
 | `foundation_seed_service.py` | Seed the foundation incident layer |
 | `demo_scenario_service.py` | Build deterministic demo scenarios across the event stack |
 
-### Service Interaction Diagram
-
-````
 
 ---
 
@@ -505,9 +493,6 @@ It also:
 - cleans reason breakdown fields,
 - and upserts events into the main event table.
 
-### Raw To Stored Flow
-
-````
 
 ### Data Families Used By The System
 
@@ -529,9 +514,6 @@ The codebase uses SQLAlchemy ORM models to persist both the foundation layer and
 The persistence model matters because the system is not just producing transient JSON responses.
 It stores the event, its engineered features, its narrative fingerprint, its predictions, its recommendations, its live updates, and its post-event learning trail.
 
-### Entity Relationship View
-
-````
 
 ### Main Persistence Groups
 
@@ -608,9 +590,6 @@ The code supports operational states such as:
 Votes and protected actions can move an incident through that lifecycle.
 The service logic prevents invalid transitions and supports automatic promotion when vote and confidence thresholds are met.
 
-### Foundation Flow
-
-````
 
 ### Foundation Frontend Responsibilities
 
@@ -647,9 +626,6 @@ It is a stitched view of:
 - live escalation history,
 - and learning output.
 
-### Event Dossier Assembly
-
-````
 
 ### Intelligence Records Around An Event
 
@@ -695,9 +671,6 @@ The dossier UI and the stored `event_dna` model are built around the following f
 | Risk indicators | Structured flags such as weekend, peak hour, closure flag, unplanned flag |
 | Similar-event memory | Historical event matches used to ground reasoning |
 
-### Event DNA Generation Flow
-
-````
 
 Event DNA is one of the reasons the dossier page feels operational rather than purely statistical.
 It gives internal users a way to read the event as a recognizable pattern.
@@ -763,9 +736,6 @@ The feature-engineering layer derives values such as:
 
 These fields are persisted in `event_features`, not just rebuilt on page load.
 
-### Simulation Flow
-
-````
 
 ### Priority Model
 
@@ -820,9 +790,6 @@ The recommendation layer translates prediction into an operational plan that a h
 | Confidence ledger | Why the plan should be read with the right level of trust |
 | Recommended action summary | One readable operational paragraph |
 
-### Recommendation Orchestration Flow
-
-````
 
 ### What The Plan Looks Like In The UI
 
@@ -875,9 +842,6 @@ A protected live update can include:
 - alert level,
 - and adaptive action text.
 
-### Live Escalation Flow
-
-````
 
 ### Why This Matters
 
@@ -903,9 +867,6 @@ The multi-event analyzer currently considers signals such as:
 - diversion route conflict,
 - and officer gap.
 
-### Multi-Event Analysis Flow
-
-````
 
 ### Output Shape
 
@@ -945,9 +906,6 @@ The backend can generate a report after an event is resolved, using the stored e
 | Future recommendations field | Stored next-time guidance generated from current event history |
 | Structured learning snapshot | Compact machine-readable summary stored inside `report_json` |
 
-### Post-Event Learning Flow
-
-````
 
 ### Why It Matters
 
@@ -999,9 +957,6 @@ A primary provider is configured, a fallback provider is configured, and route a
 | Client exposure | frontend receives provider status, not raw secrets |
 | Background prefetch | active routes are refreshed in a background loop |
 
-### Map Provider Decision Flow
-
-````
 
 ### Active Route Background Loop
 
@@ -1072,9 +1027,6 @@ Translated and normalized text is used in:
 - Event DNA narrative,
 - and stored audit context.
 
-### Translation Flow
-
-````
 
 ---
 
@@ -1094,9 +1046,6 @@ The backend decides whether that user can perform the requested action.
 | Route guard | route checks role plus assignment scope |
 | Response shaping | public, officer, control-room, and admin responses differ by route |
 
-### Auth Flow
-
-````
 
 ### Important Authorization Facts In The Current Build
 
@@ -1172,10 +1121,6 @@ That gives the product a way to show:
 | Priority | `backend/app/ml/train_priority_model.py` | `backend/app/models/xgboost_priority_model.pkl` |
 | Road closure | `backend/app/ml/train_road_closure_model.py` | `backend/artifacts/road_closure_model.joblib` |
 | Resolution time | `backend/app/ml/train_resolution_time_model.py` | `backend/artifacts/resolution_time_model.joblib` |
-
-### ML Lifecycle Diagram
-
-````
 ### Why Model Insights Exists
 
 The model-insights page is not just a vanity screen.
@@ -1226,7 +1171,6 @@ The current navigation enum includes screens for:
 
 The Android codebase includes a translation manager built around ML Kit.
 That means mobile translation is not just a web-only concern.
-
 
 ---
 
@@ -1474,5 +1418,4 @@ It does not stop at a report form.
 It carries an event from intake to operational interpretation to response planning to monitoring to after-action learning, with role boundaries enforced throughout.
 
 That is what the current implementation actually delivers.
-
 

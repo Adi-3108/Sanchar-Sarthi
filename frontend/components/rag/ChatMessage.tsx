@@ -24,7 +24,7 @@ export function ChatMessage({ message }: { message: RagChatMessage }) {
     >
       <div className="flex items-center justify-between gap-3 text-xs uppercase tracking-[0.24em]">
         <span className={isAssistant ? "text-sky-300" : "text-cyan-200"}>
-          {isAssistant ? "RAG Assistant" : "You"}
+          {isAssistant ? "Namma Sarthi" : "You"}
         </span>
         <span className="text-slate-400">{formatTime(message.createdAt)}</span>
       </div>

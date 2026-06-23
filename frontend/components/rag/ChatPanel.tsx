@@ -122,12 +122,10 @@ export function ChatPanel() {
       <button
         type="button"
         onClick={togglePanel}
-        className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full border border-blue-200 bg-white/95 text-blue-600 shadow-lg backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-700 hover:shadow-xl active:scale-95 active:translate-y-0"
-        aria-label="Ask Sanchar Sarthi Copilot"
+        className="fixed bottom-5 right-5 z-50 flex h-20 w-20 items-center justify-center rounded-full border-2 border-blue-500 bg-white shadow-xl transition-all hover:-translate-y-1 hover:shadow-2xl active:scale-95 active:translate-y-0 overflow-hidden"
+        aria-label="Ask Namma Sarthi"
       >
-        <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12h.01M15 12h.01M12 2a3 3 0 00-3 3v1H6a2 2 0 00-2 2v6a2 2 0 002 2h2v4a1 1 0 001 1h6a1 1 0 001-1v-4h2a2 2 0 002-2V8a2 2 0 00-2-2h-3V5a3 3 0 00-3-3z" />
-        </svg>
+        <img src="/namma_sarthi.png" alt="Namma Sarthi" className="h-full w-full object-cover" />
       </button>
     );
   }
@@ -137,8 +135,8 @@ export function ChatPanel() {
       <header className="border-b border-slate-100 bg-slate-50/50 px-5 py-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-blue-600">Grounded RAG Copilot</p>
-            <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-900">Traffic command assistant</h2>
+            <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-blue-600">Namma Sarthi Copilot</p>
+            <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-900">Namma Sarthi AI Assistant</h2>
             <p className="mt-1 text-xs leading-relaxed text-slate-600">{accessNote(session.accessLevel)}</p>
           </div>
           <button
@@ -159,9 +157,13 @@ export function ChatPanel() {
       <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
         {!messages.length ? (
           <section className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-5">
-            <p className="text-sm font-medium leading-relaxed text-slate-600">
-              Ask for active incidents, similar event memory, recommendations, hotspot risk, or public-safe summaries.
-            </p>
+            <div className="flex items-start gap-4 mb-2">
+              <img src="/namma_sarthi.png" alt="Namma Sarthi" className="h-12 w-12 rounded-full border border-slate-200 object-cover shadow-sm" />
+              <p className="text-sm font-medium leading-relaxed text-slate-600">
+                <span className="block font-bold text-slate-800 text-base mb-1">Hello, I am Namma Sarthi!</span>
+                Ask me about active incidents, similar event memory, recommendations, hotspot risk, or public-safe summaries.
+              </p>
+            </div>
             <div className="mt-4">
               <SuggestedQuestions items={suggestions} disabled={isHydrating || isStreaming} onSelect={(question) => void submitDraft(question)} />
             </div>

@@ -68,6 +68,8 @@ import com.namangulati.sancharsarthi.feature.foundation.FoundationOverviewScreen
 import com.namangulati.sancharsarthi.feature.foundation.PlatformFoundationViewModel
 import com.namangulati.sancharsarthi.feature.map.MapIntelligenceScreen
 import com.namangulati.sancharsarthi.feature.officer.OfficerWorkspaceScreen
+import com.namangulati.sancharsarthi.feature.rag.NammaSarthiAssistantOverlay
+import com.namangulati.sancharsarthi.feature.rag.RagAssistantViewModel
 
 import com.namangulati.sancharsarthi.feature.insights.ModelInsightsScreen
 import kotlinx.coroutines.launch
@@ -128,6 +130,9 @@ fun EventFlowApp(viewModel: PlatformFoundationViewModel) {
             onRoleChange = loginViewModel::updateRole,
         )
     } else {
+        val ragAssistantViewModel: RagAssistantViewModel = viewModel()
+        val ragAssistantState by ragAssistantViewModel.uiState.collectAsStateWithLifecycle()
+
         ModalNavigationDrawer(
             drawerState = drawerState,
             drawerContent = {
@@ -233,70 +238,84 @@ fun EventFlowApp(viewModel: PlatformFoundationViewModel) {
 
                 }
             ) { innerPadding ->
-                Column(modifier = Modifier.padding(innerPadding)) {
-                    when (currentNavItem.destination) {
-                        EventFlowDestination.Overview -> {
-                            if (state.selectedAccessLevel in listOf(AccessLevel.Admin, AccessLevel.ControlRoom)) {
-                                FoundationOverviewScreen(
-                                    state = state,
-                                    onNavigateToModelInsights = { currentNavItem = AppNavigationItem.ModelInsights },
-                                    onNavigateToSubmitReport = { currentNavItem = AppNavigationItem.UserMode },
-                                    onNavigateToMapIntelligence = { currentNavItem = AppNavigationItem.MapIntelligence }
-                                )
-                            } else {
-                                AccessProtectedScreen("Command Center access is protected.")
+                Box(
+                    modifier = Modifier
+                        .padding(innerPadding)
+                        .fillMaxSize()
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        when (currentNavItem.destination) {
+                            EventFlowDestination.Overview -> {
+                                if (state.selectedAccessLevel in listOf(AccessLevel.Admin, AccessLevel.ControlRoom)) {
+                                    FoundationOverviewScreen(
+                                        state = state,
+                                        onNavigateToModelInsights = { currentNavItem = AppNavigationItem.ModelInsights },
+                                        onNavigateToSubmitReport = { currentNavItem = AppNavigationItem.UserMode },
+                                        onNavigateToMapIntelligence = { currentNavItem = AppNavigationItem.MapIntelligence }
+                                    )
+                                } else {
+                                    AccessProtectedScreen("Command Center access is protected.")
+                                }
                             }
-                        }
-                        EventFlowDestination.Auth -> AuthSessionScreen(state = state)
-                        EventFlowDestination.Citizen -> CitizenExperienceScreen(
-                            state = state,
-                            onReportSuccess = {
-                                currentNavItem = AppNavigationItem.CommandCenter
+                            EventFlowDestination.Auth -> AuthSessionScreen(state = state)
+                            EventFlowDestination.Citizen -> CitizenExperienceScreen(
+                                state = state,
+                                onReportSuccess = {
+                                    currentNavItem = AppNavigationItem.CommandCenter
+                                }
+                            )
+                            EventFlowDestination.Officer -> {
+                                if (state.selectedAccessLevel == AccessLevel.PoliceOfficer) {
+                                    OfficerWorkspaceScreen(state = state)
+                                } else {
+                                    AccessProtectedScreen("Officer workspace is restricted to Police Officers only.")
+                                }
                             }
-                        )
-                        EventFlowDestination.Officer -> {
-                            if (state.selectedAccessLevel == AccessLevel.PoliceOfficer) {
-                                OfficerWorkspaceScreen(state = state)
-                            } else {
-                                AccessProtectedScreen("Officer workspace is restricted to Police Officers only.")
+                            EventFlowDestination.Map -> MapIntelligenceScreen(state = state)
+                            EventFlowDestination.Explorer -> {
+                                com.namangulati.sancharsarthi.feature.explorer.ExplorerScreen(state = state)
                             }
-                        }
-                        EventFlowDestination.Map -> MapIntelligenceScreen(state = state)
-                        EventFlowDestination.Explorer -> {
-                            com.namangulati.sancharsarthi.feature.explorer.ExplorerScreen(state = state)
-                        }
-                        EventFlowDestination.ModelInsights -> {
-                            if (state.selectedAccessLevel in listOf(AccessLevel.Admin, AccessLevel.ControlRoom)) {
-                                ModelInsightsScreen(appState = state)
-                            } else {
-                                AccessProtectedScreen("Model Insights access is protected.")
+                            EventFlowDestination.ModelInsights -> {
+                                if (state.selectedAccessLevel in listOf(AccessLevel.Admin, AccessLevel.ControlRoom)) {
+                                    ModelInsightsScreen(appState = state)
+                                } else {
+                                    AccessProtectedScreen("Model Insights access is protected.")
+                                }
                             }
-                        }
-                        EventFlowDestination.Admin -> {
-                            if (state.selectedAccessLevel == AccessLevel.Admin) {
-                                com.namangulati.sancharsarthi.feature.admin.AdminScreen()
-                            } else {
-                                AccessProtectedScreen("Admin access is protected.")
+                            EventFlowDestination.Admin -> {
+                                if (state.selectedAccessLevel == AccessLevel.Admin) {
+                                    com.namangulati.sancharsarthi.feature.admin.AdminScreen()
+                                } else {
+                                    AccessProtectedScreen("Admin access is protected.")
+                                }
                             }
-                        }
-                        EventFlowDestination.ControlRoom -> {
-                            if (state.selectedAccessLevel in listOf(AccessLevel.Admin, AccessLevel.ControlRoom)) {
-                                com.namangulati.sancharsarthi.feature.admin.ControlRoomScreen()
-                            } else {
-                                AccessProtectedScreen("Control Room access is protected.")
+                            EventFlowDestination.ControlRoom -> {
+                                if (state.selectedAccessLevel in listOf(AccessLevel.Admin, AccessLevel.ControlRoom)) {
+                                    com.namangulati.sancharsarthi.feature.admin.ControlRoomScreen()
+                                } else {
+                                    AccessProtectedScreen("Control Room access is protected.")
+                                }
                             }
-                        }
-                        EventFlowDestination.Simulation -> {
-                            com.namangulati.sancharsarthi.feature.simulation.SimulationScreen(state = state)
-                        }
-                        EventFlowDestination.PostEventLearning -> {
-                            com.namangulati.sancharsarthi.feature.learning.LearningScreen(state = state)
+                            EventFlowDestination.Simulation -> {
+                                com.namangulati.sancharsarthi.feature.simulation.SimulationScreen(state = state)
+                            }
+                            EventFlowDestination.PostEventLearning -> {
+                                com.namangulati.sancharsarthi.feature.learning.LearningScreen(state = state)
+                            }
                         }
                     }
+                    NammaSarthiAssistantOverlay(
+                        state = ragAssistantState,
+                        accessLevel = state.selectedAccessLevel,
+                        onToggle = ragAssistantViewModel::togglePanel,
+                        onClose = ragAssistantViewModel::closePanel,
+                        onSend = { question -> ragAssistantViewModel.sendQuestion(question) },
+                        onClear = ragAssistantViewModel::clearConversation,
+                    )
                 }
-            }
         }
     }
+}
 }
 
 

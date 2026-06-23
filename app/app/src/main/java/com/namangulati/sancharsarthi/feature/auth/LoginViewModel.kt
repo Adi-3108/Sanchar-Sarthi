@@ -3,6 +3,8 @@ package com.namangulati.sancharsarthi.feature.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.namangulati.sancharsarthi.core.auth.FirebaseAuthManager
+import com.namangulati.sancharsarthi.core.network.RetrofitClient
+import com.namangulati.sancharsarthi.core.session.ProfileStatsStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -68,10 +70,12 @@ class LoginViewModel(
 
                 firebaseAuthManager.login(email, password)
                 
-                // Fetch actual role from backend
-                val meResponse = com.namangulati.sancharsarthi.core.network.RetrofitClient.authApi.getMe()
+                // Fetch actual role and profile stats from backend
+                val meResponse = RetrofitClient.authApi.getMe()
                 val role = parseRole(meResponse.role)
-                
+                ProfileStatsStore.reset()
+                refreshProfileStats()
+
                 _uiState.update { it.copy(loading = false, selectedRole = role) }
                 onSuccess(role)
             } catch (e: Exception) {
@@ -88,20 +92,35 @@ class LoginViewModel(
         viewModelScope.launch {
             val token = firebaseAuthManager.currentToken()
             if (token == null) {
+                ProfileStatsStore.reset()
                 onResult(null)
                 return@launch
             }
             _uiState.update { it.copy(loading = true) }
             try {
-                val meResponse = com.namangulati.sancharsarthi.core.network.RetrofitClient.authApi.getMe()
+                val meResponse = RetrofitClient.authApi.getMe()
                 val role = parseRole(meResponse.role)
+                refreshProfileStats()
                 _uiState.update { it.copy(loading = false, selectedRole = role) }
                 onResult(role)
             } catch (e: Exception) {
                 // If token is invalid or backend rejects it
+                ProfileStatsStore.reset()
                 _uiState.update { it.copy(loading = false) }
                 onResult(null)
             }
+        }
+    }
+
+    private suspend fun refreshProfileStats() {
+        try {
+            val stats = RetrofitClient.foundationApi.getUserStats()
+            ProfileStatsStore.setStats(
+                incidentsReported = stats.incidents_reported,
+                incidentsVoted = stats.incidents_voted,
+            )
+        } catch (_: Exception) {
+            // Keep the existing UI value if stats refresh fails transiently.
         }
     }
 

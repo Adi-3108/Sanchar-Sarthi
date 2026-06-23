@@ -13,6 +13,13 @@ object ProfileStatsStore {
     private val _stats = MutableStateFlow(ProfileStats())
     val stats = _stats.asStateFlow()
 
+    fun setStats(incidentsReported: Int, incidentsVoted: Int) {
+        _stats.value = ProfileStats(
+            incidentsReported = incidentsReported.coerceAtLeast(0),
+            incidentsVoted = incidentsVoted.coerceAtLeast(0),
+        )
+    }
+
     fun recordIncidentReported() {
         _stats.update { it.copy(incidentsReported = it.incidentsReported + 1) }
     }

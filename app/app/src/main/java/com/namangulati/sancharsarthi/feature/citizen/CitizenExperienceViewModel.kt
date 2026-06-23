@@ -51,7 +51,7 @@ class CitizenExperienceViewModel : ViewModel() {
                 _isSubmitting.value = true
                 _feedbackMsg.value = ""
                 RetrofitClient.reportApi.createIncidentReport(request)
-                ProfileStatsStore.recordIncidentReported()
+                refreshProfileStats()
                 _feedbackMsg.value = "Incident reported successfully!"
                 onSuccess()
                 fetchIncidents()
@@ -60,6 +60,18 @@ class CitizenExperienceViewModel : ViewModel() {
             } finally {
                 _isSubmitting.value = false
             }
+        }
+    }
+
+    private suspend fun refreshProfileStats() {
+        try {
+            val stats = RetrofitClient.foundationApi.getUserStats()
+            ProfileStatsStore.setStats(
+                incidentsReported = stats.incidents_reported,
+                incidentsVoted = stats.incidents_voted,
+            )
+        } catch (_: Exception) {
+            // Profile counters are non-blocking; keep the current value on refresh failure.
         }
     }
 
@@ -75,7 +87,7 @@ class CitizenExperienceViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 RetrofitClient.foundationApi.voteIncident(incidentId, mapOf("vote_value" to voteVal))
-                ProfileStatsStore.recordIncidentVoted()
+                refreshProfileStats()
                 fetchIncidents()
             } catch (e: Exception) {
                 // Handled

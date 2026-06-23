@@ -20,7 +20,7 @@ data class SimulationUiState(
     val corridor: String = "Central Spine",
     val policeStation: String = "Ashok Nagar",
     val junction: String = "MG Road",
-    val startDatetime: String = "22-06-2026 12:30",
+    val startDatetime: String = "2026-06-24T18:00",
     val durationMinutes: String = "90",
     val crowdSize: String = "2500",
     val availableOfficers: String = "12",
@@ -70,6 +70,15 @@ class SimulationViewModel : ViewModel() {
         _uiState.update { it.copy(useLiveWeather = use) }
     }
 
+    private fun normalizeStartDatetime(value: String): String {
+        val trimmed = value.trim()
+        if (trimmed.isBlank()) return "2026-06-24T18:00:00Z"
+        if (trimmed.endsWith("Z") || trimmed.contains("+")) return trimmed
+        if (Regex("""^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$""").matches(trimmed)) return "$trimmed:00Z"
+        if (Regex("""^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$""").matches(trimmed)) return "${trimmed}Z"
+        return "2026-06-24T18:00:00Z"
+    }
+
     fun runSimulation() {
         viewModelScope.launch {
             val state = _uiState.value
@@ -85,7 +94,7 @@ class SimulationViewModel : ViewModel() {
                     police_station = state.policeStation,
                     zone = "unknown zone",
                     junction = state.junction,
-                    start_datetime = "2026-06-22T07:00:00Z", // Mocked format for now
+                    start_datetime = normalizeStartDatetime(state.startDatetime),
                     expected_duration_minutes = state.durationMinutes.toIntOrNull() ?: 90,
                     expected_crowd_size = state.crowdSize.toIntOrNull() ?: 2500,
                     weather_condition = state.weatherCondition,

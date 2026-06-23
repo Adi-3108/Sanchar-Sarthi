@@ -7,6 +7,7 @@ import com.namangulati.sancharsarthi.data.remote.FoundationApi
 import com.namangulati.sancharsarthi.data.remote.MapApi
 import com.namangulati.sancharsarthi.data.remote.ReportApi
 import com.namangulati.sancharsarthi.data.remote.OfficerApi
+import com.namangulati.sancharsarthi.data.remote.RagApi
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
@@ -38,4 +39,5 @@ object RetrofitClient {
     val mapApi: MapApi = retrofit.create(MapApi::class.java)
     val analyticsApi: AnalyticsApi = retrofit.create(AnalyticsApi::class.java)
     val officerApi: OfficerApi = retrofit.create(OfficerApi::class.java)
+    val ragApi: RagApi = retrofit.create(RagApi::class.java)
 }

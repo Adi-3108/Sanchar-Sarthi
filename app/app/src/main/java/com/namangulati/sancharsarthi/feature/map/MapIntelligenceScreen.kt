@@ -45,8 +45,14 @@ fun MapIntelligenceScreen(
     val uiState by viewModel.uiState.collectAsState()
     
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
+    var mapReady by remember { mutableStateOf(false) }
 
-    // Removed LaunchedEffects for map updates, will use AndroidView update block
+    LaunchedEffect(webViewRef, uiState.hotspots, mapReady) {
+        val webView = webViewRef
+        if (mapReady && webView != null) {
+            pushHotspotsToMap(webView, uiState.hotspots)
+        }
+    }
 
     LazyColumn(
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 18.dp),
@@ -100,6 +106,7 @@ fun MapIntelligenceScreen(
                                 @android.webkit.JavascriptInterface
                                 fun onMapLoaded() {
                                     post {
+                                        mapReady = true
                                         evaluateJavascript("javascript:window.isMapReady = true;", null)
                                     }
                                 }
@@ -112,24 +119,7 @@ fun MapIntelligenceScreen(
                         }
                     },
                     update = { webView ->
-                        if (uiState.hotspots.isNotEmpty()) {
-                            val hotspotsJsonList = uiState.hotspots.map { h ->
-                                val severity = when {
-                                    h.cluster_risk_score > 60 -> "high"
-                                    h.cluster_risk_score > 30 -> "medium"
-                                    else -> "low"
-                                }
-                                JsonObject(mapOf(
-                                    "lat" to JsonPrimitive(h.centroid_latitude),
-                                    "lng" to JsonPrimitive(h.centroid_longitude),
-                                    "count" to JsonPrimitive(h.cluster_event_count),
-                                    "label" to JsonPrimitive(h.location_cluster_id),
-                                    "severity" to JsonPrimitive(severity)
-                                ))
-                            }
-                            val jsonStr = Json.encodeToString(hotspotsJsonList)
-                            webView.evaluateJavascript("if(window.loadHotspots) { loadHotspots('$jsonStr'); } else { window.pendingHotspots = '$jsonStr'; }", null)
-                        }
+                        pushHotspotsToMap(webView, uiState.hotspots)
                         
                         val route = uiState.routeData
                         if (route != null) {
@@ -373,6 +363,48 @@ fun MapIntelligenceScreen(
                 }
             }
         }
+    }
+}
+
+
+private fun hotspotSeverity(hotspot: HotspotResponseItem): String {
+    return when {
+        hotspot.cluster_risk_score > 60 -> "high"
+        hotspot.cluster_risk_score > 30 -> "medium"
+        else -> "low"
+    }
+}
+
+private fun buildHotspotsJson(hotspots: List<HotspotResponseItem>): String {
+    val hotspotsJsonList = hotspots.map { hotspot ->
+        JsonObject(
+            mapOf(
+                "lat" to JsonPrimitive(hotspot.centroid_latitude),
+                "lng" to JsonPrimitive(hotspot.centroid_longitude),
+                "count" to JsonPrimitive(hotspot.cluster_event_count),
+                "label" to JsonPrimitive(hotspot.location_cluster_id),
+                "severity" to JsonPrimitive(hotspotSeverity(hotspot))
+            )
+        )
+    }
+    return Json.encodeToString(hotspotsJsonList)
+}
+
+private fun pushHotspotsToMap(webView: WebView, hotspots: List<HotspotResponseItem>) {
+    if (hotspots.isEmpty()) return
+    val payload = Json.encodeToString(buildHotspotsJson(hotspots))
+    val script = """
+        (function() {
+            var payload = $payload;
+            if (window.loadHotspots) {
+                window.loadHotspots(payload);
+            } else {
+                window.pendingHotspots = payload;
+            }
+        })();
+    """.trimIndent()
+    webView.post {
+        webView.evaluateJavascript(script, null)
     }
 }
 

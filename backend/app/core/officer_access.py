@@ -25,7 +25,19 @@ def officer_has_event_access(
     auth: AuthContext,
     event: Event,
 ) -> bool:
-    user_id = coerce_uuid(auth.user_id)
+    if auth.role in ("admin", "control_room"):
+        return True
+
+    if auth.police_station and getattr(event, "police_station", None) == auth.police_station:
+        return True
+
+    if auth.assigned_corridors and getattr(event, "corridor", None) in auth.assigned_corridors:
+        return True
+
+    if auth.assigned_zones and getattr(event, "zone", None) in auth.assigned_zones:
+        return True
+
+    user_id = coerce_uuid(auth.user_account_id)
     if not user_id:
         return False
 

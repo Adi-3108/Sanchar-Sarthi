@@ -155,18 +155,22 @@ fun InterpretationGuideSection() {
         subtitle = "INTERPRETATION GUIDE"
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            BulletText("â€¢ 'Artifact not loaded' means no saved model file exists yet, so rules remain active.")
-            BulletText("â€¢ 'Artifact present, dependencies missing' means a model file exists but local ML packages are not installed.")
-            BulletText("â€¢ Road-closure likelihood stays rule-history first even when optional ML support is available.")
-            BulletText("â€¢ Resolution-time metrics only use rows that pass the reliable timestamp filter.")
-            BulletText("â€¢ Priority and road-closure metrics still rely on dataset-wide historical aggregates, so read them as prototype diagnostics, not leakage-free production validation.")
+            BulletText("'Artifact not loaded' means no saved model file exists yet, so rules remain active.")
+            BulletText("'Artifact present, dependencies missing' means a model file exists but local ML packages are not installed.")
+            BulletText("Road-closure likelihood stays rule-history first even when optional ML support is available.")
+            BulletText("Resolution-time metrics only use rows that pass the reliable timestamp filter.")
+            BulletText("Priority and road-closure metrics still rely on dataset-wide historical aggregates, so read them as prototype diagnostics, not leakage-free production validation.")
         }
     }
 }
 
 @Composable
 fun BulletText(text: String) {
-    AutoTranslatedText(text = text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    AutoTranslatedText(
+        text = "\u2022 $text",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
 
 @Composable

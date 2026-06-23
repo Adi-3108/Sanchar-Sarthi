@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { logoutFirebase } from "@/lib/auth";
+import { logoutFirebase, useFirebaseAuthState } from "@/lib/auth";
 import { type AccessLevel, useSessionStore } from "@/lib/stores/useSessionStore";
 import { useUIStore } from "@/lib/stores/useUIStore";
 import { useState, useEffect } from "react";
@@ -62,6 +62,7 @@ export function TopNav() {
   const pathname = usePathname();
   const router = useRouter();
   const session = useSessionStore();
+  const { user, ready: authReady } = useFirebaseAuthState();
   const { toggleSidebar } = useUIStore();
   const { language } = useLanguage();
   const [mounted, setMounted] = useState(false);
@@ -74,7 +75,7 @@ export function TopNav() {
   const statsQuery = useQuery({
     queryKey: ["user-stats"],
     queryFn: getUserStats,
-    enabled: mounted && currentRole !== "public_citizen",
+    enabled: mounted && currentRole !== "public_citizen" && authReady && !!user,
     staleTime: 60_000,
     retry: false,
   });

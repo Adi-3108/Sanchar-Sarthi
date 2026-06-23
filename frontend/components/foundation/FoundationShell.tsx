@@ -308,6 +308,7 @@ export function FoundationShell({ mode, initialPanel = "overview" }: { mode: Mod
   async function syncData() {
     await queryClient.invalidateQueries({ queryKey: ["foundation-public"] });
     await queryClient.invalidateQueries({ queryKey: ["foundation-control"] });
+    await queryClient.invalidateQueries({ queryKey: ["user-stats"] });
   }
 
   const reportMutation = useMutation({

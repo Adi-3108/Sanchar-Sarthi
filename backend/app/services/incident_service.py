@@ -6,9 +6,6 @@ from app.orm.incident import Incident, can_transition_incident
 def apply_incident_vote(
     incident: Incident,
     vote_value: str,
-    *,
-    activation_vote_threshold: int = 5,
-    activation_confidence_threshold: float = 0.7,
 ) -> None:
     if vote_value == "true":
         incident.true_vote_count += 1
@@ -19,12 +16,6 @@ def apply_incident_vote(
 
     total_votes = incident.true_vote_count + incident.false_vote_count
     incident.confidence_score = incident.true_vote_count / total_votes if total_votes else 0
-    if (
-        incident.status == "pending_verification"
-        and incident.true_vote_count >= activation_vote_threshold
-        and float(incident.confidence_score) >= activation_confidence_threshold
-    ):
-        incident.status = "active"
 
 
 def transition_incident(
